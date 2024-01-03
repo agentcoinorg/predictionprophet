@@ -23,12 +23,13 @@ def run(
     start = time.time()
     if agent == "autonolas":
         research_response = research_autonolas(prompt)
+        print(f"Information: \n\n{research_response}")
     elif agent == "evo":
-        research_response = research(prompt)
+        (research_response, chunks) = research(prompt)
+        print(f"Information: \n\n{chunks}\n\nReport: \n{research_response}")
     else:
         raise Exception(f"Invalid agent. Available agents: {AVAILABLE_AGENTS}")
     end = time.time()
-    print(research_response)
     print(f"Time elapsed: {end - start}")
 
 if __name__ == '__main__':

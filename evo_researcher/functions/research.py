@@ -8,12 +8,12 @@ from evo_researcher.functions.rerank_subqueries import rerank_subqueries
 from evo_researcher.functions.scrape_results import scrape_results
 from evo_researcher.functions.search import search
 
-def research(goal: str):
+def research(goal: str) -> tuple[str, str]:
     initial_subqueries_limit = 20
     subqueries_limit = 5
-    scrape_content_split_chunk_size = 650
-    scrape_content_split_chunk_overlap = 150
-    top_k = 10
+    scrape_content_split_chunk_size = 800
+    scrape_content_split_chunk_overlap = 225
+    top_k = 8
 
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit)
     queries = rerank_subqueries(queries=queries, goal=goal)[:subqueries_limit]
@@ -27,7 +27,7 @@ def research(goal: str):
     scraped = [result for result in scraped if result.content != ""]
 
     text_splitter = RecursiveCharacterTextSplitter(
-        separators=["\n\n", "\n", " ", "  "],
+        separators=["\n\n", "\n", ". ", "  "],
         chunk_size=scrape_content_split_chunk_size,
         chunk_overlap=scrape_content_split_chunk_overlap
     )
@@ -38,10 +38,12 @@ def research(goal: str):
 
     for query in queries:
         top_k_results = collection.similarity_search(query, k=top_k)
-        vector_result_texts += [f"Source: {result.metadata['url']}. Content: {result.page_content}" for result in top_k_results]
+        vector_result_texts += [f"{result.page_content}" for result in top_k_results]
+    
+    chunks = ""
+    for chunk in vector_result_texts:
+        chunks += "- " + chunk + "\n\n"
 
-    reranked_results = rerank_results(vector_result_texts, goal)
+    report = prepare_report(goal, vector_result_texts)
 
-    report = prepare_report(goal, reranked_results)
-
-    return report
+    return (report, chunks)

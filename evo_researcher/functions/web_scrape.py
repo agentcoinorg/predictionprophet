@@ -37,6 +37,7 @@ def web_scrape(url: str, timeout: int = 10000) -> tuple[str, str]:
             text = soup.get_text()
             text = markdownify(text)
             text = "  ".join([x.strip() for x in text.split("\n")])
+            text = " ".join([x.strip() for x in text.split("  ")])
             
             write_to_cache(url, text)
             return (text, url)

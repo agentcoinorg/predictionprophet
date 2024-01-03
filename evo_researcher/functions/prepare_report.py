@@ -15,14 +15,13 @@ def prepare_report(goal: str, scraped: list[str]):
     If that is not possible, state why.
     You will structure your report in the following sections:
     
-    - Title
     - Introduction
     - Background
     - Findings and Analysis
     - Conclusion
-    - Links to sources
     - Caveats
     
+    Don't limit yourself to just stating each finding; provide a thorough analysis of each finding.
     Use markdown syntax. Include as much relevant information as possible and try not to summarize.
     """
     evaluation_prompt = ChatPromptTemplate.from_template(template=evaluation_prompt_template)

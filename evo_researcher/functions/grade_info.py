@@ -25,6 +25,8 @@ Limit yourself to the following criteria:
 * Relevance: The information should be relevant to the specific topic of interest​​.
 * Significance: Evaluate if the information is significant and not trivial or too general​
 
+Limit yourself to the criteria above. Do NOT add any new criteria or subcriteria.
+
 How would you approach grading the information for each of these criteria?
 Let's think about it step by step.
 """
@@ -38,11 +40,13 @@ Here is the plan you came up with to evaluate the information:
 
 {plan}
 
-Limit yourself to the criteria in the plan.
+Limit yourself to the criteria in the plan. Do NOT add any new criteria or subcriteria.
 
 Now you will be given a piece of information to evaluate, according to the plan.
 Provide a single numeric score for each criteria, from 0 to 100, where 0 is the worst and 100 is the best.
 Provide a step by step justification for each score.
+
+The information's format or writing style should not affect your evaluation. Neither should the information's length.
 
 Information:
 
@@ -66,7 +70,7 @@ def grade_info(question: str, information: str) -> InfoScores:
     planning_prompt = ChatPromptTemplate.from_template(template=grading_planning_prompt_template)
     formatting_prompt = ChatPromptTemplate.from_template(template=grading_format_prompt_template)
     
-    llm = ChatOpenAI(model="gpt-4-1106-preview")
+    llm = ChatOpenAI(model="gpt-4-1106-preview", temperature=0)
     
     planning_chain = (
         planning_prompt |
