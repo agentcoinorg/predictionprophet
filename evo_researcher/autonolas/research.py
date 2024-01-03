@@ -1070,7 +1070,7 @@ def research(
     prompt: str,
     max_tokens: int = None,
     temperature: int = None
-) -> Tuple[str, Optional[str], Optional[Dict[str, Any]]]:
+) -> str:
     prompt = f"\"{prompt}\""
     max_compl_tokens =  max_tokens or DEFAULT_OPENAI_SETTINGS["max_compl_tokens"]
     temperature = temperature or DEFAULT_OPENAI_SETTINGS["temperature"]
@@ -1121,9 +1121,9 @@ def research(
 
     
 
-def make_prediction(prompt: str, additional_information: str, max_compl_tokens: int = None, temperature: float = None) -> Prediction:
-    max_compl_tokens =  max_compl_tokens or DEFAULT_OPENAI_SETTINGS["max_compl_tokens"]
-    temperature = temperature or DEFAULT_OPENAI_SETTINGS["temperature"]
+def make_prediction(prompt: str, additional_information: str) -> Prediction:
+    max_compl_tokens =  DEFAULT_OPENAI_SETTINGS["max_compl_tokens"]
+    temperature = DEFAULT_OPENAI_SETTINGS["temperature"]
     
     current_time_utc = datetime.now(timezone.utc)
     formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"

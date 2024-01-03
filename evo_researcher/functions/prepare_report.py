@@ -20,8 +20,10 @@ def prepare_report(goal: str, scraped: list[str]):
     - Findings and Analysis
     - Conclusion
     - Caveats
+    - Reference links
     
-    Don't limit yourself to just stating each finding; provide a thorough analysis of each finding.
+    Include your sources and reference links; but don't limit yourself to just citing them.
+    Don't limit yourself to just stating each finding; provide a thorough, full and comprehensive analysis of each finding.
     Use markdown syntax. Include as much relevant information as possible and try not to summarize.
     """
     evaluation_prompt = ChatPromptTemplate.from_template(template=evaluation_prompt_template)
