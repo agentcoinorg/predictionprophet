@@ -38,7 +38,7 @@ def research(goal: str) -> tuple[str, str]:
 
     for query in queries:
         top_k_results = collection.similarity_search(query, k=top_k)
-        vector_result_texts += [f"Source: {result.metadata['url']}. Content: {result.page_content}" for result in top_k_results]
+        vector_result_texts += [f"{result.page_content}" for result in top_k_results]
     
     chunks = ""
     for chunk in vector_result_texts:

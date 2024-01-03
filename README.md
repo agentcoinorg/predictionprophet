@@ -10,6 +10,8 @@ It contains two primary features:
 - An information research function
 - An information grading function
 
+Additionally, Mech's predict capability has been ported into a function that can also be independently run from this repo.
+
 Below, there's a high level explanation of their implementations, respectively.
 
 ### Research Function
@@ -35,9 +37,10 @@ Upon receiving a question like `"Will Twitter implement a new misinformation pol
 2. Perform the evaluation of the information according to the plan from the previous step
 3. Extract the scores from the evaluation
 
-## Examples
+### Predict
 
-Reports: https://hackmd.io/mrCRBJyiTi-aO1gSFPjoDg
+Ported implementation from: https://github.com/valory-xyz/mech/blob/main/tools/prediction_request_embedding/prediction_sentence_embedding.py
+
 
 ## Installation
 
@@ -48,16 +51,30 @@ poetry shell
 
 ## Run
 
+### Research
+
 With Evo:
 
 ```bash
-poetry run python ./evo_researcher/main.py --prompt="Will Twitter implement a new misinformation policy before the 2024 elections?" --agent="evo"
+poetry run python ./evo_researcher/main.py research "Will Twitter implement a new misinformation policy before the 2024 elections?" evo
 ```
 
 With Autonolas:
 
 ```bash
-poetry run python ./evo_researcher/main.py --prompt="Will Twitter implement a new misinformation policy before the 2024 elections?" --agent="autonolas"
+poetry run python ./evo_researcher/main.py research "Will Twitter implement a new misinformation policy before the 2024 elections?" autonolas
+```
+
+### Predict
+
+```bash
+poetry run python ./evo_researcher/main.py predict "Will Twitter implement a new misinformation policy before the 2024 elections?" ./outputs/myinfopath
+```
+
+### Evaluate
+
+```bash
+poetry run python ./evo_researcher/main.py evaluate "Will Twitter implement a new misinformation policy before the 2024 elections?" ./outputs/myinfopath
 ```
 
 ## Test
@@ -75,6 +92,11 @@ Use `pytest`'s `-k` flag and a string matcher. Example:
 ```bash
 pytest -k "Twitter"
 ```
+
+## Example results
+
+* Reports: https://hackmd.io/mrCRBJyiTi-aO1gSFPjoDg
+* Information excerpts: https://hackmd.io/VQGJgHD1SImZrDR7puauJA?both
 
 ## Ideas for future improvement
 
