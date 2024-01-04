@@ -110,6 +110,7 @@ pytest -k "Twitter"
 - Identify strong claims and perform sub-searches to verify them. This is the basis of AI powered fact-checkers like: https://fullfact.org/
 - Evaluate sources credibility
 - Further iterate over chunking and vector-search strategies
+- Use [HyDE](https://medium.com/@juanc.olamendy/revolutionizing-retrieval-the-mastering-hypothetical-document-embeddings-hyde-b1fc06b9a6cc)
 
 ### For the information evaluator/grader
 
