@@ -51,15 +51,19 @@ def research(
     start = time.time()
     if agent == "autonolas":
         research_response = research_autonolas(prompt)
+        end = time.time()
+        
         dir_name = create_output_file(research_response)
         output_file = "information.txt"
     elif agent == "evo":
         (report, chunks) = evo_research(prompt)
+        end = time.time()
+        
         dir_name = create_output_file(chunks, report)
         output_file = "report.md"
     else:
         raise Exception(f"Invalid agent. Available agents: {AVAILABLE_AGENTS}")
-    end = time.time()
+    
     print(f"\n\nTime elapsed: {end - start}")
     
     print(f"\n\nTo evaluate the output, run:\n\npoetry run python ./evo_researcher/main.py evaluate '{prompt}' ./{dir_name}/{output_file}")
@@ -72,14 +76,20 @@ def evaluate(prompt: str, path: str):
     information = read_text_file(path)
     scores = grade_info(question=prompt, information=information)
     print(scores)
+    
 
 @cli.command()
 @click.argument('prompt')
 @click.argument('path')
 def predict(prompt: str, path: str):
     information = read_text_file(path)
+    
+    start = time.time()
     prediction = make_prediction(prompt=prompt, additional_information=information)
+    end = time.time()
+    
     print(prediction)
+    print(f"\n\nTime elapsed: {end - start}")
 
 if __name__ == '__main__':
     cli()
