@@ -2,7 +2,7 @@
 name = "evo_researcher"
 version = "0.1.0"
 description = ""
-authors = ["Nestor Amesty <nestor09amesty@gmail.com>"]
+authors = ["Nestor Amesty <nestor@polywrap.io>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
