@@ -19,6 +19,10 @@ import spacy
 import spacy.util
 import tiktoken
 
+from langchain.chat_models import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+from langchain.schema.output_parser import StrOutputParser
+
 from dateutil import parser
 
 load_dotenv()
@@ -1122,9 +1126,6 @@ def research(
     
 
 def make_prediction(prompt: str, additional_information: str) -> Prediction:
-    max_compl_tokens =  DEFAULT_OPENAI_SETTINGS["max_compl_tokens"]
-    temperature = DEFAULT_OPENAI_SETTINGS["temperature"]
-    
     current_time_utc = datetime.now(timezone.utc)
     formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
 
@@ -1133,20 +1134,18 @@ def make_prediction(prompt: str, additional_information: str) -> Prediction:
         additional_information=additional_information,
         timestamp=formatted_time_utc,
     )
-
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": prediction_prompt},
-    ]
-
-    response = client.chat.completions.create(
-        model="gpt-4-1106-preview",
-        messages=messages,
-        temperature=temperature,
-        max_tokens=max_compl_tokens,
-        n=1,
-        timeout=150,
-        stop=None
+    
+    prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
+    prediction_chain = (
+        prediction_prompt |
+        ChatOpenAI(model="gpt-4-1106-preview") |
+        StrOutputParser()
     )
 
-    return response.choices[0].message.content
+    response = prediction_chain.invoke({
+        "user_prompt": prompt,
+        "additional_information": additional_information,
+        "timestamp": formatted_time_utc,
+    })
+
+    return response
