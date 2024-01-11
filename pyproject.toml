@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "evo_researcher"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["Nestor Amesty <nestor@polywrap.io>"]
 readme = "README.md"
