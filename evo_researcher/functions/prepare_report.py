@@ -2,7 +2,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 
-def prepare_report(goal: str, scraped: list[str]):
+def prepare_report(goal: str, scraped: list[str], api_key: str):
     evaluation_prompt_template = """
     You are a professional researcher. Your goal is to provide a relevant information report
     in order to make an informed prediction for the question: '{goal}'.
@@ -28,7 +28,7 @@ def prepare_report(goal: str, scraped: list[str]):
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model="gpt-4-1106-preview") |
+        ChatOpenAI(model="gpt-4-1106-preview", api_key=api_key) |
         StrOutputParser()
     )
 

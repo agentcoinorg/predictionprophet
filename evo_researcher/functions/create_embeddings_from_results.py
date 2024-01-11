@@ -5,8 +5,8 @@ import os
 
 from evo_researcher.models.WebScrapeResult import WebScrapeResult
 
-def create_embeddings_from_results(results: list[WebScrapeResult], text_splitter) -> Chroma:
-    collection = Chroma(embedding_function=OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY")))
+def create_embeddings_from_results(results: list[WebScrapeResult], text_splitter, api_key: str) -> Chroma:
+    collection = Chroma(embedding_function=OpenAIEmbeddings(api_key=api_key))
     texts = []
     metadatas = []
 

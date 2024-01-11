@@ -1125,7 +1125,10 @@ def research(
 
     
 
-def make_prediction(prompt: str, additional_information: str) -> Prediction:
+def make_prediction(prompt: str, additional_information: str, **kwargs) -> Prediction:
+    api_keys: dict[str, str] = kwargs["api_keys"]
+    open_ai_key = api_keys.get('openai', os.getenv("OPENAI_API_KEY"))
+    
     current_time_utc = datetime.now(timezone.utc)
     formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
 
@@ -1138,7 +1141,7 @@ def make_prediction(prompt: str, additional_information: str) -> Prediction:
     prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
     prediction_chain = (
         prediction_prompt |
-        ChatOpenAI(model="gpt-4-1106-preview") |
+        ChatOpenAI(model="gpt-4-1106-preview", api_key=open_ai_key) |
         StrOutputParser()
     )
 

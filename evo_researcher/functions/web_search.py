@@ -4,10 +4,8 @@ from tavily import TavilyClient
 
 from evo_researcher.models.WebSearchResult import WebSearchResult
 
-load_dotenv()
-tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
-
-def web_search(query: str, max_results=5) -> list[WebSearchResult]:
+def web_search(query: str, api_key: str, max_results=5) -> list[WebSearchResult]:
+    tavily = TavilyClient(api_key=api_key)
     print(f"-- Searching the web for {query} --")
     response = tavily.search(
         query=query,

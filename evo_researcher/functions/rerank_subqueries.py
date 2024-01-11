@@ -12,12 +12,12 @@ Return them, in order of relevance, as a comma separated list of strings.
 
 Queries: {queries}
 """
-def rerank_subqueries(queries: list[str], goal: str) -> list[str]:
+def rerank_subqueries(queries: list[str], goal: str, api_key: str) -> list[str]:
     rerank_results_prompt = ChatPromptTemplate.from_template(template=rerank_queries_template)
 
     rerank_results_chain = (
         rerank_results_prompt |
-        ChatOpenAI(model="gpt-4-1106-preview") |
+        ChatOpenAI(model="gpt-4-1106-preview", api_key=api_key) |
         StrOutputParser()
     )
 
