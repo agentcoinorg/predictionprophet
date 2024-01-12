@@ -66,7 +66,7 @@ def research(
         else:
             raise Exception(f"Invalid agent. Available agents: {AVAILABLE_AGENTS}")
     
-    print(f"Tokens: {cb.total_tokens} - Cost: ${cb.total_cost}")
+    print(f"Prompt tokens: {cb.prompt_tokens} - Completion tokens: {cb.completion_tokens}")
     print(f"\n\nTime elapsed: {end - start}")
     
     print(f"\n\nTo evaluate the output, run:\n\npoetry run python ./evo_researcher/main.py evaluate '{prompt}' ./{dir_name}/{output_file}")
@@ -93,7 +93,7 @@ def predict(prompt: str, path: str):
     end = time.time()
     
     print(prediction)
-    print(f"Tokens: {cb.total_tokens} - Cost: ${cb.total_cost}")
+    print(f"Prompt tokens: {cb.prompt_tokens} - Completion tokens: {cb.completion_tokens}")
     print(f"\n\nTime elapsed: {end - start}")
 
 if __name__ == '__main__':

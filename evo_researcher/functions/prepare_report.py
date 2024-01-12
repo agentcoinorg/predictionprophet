@@ -28,7 +28,7 @@ def prepare_report(goal: str, scraped: list[str], api_key: str):
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model="gpt-4-1106-preview", api_key=api_key) |
+        ChatOpenAI(model="gpt-4-1106-preview", openai_api_key=api_key) |
         StrOutputParser()
     )
 

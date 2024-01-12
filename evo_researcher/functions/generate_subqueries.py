@@ -15,7 +15,7 @@ def generate_subqueries(query: str, limit: int, api_key: str) -> list[str]:
 
     subquery_generation_chain = (
         subquery_generation_prompt |
-        ChatOpenAI(model="gpt-4-1106-preview", api_key=api_key) |
+        ChatOpenAI(model="gpt-4-1106-preview", openai_api_key=api_key) |
         CommaSeparatedListOutputParser()
     )
 

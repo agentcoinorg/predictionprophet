@@ -11,7 +11,6 @@ from operator import itemgetter
 
 from bs4 import BeautifulSoup, NavigableString
 from googleapiclient.discovery import build
-from openai import OpenAI
 
 import requests
 from requests import Session
@@ -26,8 +25,6 @@ from langchain.schema.output_parser import StrOutputParser
 from dateutil import parser
 
 load_dotenv()
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 NUM_URLS_EXTRACT = 5
 MAX_TOTAL_TOKENS_CHAT_COMPLETION = 4000  # Set the limit for cost efficiency
@@ -1038,16 +1035,23 @@ def fetch_additional_information(
     ]
 
     # Fetch queries from the OpenAI engine
-    response = client.chat.completions.create(model=engine,
-    messages=messages,
-    temperature=temperature,  # Override the default temperature parameter set for the engine
-    max_tokens=max_compl_tokens,  # Override the default max_compl_tokens parameter set for the engine
-    n=1,
-    timeout=90,
-    stop=None)
+    research_prompt = ChatPromptTemplate.from_messages(messages=messages)
+    research_chain = (
+        research_prompt |
+        ChatOpenAI(
+            model=engine,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_compl_tokens,
+            n=1, timeout=90,
+            stop=None
+        ) |
+        StrOutputParser()
+    )
+    response = research_chain.invoke()
 
     # Parse the response content
-    json_data = json.loads(response.choices[0].message.content)
+    json_data = json.loads(response)
 
     # Get URLs from queries
     urls = get_urls_from_queries(
@@ -1073,7 +1077,7 @@ def fetch_additional_information(
 def research(
     prompt: str,
     max_tokens: int = None,
-    temperature: int = None
+    temperature: int = None,
 ) -> str:
     prompt = f"\"{prompt}\""
     max_compl_tokens =  max_tokens or DEFAULT_OPENAI_SETTINGS["max_compl_tokens"]
@@ -1126,7 +1130,7 @@ def research(
     
 
 def make_prediction(prompt: str, additional_information: str, **kwargs) -> Prediction:
-    api_keys: dict[str, str] = kwargs["api_keys"]
+    api_keys: dict[str, str] = kwargs.get("api_keys", {})
     open_ai_key = api_keys.get('openai', os.getenv("OPENAI_API_KEY"))
     
     current_time_utc = datetime.now(timezone.utc)
@@ -1141,7 +1145,7 @@ def make_prediction(prompt: str, additional_information: str, **kwargs) -> Predi
     prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
     prediction_chain = (
         prediction_prompt |
-        ChatOpenAI(model="gpt-4-1106-preview", api_key=open_ai_key) |
+        ChatOpenAI(model="gpt-3.5-turbo-1106", openai_api_key=open_ai_key) |
         StrOutputParser()
     )
 

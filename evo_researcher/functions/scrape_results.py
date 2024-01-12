@@ -13,11 +13,13 @@ def scrape_results(results: list[WebSearchResult]) -> list[WebScrapeResult]:
         for future in as_completed(futures):
             (scraped_content, url) = future.result()
             result = results_by_url[url]
-            scraped.append(WebScrapeResult(
+            result = WebScrapeResult(
                 query=result.query,
                 url=result.url,
                 title=result.title,
                 content=scraped_content
-            ))
+            )
+            
+            scraped.append(result)
 
     return scraped

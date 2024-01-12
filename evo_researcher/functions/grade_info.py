@@ -2,15 +2,15 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain.output_parsers import PydanticOutputParser
-from langchain_core.pydantic_v1 import BaseModel
+# from langchain_core.pydantic_v1 import BaseModel
 
-class InfoScores(BaseModel):
-    credibility: int
-    bias: int
-    accuracy: int
-    currency: int
-    relevance: int
-    significance: int
+# class InfoScores(BaseModel):
+#     credibility: int
+#     bias: int
+#     accuracy: int
+#     currency: int
+#     relevance: int
+#     significance: int
     
 grading_planning_prompt_template = """
 You are a professional information evaluator. Your goal is to 
@@ -65,7 +65,7 @@ Where xx is a number. Only respond with a single JSON. The keys should be lowerc
 {report}
 """
 
-def grade_info(question: str, information: str) -> InfoScores:
+def grade_info(question: str, information: str) -> str:
     grading_prompt = ChatPromptTemplate.from_template(template=grading_prompt_template)
     planning_prompt = ChatPromptTemplate.from_template(template=grading_planning_prompt_template)
     formatting_prompt = ChatPromptTemplate.from_template(template=grading_format_prompt_template)
@@ -87,7 +87,7 @@ def grade_info(question: str, information: str) -> InfoScores:
     formatting_chain = (
         formatting_prompt |
         llm |
-        PydanticOutputParser(pydantic_object=InfoScores)
+        StrOutputParser()
     )
     
     plan = planning_chain.invoke({
