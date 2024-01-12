@@ -9,7 +9,7 @@ from evo_researcher.functions.scrape_results import scrape_results
 from evo_researcher.functions.search import search
 
 def research(goal: str, **kwargs) -> tuple[str, str]:
-    api_keys: dict[str, str] = kwargs["api_keys"]
+    api_keys: dict[str, str] = kwargs.get("api_keys", {})
     open_ai_key = api_keys.get('openai', os.getenv("OPENAI_API_KEY"))
     tavily_key = api_keys.get('tavily', os.getenv("TAVILY_API_KEY"))
     

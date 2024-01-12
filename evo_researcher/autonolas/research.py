@@ -1126,7 +1126,7 @@ def research(
     
 
 def make_prediction(prompt: str, additional_information: str, **kwargs) -> Prediction:
-    api_keys: dict[str, str] = kwargs["api_keys"]
+    api_keys: dict[str, str] = kwargs.get("api_keys", {})
     open_ai_key = api_keys.get('openai', os.getenv("OPENAI_API_KEY"))
     
     current_time_utc = datetime.now(timezone.utc)
