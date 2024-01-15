@@ -1078,6 +1078,7 @@ def research(
     prompt: str,
     max_tokens: int = None,
     temperature: int = None,
+    engine: str = "gpt-3.5-turbo",
 ) -> str:
     prompt = f"\"{prompt}\""
     max_compl_tokens =  max_tokens or DEFAULT_OPENAI_SETTINGS["max_compl_tokens"]
@@ -1086,9 +1087,6 @@ def research(
     # Load the spacy model
     download_spacy_model("en_core_web_md")
     nlp = spacy.load("en_core_web_md")
-
-    # Get the LLM engine to be used
-    engine = "gpt-4-1106-preview"
 
     # Extract the event question from the prompt
     event_question = re.search(r"\"(.+?)\"", prompt).group(1)
@@ -1109,7 +1107,7 @@ def research(
     # Fetch additional information
     additional_information = fetch_additional_information(
         event_question=event_question,
-        # engine=engine,
+        engine=engine,
         temperature=0.5,
         max_compl_tokens=max_compl_tokens,
         nlp=nlp,
