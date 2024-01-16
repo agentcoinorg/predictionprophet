@@ -1,144 +1,17 @@
 import argparse
-import dotenv
-import json
-import os
 import pandas as pd
-import requests
 import typing as t
 
-from evo_researcher.functions.research import research as research_evo
-from evo_researcher.autonolas.research import (
-    make_prediction,
-    research as research_autonolas,
+from evo_researcher.benchmark.agents import (
+    AbstractBenchmarkedAgent,
+    EvoAgent,
+    OlasAgent,
 )
-
-
-class Market:
-    def __init__(self, market_json: dict):
-        self.question = market_json["question"]
-        self.url = market_json["url"]
-        self.p_yes = market_json["probability"]
-        self.volume = market_json["volume"]
-        self.is_resolved = market_json["isResolved"]
-
-    def __repr__(self):
-        return f"Market: {self.question}, p_yes:{self.p_yes}"
-
-
-class PredictionResult:
-    def __init__(self, p_yes: float, confidence: float, info_utility: float):
-        self.p_yes = p_yes
-        self.confidence = confidence
-        self.info_utility = info_utility
-
-    def __repr__(self):
-        return f"PredictionResult: p_yes:{self.p_yes}, confidence:{self.confidence}, info_utility:{self.info_utility}"
-
-
-def get_manifold_markets(number: int = 100) -> t.List[Market]:
-    url = "https://api.manifold.markets/v0/search-markets"
-    params = {
-        "term": "",
-        "sort": "liquidity",
-        "filter": "open",
-        "limit": f"{number}",
-        "contractType": "BINARY",  # TODO support CATEGORICAL markets
-    }
-    response = requests.get(url, params=params)
-
-    response.raise_for_status()
-    markets_json = response.json()
-    markets = [Market(m) for m in markets_json]
-    markets = [m for m in markets if not m.is_resolved]
-    assert len(markets) == number
-    return markets
-
-
-def parse_prediction_str(prediction: str) -> PredictionResult:
-    """
-    Parse a prediction string of the form:
-
-    ```json
-    {
-        "p_yes": 0.6,
-        "p_no": 0.4,
-        "confidence": 0.8,
-        "info_utility": 0.9
-    }
-    ```
-
-    into a PredictionResult object
-    """
-    start_index = prediction.find("{")
-    end_index = prediction.rfind("}")
-    prediction = prediction[start_index : end_index + 1]
-    prediction_json = json.loads(prediction)
-    return PredictionResult(
-        p_yes=prediction_json["p_yes"],
-        confidence=prediction_json["confidence"],
-        info_utility=prediction_json["info_utility"],
-    )
-
-
-def _make_prediction(
-    market_question: str, additional_information: str
-) -> PredictionResult:
-    prediction: str = make_prediction(
-        prompt=market_question, additional_information=additional_information
-    )
-    prediction: PredictionResult = parse_prediction_str(prediction)
-    return prediction
-
-
-class AbstractBenchmarkedAgent:
-    def __init__(self, agent_name: str):
-        self.agent_name = agent_name
-
-    def research_and_predict(self, market_question: str) -> PredictionResult:
-        raise NotImplementedError
-
-
-class OlasAgent(AbstractBenchmarkedAgent):
-    def __init__(self, model: str):
-        super().__init__(agent_name="olas")
-        self.model = model
-
-    def research_and_predict(self, market_question: str) -> PredictionResult:
-        report = research_autonolas(
-            prompt=market_question,
-            engine=self.model,
-        )
-        return _make_prediction(
-            market_question=market_question, additional_information=report
-        )
-
-
-class EvoAgent(AbstractBenchmarkedAgent):
-    def __init__(self, model: str):
-        super().__init__(agent_name="evo")
-        self.model = model
-
-    def research_and_predict(self, market_question: str) -> PredictionResult:
-        dotenv.load_dotenv()
-        open_ai_key = os.getenv("OPENAI_API_KEY")
-        tavily_key = os.getenv("TAVILY_API_KEY")
-        report, _ = research_evo(
-            goal=market_question,
-            openai_key=open_ai_key,
-            tavily_key=tavily_key,
-            model=self.model,
-        )
-        return _make_prediction(
-            market_question=market_question, additional_information=report
-        )
-
-
-class DummyAgent(AbstractBenchmarkedAgent):
-    def __init__(self):
-        super().__init__(agent_name="dummy")
-
-    def research_and_predict(self, market_question: str) -> PredictionResult:
-        return PredictionResult(p_yes=0.5, confidence=0.5, info_utility=0.5)
+from evo_researcher.benchmark.utils import (
+    Market,
+    PredictionResult,
+    get_manifold_markets,
+)
 
 
 class Benchmarker:
@@ -246,16 +119,16 @@ if __name__ == "__main__":
     )
     args = args.parse_args()
 
-    model = "gpt-4-1106-preview"
     benchmarker = Benchmarker(
-        markets=get_manifold_markets()[:1],  # Pick first 1 markets for now
+        markets=get_manifold_markets()[:3],  # Pick first 3 markets for now
         agents=[
-            OlasAgent(model=model),
-            EvoAgent(model=model),
+            OlasAgent(model="gpt-3.5-turbo"),  # TODO use same models!
+            EvoAgent(model="gpt-4-1106-preview"),
         ],
     )
     benchmarker.run_agents()
     md = benchmarker.generate_markdown_report()
 
     with open(args.output, "w") as f:
+        print(f"Writing benchmark report to: {args.output}")
         f.write(md)
