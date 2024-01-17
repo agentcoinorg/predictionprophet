@@ -1030,8 +1030,8 @@ def fetch_additional_information(
 
     # Create messages for the OpenAI engine
     messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": url_query_prompt},
+        ("system", "You are a helpful assistant."),
+        ("user", url_query_prompt),
     ]
 
     # Fetch queries from the OpenAI engine
@@ -1040,7 +1040,6 @@ def fetch_additional_information(
         research_prompt |
         ChatOpenAI(
             model=engine,
-            messages=messages,
             temperature=temperature,
             max_tokens=max_compl_tokens,
             n=1, timeout=90,
@@ -1048,7 +1047,7 @@ def fetch_additional_information(
         ) |
         StrOutputParser()
     )
-    response = research_chain.invoke()
+    response = research_chain.invoke({})
 
     # Parse the response content
     json_data = json.loads(response)
