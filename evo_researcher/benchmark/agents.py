@@ -1,6 +1,7 @@
 import dotenv
 import json
 import os
+import typing as t
 
 from evo_researcher.functions.research import research as research_evo
 from evo_researcher.autonolas.research import (
@@ -47,8 +48,9 @@ def _make_prediction(
 
 
 class AbstractBenchmarkedAgent:
-    def __init__(self, agent_name: str):
+    def __init__(self, agent_name: str, max_workers: t.Optional[int] = None):
         self.agent_name = agent_name
+        self.max_workers = max_workers  # Limit the number of workers that can run this worker in parallel threads
 
     def research_and_predict(self, market_question: str) -> PredictionResult:
         raise NotImplementedError
@@ -71,7 +73,10 @@ class OlasAgent(AbstractBenchmarkedAgent):
 
 class EvoAgent(AbstractBenchmarkedAgent):
     def __init__(self, model: str):
-        super().__init__(agent_name="evo")
+        super().__init__(
+            agent_name="evo",
+            max_workers=1,  # Problems with tavily API if this is too large
+        )
         self.model = model
 
     def research_and_predict(self, market_question: str) -> PredictionResult:

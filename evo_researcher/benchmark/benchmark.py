@@ -1,4 +1,5 @@
 import argparse
+import concurrent.futures
 import pandas as pd
 import time
 import typing as t
@@ -52,7 +53,8 @@ class Benchmarker:
 
     def run_agents(self):
         for agent in self.registered_agents:
-            for market in self.markets:
+
+            def get_prediction_result(market: Market):
                 with get_openai_callback() as cb:
                     start = time.time()
                     prediction = agent.research_and_predict(
@@ -68,7 +70,18 @@ class Benchmarker:
                             completion_tokens=cb.completion_tokens,
                         )
                     prediction.cost = cb.total_cost
-                self.add_prediction(agent=agent, prediction=prediction)
+                return prediction
+
+            # Run agents in parallel
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=agent.max_workers
+            ) as executor:
+                future_to_market = {
+                    executor.submit(get_prediction_result, market): market
+                    for market in self.markets
+                }
+                for future in concurrent.futures.as_completed(future_to_market):
+                    self.add_prediction(agent=agent, prediction=future.result())
 
     def _compute_mse(
         self, predictions: t.List[PredictionResult], markets: t.List[Market]
@@ -159,9 +172,9 @@ if __name__ == "__main__":
     args = args.parse_args()
 
     benchmarker = Benchmarker(
-        markets=get_manifold_markets()[:2],  # Pick first 2 markets for now
+        markets=get_manifold_markets()[:6],  # Pick first 20 markets for now
         agents=[
-            OlasAgent(model="gpt-3.5-turbo"),  # TODO use same models!
+            # OlasAgent(model="gpt-3.5-turbo"),  # TODO use same models!
             EvoAgent(model="gpt-4-1106-preview"),
         ],
     )
