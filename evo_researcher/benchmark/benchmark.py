@@ -1,6 +1,9 @@
 import argparse
 import pandas as pd
+import time
 import typing as t
+
+from langchain.callbacks import get_openai_callback
 
 from evo_researcher.benchmark.agents import (
     AbstractBenchmarkedAgent,
@@ -10,6 +13,7 @@ from evo_researcher.benchmark.agents import (
 from evo_researcher.benchmark.utils import (
     Market,
     PredictionResult,
+    get_llm_api_call_cost,
     get_manifold_markets,
 )
 
@@ -35,7 +39,8 @@ class Benchmarker:
             "MSE for `p_yes`": self._compute_mse,
             "Mean confidence": self._compute_mean_confidence,
             "Mean info_utility": self._compute_mean_info_utility,
-            # TODO add mean cost and mean time
+            "Mean cost ($)": self._compute_mean_cost,
+            "Mean time (s)": self._compute_mean_time,
             # TODO add 'normalized' mse to take into account confidence?
         }
         self.metric_fns.update(predefined_metric_fns)
@@ -48,7 +53,21 @@ class Benchmarker:
     def run_agents(self):
         for agent in self.registered_agents:
             for market in self.markets:
-                prediction = agent.research_and_predict(market_question=market.question)
+                with get_openai_callback() as cb:
+                    start = time.time()
+                    prediction = agent.research_and_predict(
+                        market_question=market.question
+                    )
+                    prediction.time = time.time() - start
+
+                    if cb.total_tokens > 0 and cb.total_cost == 0:
+                        # TODO: this is a hack to get the cost for an unsupported model
+                        cb.total_cost = get_llm_api_call_cost(
+                            model=agent.model,
+                            prompt_tokens=cb.prompt_tokens,
+                            completion_tokens=cb.completion_tokens,
+                        )
+                    prediction.cost = cb.total_cost
                 self.add_prediction(agent=agent, prediction=prediction)
 
     def _compute_mse(
@@ -71,6 +90,26 @@ class Benchmarker:
             predictions
         )
         return mean_info_utility
+
+    def _compute_mean_cost(
+        self, predictions: t.List[PredictionResult], markets: t.List[Market]
+    ):
+        # Note: costs are optional
+        costs = [p.cost for p in predictions if p.cost]
+        if costs:
+            return sum(costs) / len(costs)
+        else:
+            return None
+
+    def _compute_mean_time(
+        self, predictions: t.List[PredictionResult], markets: t.List[Market]
+    ):
+        # Note: times are optional
+        times = [p.time for p in predictions if p.time]
+        if times:
+            return sum(times) / len(times)
+        else:
+            return None
 
     def compute_metrics(self) -> t.Dict[str, t.List[t.Any]]:
         metrics = {}
@@ -120,7 +159,7 @@ if __name__ == "__main__":
     args = args.parse_args()
 
     benchmarker = Benchmarker(
-        markets=get_manifold_markets()[:3],  # Pick first 3 markets for now
+        markets=get_manifold_markets()[:2],  # Pick first 2 markets for now
         agents=[
             OlasAgent(model="gpt-3.5-turbo"),  # TODO use same models!
             EvoAgent(model="gpt-4-1106-preview"),
