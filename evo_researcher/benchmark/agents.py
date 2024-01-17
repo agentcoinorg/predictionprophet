@@ -73,10 +73,7 @@ class OlasAgent(AbstractBenchmarkedAgent):
 
 class EvoAgent(AbstractBenchmarkedAgent):
     def __init__(self, model: str):
-        super().__init__(
-            agent_name="evo",
-            max_workers=1,  # Problems with tavily API if this is too large
-        )
+        super().__init__(agent_name="evo")
         self.model = model
 
     def research_and_predict(self, market_question: str) -> PredictionResult:

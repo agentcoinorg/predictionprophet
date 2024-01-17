@@ -172,9 +172,9 @@ if __name__ == "__main__":
     args = args.parse_args()
 
     benchmarker = Benchmarker(
-        markets=get_manifold_markets()[:6],  # Pick first 20 markets for now
+        markets=get_manifold_markets(number=3),
         agents=[
-            # OlasAgent(model="gpt-3.5-turbo"),  # TODO use same models!
+            OlasAgent(model="gpt-3.5-turbo"),  # TODO use same models!
             EvoAgent(model="gpt-4-1106-preview"),
         ],
     )
