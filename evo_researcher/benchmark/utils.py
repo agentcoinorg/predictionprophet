@@ -1,36 +1,22 @@
 import requests
 import typing as t
+from pydantic import BaseModel
 
 
-class Market:
-    def __init__(self, market_json: dict):
-        self.question = market_json["question"]
-        self.url = market_json["url"]
-        self.p_yes = market_json["probability"]
-        self.volume = market_json["volume"]
-        self.is_resolved = market_json["isResolved"]
-
-    def __repr__(self):
-        return f"Market: {self.question}, p_yes:{self.p_yes}"
+class Market(BaseModel):
+    question: str
+    url: str
+    p_yes: float
+    volume: float
+    is_resolved: bool
 
 
-class PredictionResult:
-    def __init__(
-        self,
-        p_yes: float,
-        confidence: float,
-        info_utility: float,
-        time: t.Optional[float] = None,
-        cost: t.Optional[float] = None,
-    ):
-        self.p_yes = p_yes
-        self.confidence = confidence
-        self.info_utility = info_utility
-        self.time = time
-        self.cost = cost
-
-    def __repr__(self):
-        return f"PredictionResult: p_yes:{self.p_yes}, confidence:{self.confidence}, info_utility:{self.info_utility}, time:{self.time}, cost:{self.cost}"
+class PredictionResult(BaseModel):
+    p_yes: float
+    confidence: float
+    info_utility: float
+    time: t.Optional[float] = None
+    cost: t.Optional[float] = None
 
 
 def get_manifold_markets(number: int = 100) -> t.List[Market]:
@@ -46,7 +32,17 @@ def get_manifold_markets(number: int = 100) -> t.List[Market]:
 
     response.raise_for_status()
     markets_json = response.json()
-    markets = [Market(m) for m in markets_json]
+
+    # Map JSON fields to Market fields
+    fields_map = {
+        "probability": "p_yes",
+        "isResolved": "is_resolved",
+    }
+
+    def _map_fields(old: dict, mapping: dict) -> dict:
+        return {mapping.get(k, k): v for k, v in old.items()}
+
+    markets = [Market.parse_obj(_map_fields(m, fields_map)) for m in markets_json]
     markets = [m for m in markets if not m.is_resolved]
     assert len(markets) == number
     return markets

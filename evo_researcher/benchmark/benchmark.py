@@ -30,9 +30,9 @@ class Benchmarker:
         self.registered_agents: t.List[AbstractBenchmarkedAgent] = agents
 
         # Predictions
-        self.predictions: t.Dict[str, t.List[PredictionResult]] = {}
-        for agent in self.registered_agents:
-            self.predictions[agent.agent_name] = []
+        self.predictions: t.Dict[str, t.List[PredictionResult]] = {
+            agent.agent_name: [] for agent in self.registered_agents
+        }
 
         # Metrics
         self.metric_fns = metric_fns
