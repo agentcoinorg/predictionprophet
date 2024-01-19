@@ -58,7 +58,10 @@ class AbstractBenchmarkedAgent:
 
 class OlasAgent(AbstractBenchmarkedAgent):
     def __init__(self, model: str):
-        super().__init__(agent_name="olas")
+        super().__init__(
+            agent_name="olas",
+            max_workers=4,
+        )
         self.model = model
 
     def research_and_predict(self, market_question: str) -> PredictionResult:

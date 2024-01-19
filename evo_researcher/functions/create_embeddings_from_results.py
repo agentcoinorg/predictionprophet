@@ -2,11 +2,16 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores.chroma import Chroma
 
 import os
+import time
 
 from evo_researcher.models.WebScrapeResult import WebScrapeResult
 
 def create_embeddings_from_results(results: list[WebScrapeResult], text_splitter, api_key: str) -> Chroma:
-    collection = Chroma(embedding_function=OpenAIEmbeddings(openai_api_key=api_key))
+    collection = Chroma(
+        embedding_function=OpenAIEmbeddings(openai_api_key=api_key),
+        persist_directory=os.path.join(os.getcwd(), ".chromadb", f"{time.time()}/"),
+        # Set a persist_dir to prevent "sqlite3.OperationalError: database table is locked: embeddings_queue"
+    )
     texts = []
     metadatas = []
 
