@@ -1,5 +1,6 @@
 import argparse
 import concurrent.futures
+import os
 import pandas as pd
 import time
 import typing as t
@@ -12,8 +13,10 @@ from evo_researcher.benchmark.agents import (
     OlasAgent,
 )
 from evo_researcher.benchmark.utils import (
+    AgentPredictionResults,
     Market,
     PredictionResult,
+    PredictionResultsCache,
     get_llm_api_call_cost,
     get_manifold_markets,
 )
@@ -25,6 +28,7 @@ class Benchmarker:
         markets: t.List[Market],
         agents: t.List[AbstractBenchmarkedAgent],
         metric_fns: t.Dict[str, t.Callable] = {},
+        cache_path: t.Optional[str] = None,
     ):
         self.markets: t.List[Market] = markets
         self.registered_agents: t.List[AbstractBenchmarkedAgent] = agents
@@ -46,13 +50,56 @@ class Benchmarker:
         }
         self.metric_fns.update(predefined_metric_fns)
 
+        # Cache
+        self.cache_path = cache_path
+        if self.cache_path and os.path.exists(self.cache_path):
+            self.cached_results = PredictionResultsCache.parse_file(self.cache_path)
+        else:
+            self.cached_results = PredictionResultsCache(agents={})
+
     def add_prediction(
-        self, agent: AbstractBenchmarkedAgent, prediction: PredictionResult
+        self,
+        agent: AbstractBenchmarkedAgent,
+        prediction: PredictionResult,
+        market_question: str,
+        cache: bool = True,
     ):
         self.predictions[agent.agent_name].append(prediction)
 
-    def run_agents(self):
+        # Add predictions to the cache
+        if self.cache_path and cache:
+            if agent.agent_name not in self.cached_results.agents:
+                self.cached_results.agents[agent.agent_name] = AgentPredictionResults(
+                    predictions={}
+                )
+            assert (
+                market_question
+                not in self.cached_results.agents[agent.agent_name].predictions
+            )
+            self.cached_results.agents[agent.agent_name].predictions[
+                market_question
+            ] = prediction
+
+    def run_agents(self, save_cache: bool = True):
         for agent in self.registered_agents:
+            if self.cache_path:
+                # Load cached results
+                markets_to_run = []
+                agent_predictions = self.cached_results.agents.get(
+                    agent.agent_name, AgentPredictionResults(predictions={})
+                )
+                for market in self.markets:
+                    if market.question not in agent_predictions.predictions:
+                        markets_to_run.append(market)
+                    else:
+                        self.add_prediction(
+                            agent=agent,
+                            prediction=agent_predictions.predictions[market.question],
+                            market_question=market.question,
+                            cache=False,  # Already cached
+                        )
+            else:
+                markets_to_run = self.markets
 
             def get_prediction_result(market: Market):
                 with get_openai_callback() as cb:
@@ -70,7 +117,7 @@ class Benchmarker:
                             completion_tokens=cb.completion_tokens,
                         )
                     prediction.cost = cb.total_cost
-                return prediction
+                return market.question, prediction
 
             # Run agents in parallel
             with concurrent.futures.ThreadPoolExecutor(
@@ -78,10 +125,18 @@ class Benchmarker:
             ) as executor:
                 future_to_market = {
                     executor.submit(get_prediction_result, market): market
-                    for market in self.markets
+                    for market in markets_to_run
                 }
                 for future in concurrent.futures.as_completed(future_to_market):
-                    self.add_prediction(agent=agent, prediction=future.result())
+                    market_question, prediction = future.result()
+                    self.add_prediction(
+                        agent=agent,
+                        prediction=prediction,
+                        market_question=market_question,
+                    )
+
+        if save_cache and self.cache_path:
+            self.cached_results.save(self.cache_path)
 
     def _compute_mse(
         self, predictions: t.List[PredictionResult], markets: t.List[Market]

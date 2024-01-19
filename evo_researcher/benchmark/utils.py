@@ -19,6 +19,18 @@ class PredictionResult(BaseModel):
     cost: t.Optional[float] = None
 
 
+class AgentPredictionResults(BaseModel):
+    predictions: t.Dict[str, PredictionResult]
+
+
+class PredictionResultsCache(BaseModel):
+    agents: t.Dict[str, AgentPredictionResults]
+
+    def save(self, path: str):
+        with open(path, "w") as f:
+            f.write(self.json())
+
+
 def get_manifold_markets(number: int = 100) -> t.List[Market]:
     url = "https://api.manifold.markets/v0/search-markets"
     params = {
