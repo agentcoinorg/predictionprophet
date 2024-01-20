@@ -1,5 +1,6 @@
 import argparse
 import concurrent.futures
+import json
 import os
 import pandas as pd
 import time
@@ -13,10 +14,9 @@ from evo_researcher.benchmark.agents import (
     OlasAgent,
 )
 from evo_researcher.benchmark.utils import (
-    AgentPredictionResults,
     Market,
     PredictionResult,
-    PredictionResultsCache,
+    PredictionsCache,
     get_llm_api_call_cost,
     get_manifold_markets,
 )
@@ -34,9 +34,16 @@ class Benchmarker:
         self.registered_agents: t.List[AbstractBenchmarkedAgent] = agents
 
         # Predictions
-        self.predictions: t.Dict[str, t.List[PredictionResult]] = {
-            agent.agent_name: [] for agent in self.registered_agents
-        }
+        """
+        TODO also rename PredictionResult -> Prediction
+        """
+        self.cache_path = cache_path
+        if self.cache_path and os.path.exists(self.cache_path):
+            self.predictions = PredictionsCache.load(
+                markets=self.markets, path=self.cache_path
+            )
+        else:
+            self.predictions = {}
 
         # Metrics
         self.metric_fns = metric_fns
@@ -50,54 +57,25 @@ class Benchmarker:
         }
         self.metric_fns.update(predefined_metric_fns)
 
-        # Cache
-        self.cache_path = cache_path
-        if self.cache_path and os.path.exists(self.cache_path):
-            self.cached_results = PredictionResultsCache.parse_file(self.cache_path)
-        else:
-            self.cached_results = PredictionResultsCache(agents={})
-
     def add_prediction(
         self,
         agent: AbstractBenchmarkedAgent,
         prediction: PredictionResult,
         market_question: str,
-        cache: bool = True,
     ):
-        self.predictions[agent.agent_name].append(prediction)
+        if agent.agent_name not in self.predictions:
+            self.predictions[agent.agent_name] = {}
+        assert market_question not in self.predictions[agent.agent_name]
+        self.predictions[agent.agent_name][market_question] = prediction
 
-        # Add predictions to the cache
-        if self.cache_path and cache:
-            if agent.agent_name not in self.cached_results.agents:
-                self.cached_results.agents[agent.agent_name] = AgentPredictionResults(
-                    predictions={}
-                )
-            assert (
-                market_question
-                not in self.cached_results.agents[agent.agent_name].predictions
-            )
-            self.cached_results.agents[agent.agent_name].predictions[
-                market_question
-            ] = prediction
-
-    def run_agents(self, save_cache: bool = True):
+    def run_agents(self):
         for agent in self.registered_agents:
             if self.cache_path:
-                # Load cached results
                 markets_to_run = []
-                agent_predictions = self.cached_results.agents.get(
-                    agent.agent_name, AgentPredictionResults(predictions={})
-                )
+                agent_predictions = self.predictions.get(agent.agent_name, {})
                 for market in self.markets:
-                    if market.question not in agent_predictions.predictions:
+                    if market.question not in agent_predictions:
                         markets_to_run.append(market)
-                    else:
-                        self.add_prediction(
-                            agent=agent,
-                            prediction=agent_predictions.predictions[market.question],
-                            market_question=market.question,
-                            cache=False,  # Already cached
-                        )
             else:
                 markets_to_run = self.markets
 
@@ -135,8 +113,8 @@ class Benchmarker:
                         market_question=market_question,
                     )
 
-        if save_cache and self.cache_path:
-            self.cached_results.save(self.cache_path)
+        if self.cache_path:
+            PredictionsCache(predictions=self.predictions).save(self.cache_path)
 
     def _compute_mse(
         self, predictions: t.List[PredictionResult], markets: t.List[Market]
@@ -186,8 +164,11 @@ class Benchmarker:
         for name, fn in self.metric_fns.items():
             metrics[name] = []
             for agent in self.predictions.keys():
+                ordered_predictions = [
+                    self.predictions[agent][market.question] for market in self.markets
+                ]
                 metrics[name].append(
-                    fn(predictions=self.predictions[agent], markets=self.markets)
+                    fn(predictions=ordered_predictions, markets=self.markets)
                 )
 
         return metrics
@@ -202,7 +183,7 @@ class Benchmarker:
         }
         for model_type in self.predictions.keys():
             markets_summary[f"{model_type} p_yes"] = [
-                p.p_yes for p in self.predictions[model_type]
+                p.p_yes for p in self.predictions[model_type].values()
             ]
         markets_summary["manifold p_yes"] = [m.p_yes for m in self.markets]
         return markets_summary

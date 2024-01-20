@@ -1,9 +1,8 @@
 import pytest
 import tempfile
-import typing as t
+import json
 
 import evo_researcher.benchmark.benchmark as bm
-from evo_researcher.benchmark.utils import AgentPredictionResults
 from evo_researcher.benchmark.agents import parse_prediction_str
 
 
@@ -53,15 +52,11 @@ def test_parse_result_str_to_json():
 
 
 def test_cache():
-    cache = bm.PredictionResultsCache(
-        agents={
-            "bar": AgentPredictionResults(
-                predictions={
-                    "foo": bm.PredictionResult(
-                        p_yes=0.6, confidence=0.8, info_utility=0.9
-                    )
-                }
-            )
+    cache = bm.PredictionsCache(
+        predictions={
+            "bar": {
+                "foo": bm.PredictionResult(p_yes=0.6, confidence=0.8, info_utility=0.9)
+            }
         }
     )
 
@@ -69,7 +64,7 @@ def test_cache():
         cache_path = f"{tmpdir}/cache.json"
         cache.save(cache_path)
 
-        cache_loaded = bm.PredictionResultsCache.parse_file(cache_path)
+        cache_loaded = bm.PredictionsCache.parse_file(cache_path)
         assert cache == cache_loaded
 
 
@@ -80,7 +75,7 @@ def test_benchmarker_cache(dummy_agent):
         benchmarker = bm.Benchmarker(
             markets=markets,
             agents=[dummy_agent],
-            cache_path="./.cache.json",
+            cache_path=cache_path,
         )
         prediction = bm.PredictionResult(
             p_yes=0.00001, confidence=0.22222, info_utility=0.3333
@@ -91,12 +86,10 @@ def test_benchmarker_cache(dummy_agent):
             market_question=markets[0].question,
         )
         assert (
-            benchmarker.cached_results.agents[dummy_agent.agent_name]
-            .predictions[markets[0].question]
-            .p_yes
+            benchmarker.predictions[dummy_agent.agent_name][markets[0].question].p_yes
             == prediction.p_yes
         )
-        benchmarker.cached_results.save(cache_path)
+        bm.PredictionsCache(predictions=benchmarker.predictions).save(cache_path)
 
         another_benchmarker = bm.Benchmarker(
             markets=markets,
@@ -104,13 +97,17 @@ def test_benchmarker_cache(dummy_agent):
             cache_path=cache_path,
         )
         assert (
-            another_benchmarker.cached_results.agents[dummy_agent.agent_name]
-            .predictions[markets[0].question]
-            .p_yes
+            another_benchmarker.predictions[dummy_agent.agent_name][
+                markets[0].question
+            ].p_yes
             == prediction.p_yes
         )
         another_benchmarker.run_agents()
+
+        # Observe that the cached result is still the same
         assert (
-            another_benchmarker.predictions[dummy_agent.agent_name][0].p_yes
+            another_benchmarker.predictions[dummy_agent.agent_name][
+                markets[0].question
+            ].p_yes
             == prediction.p_yes
         )
