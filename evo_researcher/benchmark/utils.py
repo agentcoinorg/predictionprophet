@@ -1,3 +1,4 @@
+import os
 import requests
 import typing as t
 from pydantic import BaseModel
@@ -19,16 +20,37 @@ class PredictionResult(BaseModel):
     cost: t.Optional[float] = None
 
 
-class AgentPredictionResults(BaseModel):
-    predictions: t.Dict[str, PredictionResult]
+AgentPredictions = t.Dict[str, PredictionResult]
+Predictions = t.Dict[str, AgentPredictions]
 
 
-class PredictionResultsCache(BaseModel):
-    agents: t.Dict[str, AgentPredictionResults]
+class PredictionsCache(BaseModel):
+    predictions: Predictions
 
     def save(self, path: str):
+        # If the file exists, load it and add the new predictions
+        if os.path.exists(path):
+            old_cache = self.parse_file(path)
+            for agent, agent_predictions in self.predictions.items():
+                for question, prediction in agent_predictions.items():
+                    old_cache.predictions[agent][question] = prediction
+            self = old_cache
         with open(path, "w") as f:
             f.write(self.json())
+
+    @classmethod
+    def load(cls, markets: t.List[Market], path: str):
+        ps = cls.parse_file(path).predictions
+
+        # Remove predictions for markets that are not in the current list
+        return {
+            agent: {
+                question: prediction
+                for question, prediction in agent_predictions.items()
+                if any(m.question == question for m in markets)
+            }
+            for agent, agent_predictions in ps.items()
+        }
 
 
 def get_manifold_markets(number: int = 100) -> t.List[Market]:
