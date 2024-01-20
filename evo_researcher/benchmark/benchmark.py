@@ -15,7 +15,7 @@ from evo_researcher.benchmark.agents import (
 )
 from evo_researcher.benchmark.utils import (
     Market,
-    PredictionResult,
+    Prediction,
     PredictionsCache,
     get_llm_api_call_cost,
     get_manifold_markets,
@@ -34,9 +34,6 @@ class Benchmarker:
         self.registered_agents: t.List[AbstractBenchmarkedAgent] = agents
 
         # Predictions
-        """
-        TODO also rename PredictionResult -> Prediction
-        """
         self.cache_path = cache_path
         if self.cache_path and os.path.exists(self.cache_path):
             self.predictions = PredictionsCache.load(
@@ -60,7 +57,7 @@ class Benchmarker:
     def add_prediction(
         self,
         agent: AbstractBenchmarkedAgent,
-        prediction: PredictionResult,
+        prediction: Prediction,
         market_question: str,
     ):
         if agent.agent_name not in self.predictions:
@@ -116,21 +113,19 @@ class Benchmarker:
         if self.cache_path:
             PredictionsCache(predictions=self.predictions).save(self.cache_path)
 
-    def _compute_mse(
-        self, predictions: t.List[PredictionResult], markets: t.List[Market]
-    ):
+    def _compute_mse(self, predictions: t.List[Prediction], markets: t.List[Market]):
         mse = sum([(p.p_yes - m.p_yes) ** 2 for p, m in zip(predictions, markets)])
         mse /= len(predictions)
         return mse
 
     def _compute_mean_confidence(
-        self, predictions: t.List[PredictionResult], markets: t.List[Market]
+        self, predictions: t.List[Prediction], markets: t.List[Market]
     ):
         mean_confidence = sum([p.confidence for p in predictions]) / len(predictions)
         return mean_confidence
 
     def _compute_mean_info_utility(
-        self, predictions: t.List[PredictionResult], markets: t.List[Market]
+        self, predictions: t.List[Prediction], markets: t.List[Market]
     ):
         mean_info_utility = sum([p.info_utility for p in predictions]) / len(
             predictions
@@ -138,7 +133,7 @@ class Benchmarker:
         return mean_info_utility
 
     def _compute_mean_cost(
-        self, predictions: t.List[PredictionResult], markets: t.List[Market]
+        self, predictions: t.List[Prediction], markets: t.List[Market]
     ):
         # Note: costs are optional
         costs = [p.cost for p in predictions if p.cost]
@@ -148,7 +143,7 @@ class Benchmarker:
             return None
 
     def _compute_mean_time(
-        self, predictions: t.List[PredictionResult], markets: t.List[Market]
+        self, predictions: t.List[Prediction], markets: t.List[Market]
     ):
         # Note: times are optional
         times = [p.time for p in predictions if p.time]
