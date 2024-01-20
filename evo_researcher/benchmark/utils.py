@@ -12,7 +12,7 @@ class Market(BaseModel):
     is_resolved: bool
 
 
-class PredictionResult(BaseModel):
+class Prediction(BaseModel):
     p_yes: float
     confidence: float
     info_utility: float
@@ -20,7 +20,7 @@ class PredictionResult(BaseModel):
     cost: t.Optional[float] = None
 
 
-AgentPredictions = t.Dict[str, PredictionResult]
+AgentPredictions = t.Dict[str, Prediction]
 Predictions = t.Dict[str, AgentPredictions]
 
 

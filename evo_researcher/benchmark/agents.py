@@ -8,10 +8,10 @@ from evo_researcher.autonolas.research import (
     make_prediction,
     research as research_autonolas,
 )
-from evo_researcher.benchmark.utils import PredictionResult
+from evo_researcher.benchmark.utils import Prediction
 
 
-def parse_prediction_str(prediction: str) -> PredictionResult:
+def parse_prediction_str(prediction: str) -> Prediction:
     """
     Parse a prediction string of the form:
 
@@ -24,26 +24,24 @@ def parse_prediction_str(prediction: str) -> PredictionResult:
     }
     ```
 
-    into a PredictionResult object
+    into a Prediction object
     """
     start_index = prediction.find("{")
     end_index = prediction.rfind("}")
     prediction = prediction[start_index : end_index + 1]
     prediction_json = json.loads(prediction)
-    return PredictionResult(
+    return Prediction(
         p_yes=prediction_json["p_yes"],
         confidence=prediction_json["confidence"],
         info_utility=prediction_json["info_utility"],
     )
 
 
-def _make_prediction(
-    market_question: str, additional_information: str
-) -> PredictionResult:
+def _make_prediction(market_question: str, additional_information: str) -> Prediction:
     prediction: str = make_prediction(
         prompt=market_question, additional_information=additional_information
     )
-    prediction: PredictionResult = parse_prediction_str(prediction)
+    prediction: Prediction = parse_prediction_str(prediction)
     return prediction
 
 
@@ -52,7 +50,7 @@ class AbstractBenchmarkedAgent:
         self.agent_name = agent_name
         self.max_workers = max_workers  # Limit the number of workers that can run this worker in parallel threads
 
-    def research_and_predict(self, market_question: str) -> PredictionResult:
+    def research_and_predict(self, market_question: str) -> Prediction:
         raise NotImplementedError
 
 
@@ -61,7 +59,7 @@ class OlasAgent(AbstractBenchmarkedAgent):
         super().__init__(agent_name="olas")
         self.model = model
 
-    def research_and_predict(self, market_question: str) -> PredictionResult:
+    def research_and_predict(self, market_question: str) -> Prediction:
         report = research_autonolas(
             prompt=market_question,
             engine=self.model,
@@ -73,10 +71,10 @@ class OlasAgent(AbstractBenchmarkedAgent):
 
 class EvoAgent(AbstractBenchmarkedAgent):
     def __init__(self, model: str):
-        super().__init__(agent_name="evo")
+        super().__init__(agent_name="evo", max_workers=4)
         self.model = model
 
-    def research_and_predict(self, market_question: str) -> PredictionResult:
+    def research_and_predict(self, market_question: str) -> Prediction:
         dotenv.load_dotenv()
         open_ai_key = os.getenv("OPENAI_API_KEY")
         tavily_key = os.getenv("TAVILY_API_KEY")
