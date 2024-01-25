@@ -63,20 +63,23 @@ class PredictionsCache(BaseModel):
         }
 
 
-def get_manifold_markets(number: int = 100) -> t.List[Market]:
+def get_manifold_markets(
+    number: int = 100, excluded_questions: t.List[str] = []
+) -> t.List[Market]:
     url = "https://api.manifold.markets/v0/search-markets"
     params = {
         "term": "",
         "sort": "liquidity",
         "filter": "open",
-        "limit": f"{number}",
+        "limit": f"{number + len(excluded_questions)}",
         "contractType": "BINARY",  # TODO support CATEGORICAL markets
     }
     response = requests.get(url, params=params)
 
     response.raise_for_status()
     markets_json = response.json()
-    markets_json["source"] = MarketSource.MANIFOLD
+    for m in markets_json:
+        m["source"] = MarketSource.MANIFOLD
 
     # Map JSON fields to Market fields
     fields_map = {
@@ -89,8 +92,11 @@ def get_manifold_markets(number: int = 100) -> t.List[Market]:
 
     markets = [Market.parse_obj(_map_fields(m, fields_map)) for m in markets_json]
     markets = [m for m in markets if not m.is_resolved]
-    assert len(markets) == number
-    return markets
+
+    # Filter out markets with excluded questions
+    markets = [m for m in markets if m.question not in excluded_questions]
+
+    return markets[:number]
 
 
 def get_polymarket_pkey():
@@ -109,7 +115,9 @@ def get_polymarket_client():
     return client
 
 
-def get_polymarket_markets(number: int = 100) -> t.List[Market]:
+def get_polymarket_markets(
+    number: int = 100, excluded_questions: t.List[str] = []
+) -> t.List[Market]:
     if number > 100:
         raise ValueError("Polymarket API only returns 100 markets at a time")
 
@@ -121,6 +129,9 @@ def get_polymarket_markets(number: int = 100) -> t.List[Market]:
             continue
         yes_token = [t for t in m_json["tokens"] if t["outcome"] == "Yes"][0]
         p_yes = client.get_midpoint(yes_token["token_id"])["mid"]
+        if m_json["question"] in excluded_questions:
+            print(f"Skipping market with 'excluded question': {m_json['question']}")
+            continue
         markets.append(
             Market(
                 question=m_json["question"],
@@ -134,11 +145,19 @@ def get_polymarket_markets(number: int = 100) -> t.List[Market]:
     return markets[:number]
 
 
-def get_markets(number: int, source: MarketSource) -> t.List[Market]:
+def get_markets(
+    number: int,
+    source: MarketSource,
+    excluded_questions: t.List[str] = [],
+) -> t.List[Market]:
     if source == MarketSource.MANIFOLD:
-        return get_manifold_markets(number=number)
+        return get_manifold_markets(
+            number=number, excluded_questions=excluded_questions
+        )
     elif source == MarketSource.POLYMARKET:
-        return get_polymarket_markets(number=number)
+        return get_polymarket_markets(
+            number=number, excluded_questions=excluded_questions
+        )
     else:
         raise ValueError(f"Unknown market source: {source}")
 

@@ -62,7 +62,6 @@ class Benchmarker:
             "Mean info_utility": self._compute_mean_info_utility,
             "Mean cost ($)": self._compute_mean_cost,
             "Mean time (s)": self._compute_mean_time,
-            # b) correlation between confidence and prediction error relative to the reference
         }
         self.metric_fns.update(predefined_metric_fns)
 
