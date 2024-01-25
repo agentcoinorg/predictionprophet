@@ -1,6 +1,5 @@
 import argparse
 import concurrent.futures
-import json
 import os
 import pandas as pd
 import time
@@ -15,10 +14,11 @@ from evo_researcher.benchmark.agents import (
 )
 from evo_researcher.benchmark.utils import (
     Market,
+    MarketSource,
     Prediction,
     PredictionsCache,
     get_llm_api_call_cost,
-    get_manifold_markets,
+    get_markets,
 )
 
 
@@ -180,7 +180,7 @@ class Benchmarker:
             markets_summary[f"{model_type} p_yes"] = [
                 p.p_yes for p in self.predictions[model_type].values()
             ]
-        markets_summary["manifold p_yes"] = [m.p_yes for m in self.markets]
+        markets_summary[f"reference p_yes"] = [m.p_yes for m in self.markets]
         return markets_summary
 
     def generate_markdown_report(self):
@@ -200,10 +200,16 @@ if __name__ == "__main__":
         type=str,
         default="./benchmark_report.md",
     )
+    args.add_argument(
+        "--reference",
+        type=str,
+        choices=[ms.value for ms in MarketSource],
+        default="manifold",
+    )
     args = args.parse_args()
 
     benchmarker = Benchmarker(
-        markets=get_manifold_markets(number=3),
+        markets=get_markets(number=3, source=MarketSource(args.reference)),
         agents=[
             OlasAgent(model="gpt-3.5-turbo"),  # TODO use same models!
             EvoAgent(model="gpt-4-1106-preview"),
