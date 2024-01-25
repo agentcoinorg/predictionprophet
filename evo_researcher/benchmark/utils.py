@@ -1,10 +1,20 @@
+from dotenv import load_dotenv
+from enum import Enum
 import os
 import requests
 import typing as t
 from pydantic import BaseModel
+from py_clob_client.constants import POLYGON
+from py_clob_client.client import ClobClient
+
+
+class MarketSource(Enum):
+    MANIFOLD = "manifold"
+    POLYMARKET = "polymarket"
 
 
 class Market(BaseModel):
+    source: MarketSource
     question: str
     url: str
     p_yes: float
@@ -66,6 +76,7 @@ def get_manifold_markets(number: int = 100) -> t.List[Market]:
 
     response.raise_for_status()
     markets_json = response.json()
+    markets_json["source"] = MarketSource.MANIFOLD
 
     # Map JSON fields to Market fields
     fields_map = {
@@ -80,6 +91,56 @@ def get_manifold_markets(number: int = 100) -> t.List[Market]:
     markets = [m for m in markets if not m.is_resolved]
     assert len(markets) == number
     return markets
+
+
+def get_polymarket_pkey():
+    load_dotenv()
+    pk = os.getenv("POLYMARKET_PKEY")
+    if pk is None:
+        raise ValueError("POLYMARKET_PKEY env var not set")
+    return pk
+
+
+def get_polymarket_client():
+    host = "https://clob.polymarket.com"
+    chain_id = POLYGON
+    client = ClobClient(host, key=get_polymarket_pkey(), chain_id=chain_id)
+    client.set_api_creds(client.create_or_derive_api_creds())
+    return client
+
+
+def get_polymarket_markets(number: int = 100) -> t.List[Market]:
+    if number > 100:
+        raise ValueError("Polymarket API only returns 100 markets at a time")
+
+    client = get_polymarket_client()
+    ms_json = client.get_markets()["data"]
+    markets: t.List[Market] = []
+    for m_json in ms_json:
+        if m_json["closed"]:
+            continue
+        yes_token = [t for t in m_json["tokens"] if t["outcome"] == "Yes"][0]
+        p_yes = client.get_midpoint(yes_token["token_id"])["mid"]
+        markets.append(
+            Market(
+                question=m_json["question"],
+                url=f"https://polymarket.com/event/{m_json['market_slug']}",
+                p_yes=p_yes,
+                volume=0,
+                is_resolved=False,
+                source=MarketSource.POLYMARKET,
+            )
+        )
+    return markets[:number]
+
+
+def get_markets(number: int, source: MarketSource) -> t.List[Market]:
+    if source == MarketSource.MANIFOLD:
+        return get_manifold_markets(number=number)
+    elif source == MarketSource.POLYMARKET:
+        return get_polymarket_markets(number=number)
+    else:
+        raise ValueError(f"Unknown market source: {source}")
 
 
 def get_llm_api_call_cost(model: str, prompt_tokens: int, completion_tokens) -> float:
