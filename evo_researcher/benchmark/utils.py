@@ -4,8 +4,6 @@ import os
 import requests
 import typing as t
 from pydantic import BaseModel
-from py_clob_client.constants import POLYGON
-from py_clob_client.client import ClobClient
 
 
 class MarketSource(Enum):
@@ -99,50 +97,35 @@ def get_manifold_markets(
     return markets[:number]
 
 
-def get_polymarket_pkey():
-    load_dotenv()
-    pk = os.getenv("POLYMARKET_PKEY")
-    if pk is None:
-        raise ValueError("POLYMARKET_PKEY env var not set")
-    return pk
-
-
-def get_polymarket_client():
-    host = "https://clob.polymarket.com"
-    chain_id = POLYGON
-    client = ClobClient(host, key=get_polymarket_pkey(), chain_id=chain_id)
-    client.set_api_creds(client.create_or_derive_api_creds())
-    return client
-
-
 def get_polymarket_markets(
     number: int = 100, excluded_questions: t.List[str] = []
 ) -> t.List[Market]:
     if number > 100:
         raise ValueError("Polymarket API only returns 100 markets at a time")
 
-    client = get_polymarket_client()
-    ms_json = client.get_markets()["data"]
+    api_uri = f"https://strapi-matic.poly.market/markets?_limit={number}&active=true&closed=false"
+    ms_json = requests.get(api_uri).json()
     markets: t.List[Market] = []
     for m_json in ms_json:
-        if m_json["closed"]:
+        # Skip non-binary markets. Unfortunately no way to filter in the API call
+        if m_json["outcomes"] != ["Yes", "No"]:
             continue
-        yes_token = [t for t in m_json["tokens"] if t["outcome"] == "Yes"][0]
-        p_yes = client.get_midpoint(yes_token["token_id"])["mid"]
+
         if m_json["question"] in excluded_questions:
             print(f"Skipping market with 'excluded question': {m_json['question']}")
             continue
+
         markets.append(
             Market(
                 question=m_json["question"],
-                url=f"https://polymarket.com/event/{m_json['market_slug']}",
-                p_yes=p_yes,
-                volume=0,
+                url=f"https://polymarket.com/event/{m_json['slug']}",
+                p_yes=m_json["outcomePrices"][0],
+                volume=m_json["volume"],
                 is_resolved=False,
                 source=MarketSource.POLYMARKET,
             )
         )
-    return markets[:number]
+    return markets
 
 
 def get_markets(
