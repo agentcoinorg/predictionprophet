@@ -191,6 +191,7 @@ class Benchmarker:
             markets_summary[f"{agent} p_yes"] = [
                 self.get_prediction(agent_name=agent, question=q).p_yes
                 for q in market_questions
+            ]
 
         markets_summary["manifold p_yes"] = [m.p_yes for m in self.markets]
         return markets_summary
