@@ -39,13 +39,9 @@ class Benchmarker:
         """
         self.cache_path = cache_path
         if self.cache_path and os.path.exists(self.cache_path):
-            self.predictions = PredictionsCache.load(
-                markets=self.markets,
-                agents=[a.agent_name for a in self.registered_agents],
-                path=self.cache_path,
-            )
+            self.predictions = PredictionsCache.load(path=self.cache_path)
         else:
-            self.predictions = {}
+            self.predictions = PredictionsCache(predictions={})
 
         # Metrics
         self.metric_fns = metric_fns
@@ -65,19 +61,25 @@ class Benchmarker:
         prediction: PredictionResult,
         market_question: str,
     ):
-        if agent.agent_name not in self.predictions:
-            self.predictions[agent.agent_name] = {}
-        assert market_question not in self.predictions[agent.agent_name]
-        self.predictions[agent.agent_name][market_question] = prediction
+        self.predictions.add_prediction(
+            agent_name=agent.agent_name,
+            question=market_question,
+            prediction=prediction,
+        )
+
+    def get_prediction(self, agent_name: str, question: str) -> PredictionResult:
+        return self.predictions.get_prediction(agent_name=agent_name, question=question)
 
     def run_agents(self):
         for agent in self.registered_agents:
             if self.cache_path:
-                markets_to_run = []
-                agent_predictions = self.predictions.get(agent.agent_name, {})
-                for market in self.markets:
-                    if market.question not in agent_predictions:
-                        markets_to_run.append(market)
+                markets_to_run = [
+                    m
+                    for m in self.markets
+                    if not self.predictions.has_market(
+                        agent_name=agent.agent_name, question=m.question
+                    )
+                ]
             else:
                 markets_to_run = self.markets
 
@@ -115,7 +117,7 @@ class Benchmarker:
                         market_question=market_question,
                     )
                 if self.cache_path:
-                    PredictionsCache(predictions=self.predictions).save(self.cache_path)
+                    self.predictions.save(self.cache_path)
 
     def _compute_mse(
         self, predictions: t.List[PredictionResult], markets: t.List[Market]
@@ -160,13 +162,15 @@ class Benchmarker:
 
     def compute_metrics(self) -> t.Dict[str, t.List[t.Any]]:
         metrics = {}
-        metrics["Agents"] = list(self.predictions.keys())
+        agents = [a.agent_name for a in self.registered_agents]
+        metrics["Agents"] = agents
 
         for name, fn in self.metric_fns.items():
             metrics[name] = []
-            for agent in self.predictions.keys():
+            for agent in agents:
                 ordered_predictions = [
-                    self.predictions[agent][market.question] for market in self.markets
+                    self.get_prediction(question=market.question, agent_name=agent)
+                    for market in self.markets
                 ]
                 metrics[name].append(
                     fn(predictions=ordered_predictions, markets=self.markets)
@@ -182,9 +186,10 @@ class Benchmarker:
                 f"[{question}]({url})" for question, url in zip(market_questions, urls)
             ],
         }
-        for model_type in self.predictions.keys():
-            markets_summary[f"{model_type} p_yes"] = [
-                p.p_yes for p in self.predictions[model_type].values()
+        for agent in [a.agent_name for a in self.registered_agents]:
+            markets_summary[f"{agent} p_yes"] = [
+                self.get_prediction(agent_name=agent, question=q).p_yes
+                for q in market_questions
             ]
         markets_summary["manifold p_yes"] = [m.p_yes for m in self.markets]
         return markets_summary

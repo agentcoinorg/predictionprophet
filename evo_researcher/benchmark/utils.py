@@ -28,32 +28,30 @@ Predictions = t.Dict[str, AgentPredictions]
 class PredictionsCache(BaseModel):
     predictions: Predictions
 
+    def get_prediction(self, agent_name: str, question: str) -> PredictionResult:
+        return self.predictions[agent_name][question]
+
+    def has_market(self, agent_name: str, question: str) -> bool:
+        return (
+            agent_name in self.predictions and question in self.predictions[agent_name]
+        )
+
+    def add_prediction(
+        self, agent_name: str, question: str, prediction: PredictionResult
+    ):
+        if agent_name not in self.predictions:
+            self.predictions[agent_name] = {}
+        assert question not in self.predictions[agent_name]
+        self.predictions[agent_name][question] = prediction
+
     def save(self, path: str):
-        # If the file exists, load it and add the new predictions
-        if os.path.exists(path):
-            old_cache = self.parse_file(path)
-            for agent, agent_predictions in self.predictions.items():
-                for question, prediction in agent_predictions.items():
-                    old_cache.predictions.get(agent, {})[question] = prediction
-            self = old_cache
         with open(path, "w") as f:
             json.dump(self.dict(), f, indent=2)
 
-    @classmethod
-    def load(cls, markets: t.List[Market], agents: t.List[str], path: str):
-        ps = cls.parse_file(path).predictions
-
-        # Remove predictions for markets that are not in the current list
-        return {
-            agent: {
-                question: prediction
-                for question, prediction in agent_predictions.items()
-                if any(m.question == question for m in markets)
-            }
-            # Remove agents not in `registered_agents`
-            for agent, agent_predictions in ps.items()
-            if agent in agents
-        }
+    @staticmethod
+    def load(path: str) -> "PredictionsCache":
+        with open(path, "r") as f:
+            return PredictionsCache.parse_obj(json.load(f))
 
 
 def get_manifold_markets(number: int = 100) -> t.List[Market]:

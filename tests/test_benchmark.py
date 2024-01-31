@@ -87,10 +87,12 @@ def test_benchmarker_cache(dummy_agent):
             market_question=markets[0].question,
         )
         assert (
-            benchmarker.predictions[dummy_agent.agent_name][markets[0].question].p_yes
+            benchmarker.get_prediction(
+                agent_name=dummy_agent.agent_name, question=markets[0].question
+            ).p_yes
             == prediction.p_yes
         )
-        bm.PredictionsCache(predictions=benchmarker.predictions).save(cache_path)
+        benchmarker.predictions.save(cache_path)
 
         another_benchmarker = bm.Benchmarker(
             markets=markets,
@@ -98,43 +100,17 @@ def test_benchmarker_cache(dummy_agent):
             cache_path=cache_path,
         )
         assert (
-            another_benchmarker.predictions[dummy_agent.agent_name][
-                markets[0].question
-            ].p_yes
+            another_benchmarker.get_prediction(
+                agent_name=dummy_agent.agent_name, question=markets[0].question
+            ).p_yes
             == prediction.p_yes
         )
         another_benchmarker.run_agents()
 
         # Observe that the cached result is still the same
         assert (
-            another_benchmarker.predictions[dummy_agent.agent_name][
-                markets[0].question
-            ].p_yes
+            another_benchmarker.get_prediction(
+                agent_name=dummy_agent.agent_name, question=markets[0].question
+            ).p_yes
             == prediction.p_yes
         )
-
-
-def test_benchmark_cache_new_agents(dummy_agent):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        cache_path = f"{tmpdir}/cache.json"
-
-        benchmarker0 = bm.Benchmarker(
-            markets=bm.get_manifold_markets(number=1),
-            agents=[dummy_agent],
-            cache_path=cache_path,
-        )
-        benchmarker0.run_agents()
-
-        # Copy dummy agent and assign new name
-        dummy_agent1 = copy.deepcopy(dummy_agent)
-        dummy_agent1.agent_name = "dummy2"
-        benchmarker1 = bm.Benchmarker(
-            markets=bm.get_manifold_markets(number=2)[1:],
-            agents=[dummy_agent1],
-            cache_path=cache_path,
-        )
-        benchmarker1.run_agents()
-
-        # Observe that the cached result from other agents have not been loaded
-        assert dummy_agent.agent_name not in benchmarker1.predictions
-        assert dummy_agent1.agent_name in benchmarker1.predictions
