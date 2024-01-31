@@ -40,7 +40,9 @@ class Benchmarker:
         self.cache_path = cache_path
         if self.cache_path and os.path.exists(self.cache_path):
             self.predictions = PredictionsCache.load(
-                markets=self.markets, path=self.cache_path
+                markets=self.markets,
+                agents=[a.agent_name for a in self.registered_agents],
+                path=self.cache_path,
             )
         else:
             self.predictions = {}
@@ -112,9 +114,8 @@ class Benchmarker:
                         prediction=prediction,
                         market_question=market_question,
                     )
-
-        if self.cache_path:
-            PredictionsCache(predictions=self.predictions).save(self.cache_path)
+                if self.cache_path:
+                    PredictionsCache(predictions=self.predictions).save(self.cache_path)
 
     def _compute_mse(
         self, predictions: t.List[PredictionResult], markets: t.List[Market]

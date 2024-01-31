@@ -1,3 +1,4 @@
+import json
 import os
 import requests
 import typing as t
@@ -33,13 +34,13 @@ class PredictionsCache(BaseModel):
             old_cache = self.parse_file(path)
             for agent, agent_predictions in self.predictions.items():
                 for question, prediction in agent_predictions.items():
-                    old_cache.predictions[agent][question] = prediction
+                    old_cache.predictions.get(agent, {})[question] = prediction
             self = old_cache
         with open(path, "w") as f:
-            f.write(self.json())
+            json.dump(self.dict(), f, indent=2)
 
     @classmethod
-    def load(cls, markets: t.List[Market], path: str):
+    def load(cls, markets: t.List[Market], agents: t.List[str], path: str):
         ps = cls.parse_file(path).predictions
 
         # Remove predictions for markets that are not in the current list
@@ -49,7 +50,9 @@ class PredictionsCache(BaseModel):
                 for question, prediction in agent_predictions.items()
                 if any(m.question == question for m in markets)
             }
+            # Remove agents not in `registered_agents`
             for agent, agent_predictions in ps.items()
+            if agent in agents
         }
 
 
