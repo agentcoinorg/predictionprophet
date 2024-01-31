@@ -184,7 +184,7 @@ class Benchmarker:
         }
         for model_type in self.predictions.keys():
             markets_summary[f"{model_type} p_yes"] = [
-                p.p_yes for p in self.predictions[model_type].values()
+                self.predictions[model_type][q.question].p_yes for q in self.markets
             ]
         markets_summary["manifold p_yes"] = [m.p_yes for m in self.markets]
         return markets_summary
