@@ -2112,7 +2112,7 @@ files = [
 name = "pysqlite3-binary"
 version = "0.5.2.post3"
 description = "DB-API 2.0 interface for Sqlite 3.x"
-optional = false
+optional = true
 python-versions = "*"
 files = [
     {file = "pysqlite3_binary-0.5.2.post3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9e3535276d490b60d4f1cb1bace7613afc90333f2b37ce76bffb21d09032eccb"},
@@ -3525,7 +3525,10 @@ files = [
 idna = ">=2.0"
 multidict = ">=4.0"
 
+[extras]
+pysqlite3-binary = ["pysqlite3-binary"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "23ea65a13f5599e5ab28fd4b0b8f04ed93e86dab34205f07218330600120779e"
+content-hash = "23defd491ab7d9c8d70c29048588a26fb2496cda21d168d952f62b1b3d773710"
