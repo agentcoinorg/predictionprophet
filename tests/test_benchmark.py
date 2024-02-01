@@ -1,6 +1,5 @@
 import pytest
 import tempfile
-import json
 
 import evo_researcher.benchmark.benchmark as bm
 from evo_researcher.benchmark.agents import parse_prediction_str
@@ -27,7 +26,7 @@ def test_agent_prediction(dummy_agent):
 
 def test_benchmark_run(dummy_agent):
     benchmarker = bm.Benchmarker(
-        markets=bm.get_manifold_markets(number=1),
+        markets=bm.get_markets(number=1, source=bm.MarketSource.MANIFOLD),
         agents=[dummy_agent],
     )
     benchmarker.run_agents()
@@ -69,7 +68,7 @@ def test_cache():
 def test_benchmarker_cache(dummy_agent):
     with tempfile.TemporaryDirectory() as tmpdir:
         cache_path = f"{tmpdir}/cache.json"
-        markets = bm.get_manifold_markets(number=1)
+        markets = bm.get_markets(number=1, source=bm.MarketSource.MANIFOLD)
         benchmarker = bm.Benchmarker(
             markets=markets,
             agents=[dummy_agent],
@@ -84,10 +83,12 @@ def test_benchmarker_cache(dummy_agent):
             market_question=markets[0].question,
         )
         assert (
-            benchmarker.predictions[dummy_agent.agent_name][markets[0].question].p_yes
+            benchmarker.get_prediction(
+                agent_name=dummy_agent.agent_name, question=markets[0].question
+            ).p_yes
             == prediction.p_yes
         )
-        bm.PredictionsCache(predictions=benchmarker.predictions).save(cache_path)
+        benchmarker.predictions.save(cache_path)
 
         another_benchmarker = bm.Benchmarker(
             markets=markets,
@@ -95,17 +96,17 @@ def test_benchmarker_cache(dummy_agent):
             cache_path=cache_path,
         )
         assert (
-            another_benchmarker.predictions[dummy_agent.agent_name][
-                markets[0].question
-            ].p_yes
+            another_benchmarker.get_prediction(
+                agent_name=dummy_agent.agent_name, question=markets[0].question
+            ).p_yes
             == prediction.p_yes
         )
         another_benchmarker.run_agents()
 
         # Observe that the cached result is still the same
         assert (
-            another_benchmarker.predictions[dummy_agent.agent_name][
-                markets[0].question
-            ].p_yes
+            another_benchmarker.get_prediction(
+                agent_name=dummy_agent.agent_name, question=markets[0].question
+            ).p_yes
             == prediction.p_yes
         )

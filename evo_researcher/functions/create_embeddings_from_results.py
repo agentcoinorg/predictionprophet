@@ -1,3 +1,11 @@
+try:
+    __import__('pysqlite3')
+    import sys
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    print("pysqlite3-binary not found, using sqlite3 instead.")
+
+
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores.chroma import Chroma
 
@@ -5,6 +13,7 @@ import os
 import time
 
 from evo_researcher.models.WebScrapeResult import WebScrapeResult
+
 
 def create_embeddings_from_results(results: list[WebScrapeResult], text_splitter, api_key: str) -> Chroma:
     collection = Chroma(

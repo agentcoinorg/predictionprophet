@@ -8,13 +8,17 @@ from evo_researcher.functions.rerank_subqueries import rerank_subqueries
 from evo_researcher.functions.scrape_results import scrape_results
 from evo_researcher.functions.search import search
 
-def research(goal: str, openai_key: str, tavily_key: str, model: str = "gpt-4-1106-preview",  **kwargs) -> tuple[str, str]:
-    initial_subqueries_limit = kwargs.get('initial_subqueries_limit', 20)
-    subqueries_limit = kwargs.get('subqueries_limit', 4)
-    scrape_content_split_chunk_size = kwargs.get('scrape_content_split_chunk_size', 800)
-    scrape_content_split_chunk_overlap = kwargs.get('scrape_content_split_chunk_overlap', 225)
-    top_k_per_query = kwargs.get('top_k_per_query', 8)
-
+def research(
+    goal: str,
+    openai_key: str,
+    tavily_key: str,
+    model: str = "gpt-4-1106-preview",
+    initial_subqueries_limit: int = 20,
+    subqueries_limit: int = 4,
+    scrape_content_split_chunk_size: int = 800,
+    scrape_content_split_chunk_overlap: int = 225,
+    top_k_per_query: int = 8
+) -> tuple[str, str]:    
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, api_key=openai_key)
     queries = rerank_subqueries(queries=queries, goal=goal, api_key=openai_key)[:subqueries_limit]
 
