@@ -72,16 +72,14 @@ class Benchmarker:
 
     def run_agents(self):
         for agent in self.registered_agents:
-            if self.cache_path:
-                markets_to_run = [
-                    m
-                    for m in self.markets
-                    if not self.predictions.has_market(
-                        agent_name=agent.agent_name, question=m.question
-                    )
-                ]
-            else:
-                markets_to_run = self.markets
+            # Filter out cached predictions
+            markets_to_run = [
+                m
+                for m in self.markets
+                if not self.predictions.has_market(
+                    agent_name=agent.agent_name, question=m.question
+                )
+            ]
 
             def get_prediction_result(market: Market):
                 with get_openai_callback() as cb:
