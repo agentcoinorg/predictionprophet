@@ -1,11 +1,17 @@
+from enum import Enum
 import json
-import os
 import requests
 import typing as t
 from pydantic import BaseModel
 
 
+class MarketSource(Enum):
+    MANIFOLD = "manifold"
+    POLYMARKET = "polymarket"
+
+
 class Market(BaseModel):
+    source: MarketSource
     question: str
     url: str
     p_yes: float
@@ -13,7 +19,7 @@ class Market(BaseModel):
     is_resolved: bool
 
 
-class PredictionResult(BaseModel):
+class Prediction(BaseModel):
     p_yes: float
     confidence: float
     info_utility: float
@@ -21,14 +27,14 @@ class PredictionResult(BaseModel):
     cost: t.Optional[float] = None
 
 
-AgentPredictions = t.Dict[str, PredictionResult]
+AgentPredictions = t.Dict[str, Prediction]
 Predictions = t.Dict[str, AgentPredictions]
 
 
 class PredictionsCache(BaseModel):
     predictions: Predictions
 
-    def get_prediction(self, agent_name: str, question: str) -> PredictionResult:
+    def get_prediction(self, agent_name: str, question: str) -> Prediction:
         return self.predictions[agent_name][question]
 
     def has_market(self, agent_name: str, question: str) -> bool:
@@ -36,9 +42,7 @@ class PredictionsCache(BaseModel):
             agent_name in self.predictions and question in self.predictions[agent_name]
         )
 
-    def add_prediction(
-        self, agent_name: str, question: str, prediction: PredictionResult
-    ):
+    def add_prediction(self, agent_name: str, question: str, prediction: Prediction):
         if agent_name not in self.predictions:
             self.predictions[agent_name] = {}
         assert question not in self.predictions[agent_name]
@@ -54,19 +58,23 @@ class PredictionsCache(BaseModel):
             return PredictionsCache.parse_obj(json.load(f))
 
 
-def get_manifold_markets(number: int = 100) -> t.List[Market]:
+def get_manifold_markets(
+    number: int = 100, excluded_questions: t.List[str] = []
+) -> t.List[Market]:
     url = "https://api.manifold.markets/v0/search-markets"
     params = {
         "term": "",
         "sort": "liquidity",
         "filter": "open",
-        "limit": f"{number}",
+        "limit": f"{number + len(excluded_questions)}",
         "contractType": "BINARY",  # TODO support CATEGORICAL markets
     }
     response = requests.get(url, params=params)
 
     response.raise_for_status()
     markets_json = response.json()
+    for m in markets_json:
+        m["source"] = MarketSource.MANIFOLD
 
     # Map JSON fields to Market fields
     fields_map = {
@@ -79,8 +87,59 @@ def get_manifold_markets(number: int = 100) -> t.List[Market]:
 
     markets = [Market.parse_obj(_map_fields(m, fields_map)) for m in markets_json]
     markets = [m for m in markets if not m.is_resolved]
-    assert len(markets) == number
+
+    # Filter out markets with excluded questions
+    markets = [m for m in markets if m.question not in excluded_questions]
+
+    return markets[:number]
+
+
+def get_polymarket_markets(
+    number: int = 100, excluded_questions: t.List[str] = []
+) -> t.List[Market]:
+    if number > 100:
+        raise ValueError("Polymarket API only returns 100 markets at a time")
+
+    api_uri = f"https://strapi-matic.poly.market/markets?_limit={number + len(excluded_questions)}&active=true&closed=false"
+    ms_json = requests.get(api_uri).json()
+    markets: t.List[Market] = []
+    for m_json in ms_json:
+        # Skip non-binary markets. Unfortunately no way to filter in the API call
+        if m_json["outcomes"] != ["Yes", "No"]:
+            continue
+
+        if m_json["question"] in excluded_questions:
+            print(f"Skipping market with 'excluded question': {m_json['question']}")
+            continue
+
+        markets.append(
+            Market(
+                question=m_json["question"],
+                url=f"https://polymarket.com/event/{m_json['slug']}",
+                p_yes=m_json["outcomePrices"][0],
+                volume=m_json["volume"],
+                is_resolved=False,
+                source=MarketSource.POLYMARKET,
+            )
+        )
     return markets
+
+
+def get_markets(
+    number: int,
+    source: MarketSource,
+    excluded_questions: t.List[str] = [],
+) -> t.List[Market]:
+    if source == MarketSource.MANIFOLD:
+        return get_manifold_markets(
+            number=number, excluded_questions=excluded_questions
+        )
+    elif source == MarketSource.POLYMARKET:
+        return get_polymarket_markets(
+            number=number, excluded_questions=excluded_questions
+        )
+    else:
+        raise ValueError(f"Unknown market source: {source}")
 
 
 def get_llm_api_call_cost(model: str, prompt_tokens: int, completion_tokens) -> float:
