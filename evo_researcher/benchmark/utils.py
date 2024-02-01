@@ -103,7 +103,7 @@ def get_polymarket_markets(
     if number > 100:
         raise ValueError("Polymarket API only returns 100 markets at a time")
 
-    api_uri = f"https://strapi-matic.poly.market/markets?_limit={number}&active=true&closed=false"
+    api_uri = f"https://strapi-matic.poly.market/markets?_limit={number + len(excluded_questions)}&active=true&closed=false"
     ms_json = requests.get(api_uri).json()
     markets: t.List[Market] = []
     for m_json in ms_json:
