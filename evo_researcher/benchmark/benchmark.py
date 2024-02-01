@@ -1,6 +1,6 @@
 import argparse
 import concurrent.futures
-import json
+import numpy as np
 import os
 import pandas as pd
 import time
@@ -15,10 +15,11 @@ from evo_researcher.benchmark.agents import (
 )
 from evo_researcher.benchmark.utils import (
     Market,
+    MarketSource,
     Prediction,
     PredictionsCache,
     get_llm_api_call_cost,
-    get_manifold_markets,
+    get_markets,
 )
 
 
@@ -47,10 +48,20 @@ class Benchmarker:
         predefined_metric_fns = {
             "MSE for `p_yes`": self._compute_mse,
             "Mean confidence": self._compute_mean_confidence,
+            "% within +-0.05": lambda predictions, markets: self._compute_percentage_within_range(
+                predictions, markets, tolerance=0.05
+            ),
+            "% within +-0.1": lambda predictions, markets: self._compute_percentage_within_range(
+                predictions, markets, tolerance=0.1
+            ),
+            "% within +-0.2": lambda predictions, markets: self._compute_percentage_within_range(
+                predictions, markets, tolerance=0.2
+            ),
+            "% correct outcome": self._compute_correct_outcome_percentage,
+            "confidence/p_yes error correlation": self._compute_confidence_p_yes_error_correlation,
             "Mean info_utility": self._compute_mean_info_utility,
             "Mean cost ($)": self._compute_mean_cost,
             "Mean time (s)": self._compute_mean_time,
-            # TODO add 'normalized' mse to take into account confidence?
         }
         self.metric_fns.update(predefined_metric_fns)
 
@@ -132,6 +143,36 @@ class Benchmarker:
         )
         return mean_info_utility
 
+    def _compute_percentage_within_range(
+        self,
+        predictions: t.List[Prediction],
+        markets: t.List[Market],
+        tolerance: float = 0.05,
+    ):
+        within_range_count = 0
+        for p, m in zip(predictions, markets):
+            if abs(p.p_yes - m.p_yes) <= tolerance:
+                within_range_count += 1
+
+        return (100 * within_range_count) / len(predictions)
+
+    def _compute_correct_outcome_percentage(
+        self, predictions: t.List[Prediction], markets: t.List[Market]
+    ):
+        correct_outcome_count = 0
+        for p, m in zip(predictions, markets):
+            if (p.p_yes > 0.5 and m.p_yes > 0.5) or (p.p_yes < 0.5 and m.p_yes < 0.5):
+                correct_outcome_count += 1
+
+        return (100 * correct_outcome_count) / len(predictions)
+
+    def _compute_confidence_p_yes_error_correlation(
+        self, predictions: t.List[Prediction], markets: t.List[Market]
+    ):
+        p_yes_errors = [abs(p.p_yes - m.p_yes) for p, m in zip(predictions, markets)]
+        confidences = [p.confidence for p in predictions]
+        return np.corrcoef(confidences, p_yes_errors)[0, 1]
+
     def _compute_mean_cost(
         self, predictions: t.List[Prediction], markets: t.List[Market]
     ):
@@ -180,7 +221,7 @@ class Benchmarker:
             markets_summary[f"{model_type} p_yes"] = [
                 p.p_yes for p in self.predictions[model_type].values()
             ]
-        markets_summary["manifold p_yes"] = [m.p_yes for m in self.markets]
+        markets_summary[f"reference p_yes"] = [m.p_yes for m in self.markets]
         return markets_summary
 
     def generate_markdown_report(self):
@@ -200,10 +241,16 @@ if __name__ == "__main__":
         type=str,
         default="./benchmark_report.md",
     )
+    args.add_argument(
+        "--reference",
+        type=str,
+        choices=[ms.value for ms in MarketSource],
+        default="manifold",
+    )
     args = args.parse_args()
 
     benchmarker = Benchmarker(
-        markets=get_manifold_markets(number=3),
+        markets=get_markets(number=3, source=MarketSource(args.reference)),
         agents=[
             OlasAgent(model="gpt-3.5-turbo"),  # TODO use same models!
             EvoAgent(model="gpt-4-1106-preview"),
