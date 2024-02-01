@@ -1,9 +1,12 @@
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
+
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores.chroma import Chroma
-
-import os
-
 from evo_researcher.models.WebScrapeResult import WebScrapeResult
+
 
 def create_embeddings_from_results(results: list[WebScrapeResult], text_splitter, api_key: str) -> Chroma:
     collection = Chroma(embedding_function=OpenAIEmbeddings(openai_api_key=api_key))
