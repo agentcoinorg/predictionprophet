@@ -3,7 +3,7 @@ import uuid
 import click
 import time
 from dotenv import load_dotenv
-from langchain.callbacks import get_openai_callback
+from langchain_community.callbacks import get_openai_callback
 from evo_researcher.autonolas.research import make_prediction, research as research_autonolas
 from evo_researcher.functions.grade_info import grade_info
 from evo_researcher.functions.research import research as evo_research

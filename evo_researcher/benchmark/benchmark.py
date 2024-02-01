@@ -6,7 +6,7 @@ import pandas as pd
 import time
 import typing as t
 
-from langchain.callbacks import get_openai_callback
+from langchain_community.callbacks import get_openai_callback
 
 from evo_researcher.benchmark.agents import (
     AbstractBenchmarkedAgent,

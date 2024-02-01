@@ -1,6 +1,9 @@
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+try:
+    __import__('pysqlite3')
+    import sys
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    print("pysqlite3-binary not found, using sqlite3 instead.")
 
 
 from langchain.embeddings.openai import OpenAIEmbeddings
