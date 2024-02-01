@@ -1,5 +1,7 @@
 import argparse
 import concurrent.futures
+import numpy as np
+import os
 import pandas as pd
 import time
 import typing as t
@@ -13,9 +15,11 @@ from evo_researcher.benchmark.agents import (
 )
 from evo_researcher.benchmark.utils import (
     Market,
-    PredictionResult,
+    MarketSource,
+    Prediction,
+    PredictionsCache,
     get_llm_api_call_cost,
-    get_manifold_markets,
+    get_markets,
 )
 
 
@@ -25,34 +29,65 @@ class Benchmarker:
         markets: t.List[Market],
         agents: t.List[AbstractBenchmarkedAgent],
         metric_fns: t.Dict[str, t.Callable] = {},
+        cache_path: t.Optional[str] = None,
     ):
         self.markets: t.List[Market] = markets
         self.registered_agents: t.List[AbstractBenchmarkedAgent] = agents
 
         # Predictions
-        self.predictions: t.Dict[str, t.List[PredictionResult]] = {
-            agent.agent_name: [] for agent in self.registered_agents
-        }
+        self.cache_path = cache_path
+        if self.cache_path and os.path.exists(self.cache_path):
+            self.predictions = PredictionsCache.load(path=self.cache_path)
+        else:
+            self.predictions = PredictionsCache(predictions={})
 
         # Metrics
         self.metric_fns = metric_fns
         predefined_metric_fns = {
             "MSE for `p_yes`": self._compute_mse,
             "Mean confidence": self._compute_mean_confidence,
+            "% within +-0.05": lambda predictions, markets: self._compute_percentage_within_range(
+                predictions, markets, tolerance=0.05
+            ),
+            "% within +-0.1": lambda predictions, markets: self._compute_percentage_within_range(
+                predictions, markets, tolerance=0.1
+            ),
+            "% within +-0.2": lambda predictions, markets: self._compute_percentage_within_range(
+                predictions, markets, tolerance=0.2
+            ),
+            "% correct outcome": self._compute_correct_outcome_percentage,
+            "confidence/p_yes error correlation": self._compute_confidence_p_yes_error_correlation,
             "Mean info_utility": self._compute_mean_info_utility,
             "Mean cost ($)": self._compute_mean_cost,
             "Mean time (s)": self._compute_mean_time,
-            # TODO add 'normalized' mse to take into account confidence?
         }
         self.metric_fns.update(predefined_metric_fns)
 
     def add_prediction(
-        self, agent: AbstractBenchmarkedAgent, prediction: PredictionResult
+        self,
+        agent: AbstractBenchmarkedAgent,
+        prediction: Prediction,
+        market_question: str,
     ):
-        self.predictions[agent.agent_name].append(prediction)
+        self.predictions.add_prediction(
+            agent_name=agent.agent_name,
+            question=market_question,
+            prediction=prediction,
+        )
+
+    def get_prediction(self, agent_name: str, question: str) -> Prediction:
+        return self.predictions.get_prediction(agent_name=agent_name, question=question)
 
     def run_agents(self):
         for agent in self.registered_agents:
+            # Filter out cached predictions
+            markets_to_run = [
+                m
+                for m in self.markets
+                if not self.predictions.has_market(
+                    agent_name=agent.agent_name, question=m.question
+                )
+            ]
 
             def get_prediction_result(market: Market):
                 with get_openai_callback() as cb:
@@ -70,7 +105,7 @@ class Benchmarker:
                             completion_tokens=cb.completion_tokens,
                         )
                     prediction.cost = cb.total_cost
-                return prediction
+                return market.question, prediction
 
             # Run agents in parallel
             with concurrent.futures.ThreadPoolExecutor(
@@ -78,34 +113,69 @@ class Benchmarker:
             ) as executor:
                 future_to_market = {
                     executor.submit(get_prediction_result, market): market
-                    for market in self.markets
+                    for market in markets_to_run
                 }
                 for future in concurrent.futures.as_completed(future_to_market):
-                    self.add_prediction(agent=agent, prediction=future.result())
+                    market_question, prediction = future.result()
+                    self.add_prediction(
+                        agent=agent,
+                        prediction=prediction,
+                        market_question=market_question,
+                    )
+                if self.cache_path:
+                    self.predictions.save(self.cache_path)
 
-    def _compute_mse(
-        self, predictions: t.List[PredictionResult], markets: t.List[Market]
-    ):
+    def _compute_mse(self, predictions: t.List[Prediction], markets: t.List[Market]):
         mse = sum([(p.p_yes - m.p_yes) ** 2 for p, m in zip(predictions, markets)])
         mse /= len(predictions)
         return mse
 
     def _compute_mean_confidence(
-        self, predictions: t.List[PredictionResult], markets: t.List[Market]
+        self, predictions: t.List[Prediction], markets: t.List[Market]
     ):
         mean_confidence = sum([p.confidence for p in predictions]) / len(predictions)
         return mean_confidence
 
     def _compute_mean_info_utility(
-        self, predictions: t.List[PredictionResult], markets: t.List[Market]
+        self, predictions: t.List[Prediction], markets: t.List[Market]
     ):
         mean_info_utility = sum([p.info_utility for p in predictions]) / len(
             predictions
         )
         return mean_info_utility
 
+    def _compute_percentage_within_range(
+        self,
+        predictions: t.List[Prediction],
+        markets: t.List[Market],
+        tolerance: float = 0.05,
+    ):
+        within_range_count = 0
+        for p, m in zip(predictions, markets):
+            if abs(p.p_yes - m.p_yes) <= tolerance:
+                within_range_count += 1
+
+        return (100 * within_range_count) / len(predictions)
+
+    def _compute_correct_outcome_percentage(
+        self, predictions: t.List[Prediction], markets: t.List[Market]
+    ):
+        correct_outcome_count = 0
+        for p, m in zip(predictions, markets):
+            if (p.p_yes > 0.5 and m.p_yes > 0.5) or (p.p_yes < 0.5 and m.p_yes < 0.5):
+                correct_outcome_count += 1
+
+        return (100 * correct_outcome_count) / len(predictions)
+
+    def _compute_confidence_p_yes_error_correlation(
+        self, predictions: t.List[Prediction], markets: t.List[Market]
+    ):
+        p_yes_errors = [abs(p.p_yes - m.p_yes) for p, m in zip(predictions, markets)]
+        confidences = [p.confidence for p in predictions]
+        return np.corrcoef(confidences, p_yes_errors)[0, 1]
+
     def _compute_mean_cost(
-        self, predictions: t.List[PredictionResult], markets: t.List[Market]
+        self, predictions: t.List[Prediction], markets: t.List[Market]
     ):
         # Note: costs are optional
         costs = [p.cost for p in predictions if p.cost]
@@ -115,7 +185,7 @@ class Benchmarker:
             return None
 
     def _compute_mean_time(
-        self, predictions: t.List[PredictionResult], markets: t.List[Market]
+        self, predictions: t.List[Prediction], markets: t.List[Market]
     ):
         # Note: times are optional
         times = [p.time for p in predictions if p.time]
@@ -126,13 +196,18 @@ class Benchmarker:
 
     def compute_metrics(self) -> t.Dict[str, t.List[t.Any]]:
         metrics = {}
-        metrics["Agents"] = list(self.predictions.keys())
+        agents = [a.agent_name for a in self.registered_agents]
+        metrics["Agents"] = agents
 
         for name, fn in self.metric_fns.items():
             metrics[name] = []
-            for agent in self.predictions.keys():
+            for agent in agents:
+                ordered_predictions = [
+                    self.get_prediction(question=market.question, agent_name=agent)
+                    for market in self.markets
+                ]
                 metrics[name].append(
-                    fn(predictions=self.predictions[agent], markets=self.markets)
+                    fn(predictions=ordered_predictions, markets=self.markets)
                 )
 
         return metrics
@@ -145,11 +220,13 @@ class Benchmarker:
                 f"[{question}]({url})" for question, url in zip(market_questions, urls)
             ],
         }
-        for model_type in self.predictions.keys():
-            markets_summary[f"{model_type} p_yes"] = [
-                p.p_yes for p in self.predictions[model_type]
+
+        for agent in [a.agent_name for a in self.registered_agents]:
+            markets_summary[f"{agent} p_yes"] = [
+                self.get_prediction(agent_name=agent, question=q).p_yes
+                for q in market_questions
             ]
-        markets_summary["manifold p_yes"] = [m.p_yes for m in self.markets]
+        markets_summary[f"reference p_yes"] = [m.p_yes for m in self.markets]
         return markets_summary
 
     def generate_markdown_report(self):
@@ -169,10 +246,16 @@ if __name__ == "__main__":
         type=str,
         default="./benchmark_report.md",
     )
+    args.add_argument(
+        "--reference",
+        type=str,
+        choices=[ms.value for ms in MarketSource],
+        default="manifold",
+    )
     args = args.parse_args()
 
     benchmarker = Benchmarker(
-        markets=get_manifold_markets(number=3),
+        markets=get_markets(number=3, source=MarketSource(args.reference)),
         agents=[
             OlasAgent(model="gpt-3.5-turbo"),  # TODO use same models!
             EvoAgent(model="gpt-4-1106-preview"),
