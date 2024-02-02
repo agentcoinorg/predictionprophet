@@ -12,7 +12,7 @@ ENABLE_CACHE = os.getenv("ENABLE_CACHE", "0") == "1"
 T = TypeVar("T", bound=Callable[..., Any])
 
 
-def persisted_inmemory_cache(func: T) -> T:
+def persistent_inmemory_cache(func: T) -> T:
     """
     Wraps a function with both file cache (for persistent cache) and in-memory cache (for speed).
     """
