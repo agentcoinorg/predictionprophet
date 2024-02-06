@@ -39,7 +39,7 @@ def research(
 
     for query in queries:
         top_k_per_query_results = collection.similarity_search(query, k=top_k_per_query)
-        vector_result_texts += [f"{result.page_content}" for result in top_k_per_query_results]
+        vector_result_texts += [result.page_content for result in top_k_per_query_results if result.page_content not in vector_result_texts]
     
     chunks = ""
     for chunk in vector_result_texts:
