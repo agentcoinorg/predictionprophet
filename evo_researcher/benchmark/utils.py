@@ -3,6 +3,7 @@ import json
 import requests
 import typing as t
 from pydantic import BaseModel
+from evo_researcher.functions.evaluate_question import EvalautedQuestion
 
 
 class MarketSource(Enum):
@@ -19,13 +20,23 @@ class Market(BaseModel):
     is_resolved: bool
 
 
-class Prediction(BaseModel):
+
+class CompletionPrediction(BaseModel):
     p_yes: float
     confidence: float
-    info_utility: float
+
+
+class Prediction(BaseModel):
+    question_evaluation: t.Optional[EvalautedQuestion]
+    completion_prediction: t.Optional[CompletionPrediction]
+    
+    info_utility: t.Optional[float]
     time: t.Optional[float] = None
     cost: t.Optional[float] = None
 
+    @property
+    def is_answered(self) -> bool:
+        return self.completion_prediction is not None
 
 AgentPredictions = t.Dict[str, Prediction]
 Predictions = t.Dict[str, AgentPredictions]
@@ -34,7 +45,7 @@ Predictions = t.Dict[str, AgentPredictions]
 class PredictionsCache(BaseModel):
     predictions: Predictions
 
-    def get_prediction(self, agent_name: str, question: str) -> Prediction:
+    def get_prediction(self, agent_name: str, question: str) -> t.Optional[Prediction]:
         return self.predictions[agent_name][question]
 
     def has_market(self, agent_name: str, question: str) -> bool:
@@ -42,7 +53,7 @@ class PredictionsCache(BaseModel):
             agent_name in self.predictions and question in self.predictions[agent_name]
         )
 
-    def add_prediction(self, agent_name: str, question: str, prediction: Prediction):
+    def add_prediction(self, agent_name: str, question: str, prediction: t.Optional[Prediction]):
         if agent_name not in self.predictions:
             self.predictions[agent_name] = {}
         assert question not in self.predictions[agent_name]
@@ -165,3 +176,8 @@ def get_llm_api_call_cost(model: str, prompt_tokens: int, completion_tokens) -> 
     model_cost += model_costs[model]["completion_tokens"] * completion_tokens
     model_cost /= 1000
     return model_cost
+
+
+def should_not_happen(message: str, E: t.Type[Exception] = RuntimeError) -> t.NoReturn:
+    raise E(message)
+

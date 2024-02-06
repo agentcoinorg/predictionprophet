@@ -1042,7 +1042,8 @@ def fetch_additional_information(
             model=engine,
             temperature=temperature,
             max_tokens=max_compl_tokens,
-            n=1, timeout=90,
+            n=1, 
+            timeout=120,
             stop=None
         ) |
         StrOutputParser()
@@ -1050,7 +1051,10 @@ def fetch_additional_information(
     response = research_chain.invoke({})
 
     # Parse the response content
-    json_data = json.loads(response)
+    try:
+        json_data = json.loads(clean_completion_json(response))
+    except json.decoder.JSONDecodeError as e:
+        raise ValueError(f"The response from {engine=} could not be parsed as JSON: {response=}") from e
 
     # Get URLs from queries
     urls = get_urls_from_queries(
@@ -1093,7 +1097,7 @@ def research(
         raise ValueError("No event question found in prompt.")
 
     # Get the tiktoken base encoding
-    enc = tiktoken.get_encoding("cl100k_base")
+    enc = tiktoken.encoding_for_model(engine)
 
     # Calculate the maximum number of tokens and words that can be consumed by the additional information string
     max_add_tokens = get_max_tokens_for_additional_information(
@@ -1151,5 +1155,24 @@ def make_prediction(prompt: str, additional_information: str, **kwargs) -> Predi
         "additional_information": additional_information,
         "timestamp": formatted_time_utc,
     })
-
+    response = json.loads(clean_completion_json(response))
     return response
+
+
+def clean_completion_json(completion: str) -> str:
+    """
+    Cleans completion JSON in form of a string:
+
+    ```json
+    {
+        ...
+    }
+    ```
+
+    into just { ... }
+    ```
+    """
+    start_index = completion.find("{")
+    end_index = completion.rfind("}")
+    completion = completion[start_index : end_index + 1]
+    return completion

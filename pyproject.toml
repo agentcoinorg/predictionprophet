@@ -24,6 +24,8 @@ pysqlite3-binary = {version="^0.5.2.post3", optional=true}
 langchain-community = "^0.0.16"
 tenacity = "^8.2.3"
 joblib = "^1.3.2"
+streamlit = "^1.30.0"
+watchdog = "^3.0.0"
 
 [tool.poetry.extras]
 pysqlite3-binary = ["pysqlite3-binary"]
