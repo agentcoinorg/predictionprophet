@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
-from evo_researcher.functions.cache import persisted_inmemory_cache
+from evo_researcher.functions.cache import persistent_inmemory_cache
 
 
 # I tried to make it return a JSON, but it didn't work well in combo with asking it to do chain of thought.
@@ -24,18 +24,12 @@ Then, give your final decision, write either "yes" or "no" about whether the que
 """
 
 
-class IsPredictable(BaseModel):
-    answer: bool
-    prompt: str
-    completion: str
-
-
 class EvalautedQuestion(BaseModel):
     question: str
-    is_predictable: IsPredictable
+    is_predictable: bool
 
 
-@persisted_inmemory_cache
+@persistent_inmemory_cache
 def evaluate_question(
     question: str,
     engine: str = "gpt-4-1106-preview",
@@ -59,9 +53,5 @@ def evaluate_question(
 
     return EvalautedQuestion(
         question=question, 
-        is_predictable=IsPredictable(
-            answer=is_predictable,
-            prompt=QUESTION_EVALUATE_PROMPT,
-            completion=completion,
-        )
+        is_predictable=is_predictable
     )

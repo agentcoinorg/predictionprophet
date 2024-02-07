@@ -50,14 +50,14 @@ if st.checkbox("Enable question evaluation", value=False):
         evaluated = agent.evaluate(market_question=question) 
     st.markdown(f"""## Evaluation
 
-    Is predictable: `{evaluated.is_predictable.answer}`
+    Is predictable: `{evaluated.is_predictable}`
 
     Is predictable's completion: 
     ```
     {evaluated.is_predictable.completion}
     ```
     """)
-    if not evaluated.is_predictable.answer:
+    if not evaluated.is_predictable:
         st.error("The agent thinks this question is not predictable.")
         if not st.checkbox("Show research and prediction anyway"):
             st.stop()

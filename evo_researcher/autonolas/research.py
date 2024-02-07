@@ -1,5 +1,6 @@
 
 import os
+import math
 from typing import Any, Dict, Generator, List, Optional, Tuple, TypedDict
 from datetime import datetime, timezone
 import json
@@ -96,9 +97,10 @@ ADDITIONAL_INFORMATION:
 
 OUTPUT_FORMAT:
 * Your output response must be only a single JSON object to be parsed by Python's "json.loads()".
-* The JSON must contain four fields: "p_yes", "p_no", "confidence", and "info_utility", each ranging from 0 to 1.
-   - "p_yes": Probability that the market question's outcome will be `Yes`.
-   - "p_no": Probability that the market questions outcome will be `No`.
+* The JSON must contain five fields: "decision", "p_yes", "p_no", "confidence", and "info_utility".
+   - "decision": The decision you made. Either `y` (for `Yes`) or `n` (for `No`).
+   - "p_yes": Probability that the market question's outcome will be `Yes`. Ranging from 0 (lowest probability) to 1 (maximum probability).
+   - "p_no": Probability that the market questions outcome will be `No`. Ranging from 0 (lowest probability) to 1 (maximum probability).
    - "confidence": Indicating the confidence in the estimated probabilities you provided ranging from 0 (lowest confidence) to 1 (maximum confidence). Confidence can be calculated based on the quality and quantity of data used for the estimation.
    - "info_utility": Utility of the information provided in "ADDITIONAL_INFORMATION" to help you make the probability estimation ranging from 0 (lowest utility) to 1 (maximum utility).
 * The sum of "p_yes" and "p_no" must equal 1.
@@ -294,8 +296,10 @@ HTML_TAGS_TO_REMOVE = [
 ]
 
 class Prediction(TypedDict):
+    decision: Optional[str]
+    decision_token_prob: Optional[float]
     p_yes: float
-    p_yes: float
+    p_no: float
     confidence: float
     info_utility: float
 
@@ -1128,34 +1132,44 @@ def research(
     
     return additional_information
 
-    
 
-def make_prediction(prompt: str, additional_information: str, **kwargs) -> Prediction:
+def make_prediction(
+    prompt: str,
+    additional_information: str,
+    temperature: float = 0.7,
+    engine: str = "gpt-3.5-turbo-1106",
+    **kwargs,
+) -> Prediction:
     api_keys: dict[str, str] = kwargs.get("api_keys", {})
     open_ai_key = api_keys.get('openai', os.getenv("OPENAI_API_KEY"))
     
     current_time_utc = datetime.now(timezone.utc)
     formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
 
-    prediction_prompt = PREDICTION_PROMPT.format(
-        user_prompt=prompt,
-        additional_information=additional_information,
-        timestamp=formatted_time_utc,
-    )
-    
     prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
-    prediction_chain = (
-        prediction_prompt |
-        ChatOpenAI(model="gpt-3.5-turbo-1106", openai_api_key=open_ai_key) |
-        StrOutputParser()
-    )
 
-    response = prediction_chain.invoke({
-        "user_prompt": prompt,
-        "additional_information": additional_information,
-        "timestamp": formatted_time_utc,
-    })
-    response = json.loads(clean_completion_json(response))
+    llm = ChatOpenAI(model=engine, temperature=temperature, openai_api_key=open_ai_key)
+    formatted_messages = prediction_prompt.format_messages(user_prompt=prompt, additional_information=additional_information, timestamp=formatted_time_utc)
+    generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5)
+
+    completion = generation.generations[0][0].text
+
+    # Get probability that is based on the token's top logprobs.
+    decision, probability = None, None
+    for token in generation.generations[0][0].generation_info["logprobs"]["content"]:
+        # Check if the token is a decision token, we prompt the model for it to be there, so it is in 99% of cases.
+        if token["token"] in ("y", "n"):
+            decision = token["token"]
+            probability = math.exp(token["logprob"])
+            break
+
+    if decision is None or probability is None:
+        raise ValueError(f"No decision found in completion from {engine=}, {completion=}, {formatted_messages=}")
+
+    response = json.loads(clean_completion_json(completion))
+    response["decision"] = decision
+    response["decision_token_prob"] = probability
+    
     return response
 
 

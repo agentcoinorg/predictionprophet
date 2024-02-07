@@ -13,6 +13,6 @@ from evo_researcher.functions.evaluate_question import evaluate_question
 def test_evaluate_question(question: str, answerable: bool) -> None:
     eval = evaluate_question(question=question)
     assert (
-        eval.is_predictable.answer == answerable, 
+        eval.is_predictable == answerable, 
         f"Question is not evaluated correctly, see the completion: {eval.is_predictable.completion}"
     )

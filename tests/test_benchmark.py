@@ -2,14 +2,12 @@ import json
 import pytest
 import tempfile
 import json
-from typing import Optional
 import evo_researcher.benchmark.benchmark as bm
 from evo_researcher.benchmark.agents import (
     completion_prediction_json_to_pydantic_model, 
-    CompletionPrediction, 
     EvalautedQuestion, 
+    OutcomePrediction,
 )
-from evo_researcher.functions.evaluate_question import IsPredictable
 from evo_researcher.autonolas.research import clean_completion_json
 
 
@@ -21,19 +19,15 @@ def dummy_agent():
 
         def evaluate_research_predict(self, market_question: str) -> bm.Prediction:
             return bm.Prediction(
-                question_evaluation=EvalautedQuestion(
-                    question="...",
-                    is_predictable=IsPredictable(
-                        answer=True, 
-                        prompt="...",
-                        completion="...",
-                    )
+                evaluation=EvalautedQuestion(
+                    question=market_question,
+                    is_predictable=True,
                 ),
-                completion_prediction=CompletionPrediction(
+                outcome_prediction=OutcomePrediction(
                     p_yes=0.6, 
                     confidence=0.8,
+                    info_utility=0.9,
                 ),
-                info_utility=0.9,
             )
 
     return DummyAgent()
@@ -43,19 +37,25 @@ def dummy_agent():
 def dummy_agent_no_prediciton():
     class DummyAgentNoPrediction(bm.AbstractBenchmarkedAgent):
         def __init__(self):
-            super().__init__(agent_name="dummy_none")
+            super().__init__(agent_name="dummy_no_prediction")
 
         def evaluate_research_predict(self, market_question: str) -> bm.Prediction:
-            return bm.Prediction()
+            return bm.Prediction(
+                evaluation=EvalautedQuestion(
+                    question=market_question,
+                    is_predictable=False,
+                ),
+                outcome_prediction=None,
+            )
 
     return DummyAgentNoPrediction()
 
 
 def test_agent_prediction(dummy_agent):
     prediction = dummy_agent.evaluate_research_predict(market_question="Will GNO go up?")
-    assert prediction.completion_prediction.p_yes == 0.6
-    assert prediction.completion_prediction.confidence == 0.8
-    assert prediction.info_utility == 0.9
+    assert prediction.outcome_prediction.p_yes == 0.6
+    assert prediction.outcome_prediction.confidence == 0.8
+    assert prediction.outcome_prediction.info_utility == 0.9
 
 
 def test_benchmark_run(dummy_agent, dummy_agent_no_prediciton):
@@ -81,15 +81,15 @@ def test_parse_result_str_to_json():
         "```\n"
     )
     prediction: bm.Prediction = completion_prediction_json_to_pydantic_model(json.loads(clean_completion_json(prediction)), None)
-    assert prediction.completion_prediction.p_yes == 0.6
-    assert prediction.completion_prediction.confidence == 0.8
-    assert prediction.info_utility == 0.9
+    assert prediction.outcome_prediction.p_yes == 0.6
+    assert prediction.outcome_prediction.confidence == 0.8
+    assert prediction.outcome_prediction.info_utility == 0.9
 
 
 def test_cache():
     cache = bm.PredictionsCache(
         predictions={
-            "bar": {"foo": bm.Prediction(completion_prediction=CompletionPrediction(p_yes=0.6, confidence=0.8), info_utility=0.9)}
+            "bar": {"foo": bm.Prediction(outcome_prediction=OutcomePrediction(p_yes=0.6, confidence=0.8, info_utility=0.9))}
         }
     )
 
@@ -111,10 +111,11 @@ def test_benchmarker_cache(dummy_agent):
             cache_path=cache_path,
         )
         prediction = bm.Prediction(
-            completion_prediction=CompletionPrediction(
-                p_yes=0.00001, confidence=0.22222
+            outcome_prediction=OutcomePrediction(
+                info_utility=0.3333,
+                p_yes=0.00001, 
+                confidence=0.22222,
             ),
-            info_utility=0.3333,
         )
         benchmarker.add_prediction(
             agent=dummy_agent,
@@ -124,8 +125,8 @@ def test_benchmarker_cache(dummy_agent):
         assert (
             benchmarker.get_prediction(
                 agent_name=dummy_agent.agent_name, question=markets[0].question
-            ).completion_prediction.p_yes
-            == prediction.completion_prediction.p_yes
+            ).outcome_prediction.p_yes
+            == prediction.outcome_prediction.p_yes
         )
         benchmarker.predictions.save(cache_path)
 
@@ -137,8 +138,8 @@ def test_benchmarker_cache(dummy_agent):
         assert (
             another_benchmarker.get_prediction(
                 agent_name=dummy_agent.agent_name, question=markets[0].question
-            ).completion_prediction.p_yes
-            == prediction.completion_prediction.p_yes
+            ).outcome_prediction.p_yes
+            == prediction.outcome_prediction.p_yes
         )
         another_benchmarker.run_agents()
 
@@ -146,6 +147,6 @@ def test_benchmarker_cache(dummy_agent):
         assert (
             another_benchmarker.get_prediction(
                 agent_name=dummy_agent.agent_name, question=markets[0].question
-            ).completion_prediction.p_yes
-            == prediction.completion_prediction.p_yes
+            ).outcome_prediction.p_yes
+            == prediction.outcome_prediction.p_yes
         )
