@@ -4,8 +4,10 @@ import os
 import typing as t
 
 from evo_researcher.functions.evaluate_question import evaluate_question, EvalautedQuestion
+from evo_researcher.functions.rephrase_question import rephrase_question
 from evo_researcher.functions.research import research as research_evo
 from evo_researcher.autonolas.research import (
+    EmbeddingModel,
     make_prediction,
     Prediction as LLMCompletionPredictionDict,
     research as research_autonolas,
@@ -53,7 +55,7 @@ class AbstractBenchmarkedAgent:
 
     def research(self, market_question: str) -> t.Optional[str]:
         raise NotImplementedError
-    
+
     def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
         raise NotImplementedError
 
@@ -70,11 +72,13 @@ class AbstractBenchmarkedAgent:
             evaluated=eval,
         )
 
+      
 class OlasAgent(AbstractBenchmarkedAgent):
-    def __init__(self, model: str, temperature: float, agent_name: str = "olas", max_workers: t.Optional[int] = None):
+    def __init__(self, model: str, temperature: float, agent_name: str = "olas", max_workers: t.Optional[int] = None, embedding_model: EmbeddingModel = EmbeddingModel.spacy):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model = model
         self.temperature = temperature
+        self.embedding_model = embedding_model
 
     def evaluate(self, market_question: str) -> EvalautedQuestion:
         return evaluate_question(question=market_question)
@@ -84,6 +88,7 @@ class OlasAgent(AbstractBenchmarkedAgent):
             return research_autonolas(
                 prompt=market_question,
                 engine=self.model,
+                embedding_model=self.embedding_model,
             )
         except ValueError as e:
             print(f"Error in OlasAgent's research: {e}")
@@ -141,7 +146,45 @@ class EvoAgent(AbstractBenchmarkedAgent):
             return Prediction(evaluation=evaluated)
 
 
+class RephrasingOlasAgent(OlasAgent):
+    def __init__(
+        self,
+        model: str,
+        temperature: float,
+        agent_name: str = "reph-olas",
+        max_workers: t.Optional[int] = None,
+        embedding_model: EmbeddingModel = EmbeddingModel.spacy,
+    ):
+        super().__init__(
+            model=model,
+            temperature=temperature,
+            embedding_model=embedding_model,
+            agent_name=agent_name,
+            max_workers=max_workers,
+        )
+
+    def research(self, market_question: str) -> t.Optional[str]:
+        questions = rephrase_question(question=market_question)
+
+        report_original = super().research(market_question=questions.original_question)
+        report_negated = super().research(market_question=questions.negated_question)
+        report_universal = super().research(market_question=questions.open_ended_question)
+
+        report_concat = "\n\n---\n\n".join([
+            f"### {r_name}\n\n{r}"
+            for r_name, r in [
+                ("Research based on the question", report_original), 
+                ("Research based on the negated question", report_negated), 
+                ("Research based on the universal search query", report_universal)
+            ] 
+            if r is not None
+        ])
+
+        return report_concat
+
+
 AGENTS = [
     OlasAgent,
+    RephrasingOlasAgent,
     EvoAgent,
 ]

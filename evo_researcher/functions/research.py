@@ -20,7 +20,7 @@ def research(
     top_k_per_query: int = 8
 ) -> tuple[str, str]:    
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, api_key=openai_key)
-    queries = rerank_subqueries(queries=queries, goal=goal, api_key=openai_key)[:subqueries_limit]
+    queries = rerank_subqueries(queries=queries, goal=goal, api_key=openai_key)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
 
     search_results_with_queries = search(queries, tavily_key, lambda result: not result["url"].startswith("https://www.youtube"))
 

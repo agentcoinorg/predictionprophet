@@ -1,6 +1,7 @@
 
 import os
 import math
+from sklearn.metrics.pairwise import cosine_similarity
 from typing import Any, Dict, Generator, List, Optional, Tuple, TypedDict
 from datetime import datetime, timezone
 import json
@@ -9,7 +10,7 @@ import re
 from concurrent.futures import Future, ThreadPoolExecutor
 from itertools import groupby
 from operator import itemgetter
-
+from enum import Enum
 from bs4 import BeautifulSoup, NavigableString
 from googleapiclient.discovery import build
 
@@ -22,8 +23,11 @@ import tiktoken
 from langchain_community.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
+from langchain.embeddings.openai import OpenAIEmbeddings
 
 from dateutil import parser
+from evo_researcher.functions.cache import persistent_inmemory_cache
+from evo_researcher.functions.parallelism import par_map
 
 load_dotenv()
 
@@ -295,6 +299,12 @@ HTML_TAGS_TO_REMOVE = [
     "link",
 ]
 
+
+class EmbeddingModel(Enum):
+    spacy = "spacy"
+    openai = "openai"
+
+
 class Prediction(TypedDict):
     decision: Optional[str]
     decision_token_prob: Optional[float]
@@ -316,7 +326,10 @@ def search_google(query: str, api_key: str, engine: str, num: int = 3) -> List[s
         )
         .execute()
     )
-    return [result["link"] for result in search["items"]]
+    try:
+        return [result["link"] for result in search["items"]]
+    except KeyError as e:
+        raise ValueError(f"Can not parse results: {search}") from e
 
 
 def download_spacy_model(model_name: str) -> None:
@@ -627,12 +640,19 @@ def concatenate_short_sentences(sentences, len_sentence_threshold):
     return modified_sentences
 
 
+@persistent_inmemory_cache
+def openai_embedding_cached(text: str, model: str = "text-embedding-ada-002") -> list[float]:
+    emb = OpenAIEmbeddings(model=model)
+    return emb.embed_query(text)
+
+
 def extract_similarity_scores(
     text: str,
-    query_emb,
+    doc_question,
     event_date: str,
     nlp,
     date: str,
+    embedding_model: EmbeddingModel,
 ) -> List[Tuple[str, float, str]]:
     """
     Extract relevant information from website text based on a given event question.
@@ -690,13 +710,18 @@ def extract_similarity_scores(
     # Limit the number of sentences for performance optimization
     sentences = sentences[:num_sentences_threshold]
 
-    similarities = []
-
-    # Encode sentences using spaCy model
-    for i, sentence in enumerate(sentences):
-        doc_sentence = nlp(sentence)
-        similarity_score = query_emb.similarity(doc_sentence)
-        similarities.append(similarity_score)
+    # Encode sentences using an embedding model
+    similarities = par_map(
+        sentences, 
+        lambda sentence: (
+            doc_question.similarity(nlp(sentence)) if embedding_model == EmbeddingModel.spacy 
+            else cosine_similarity(
+                [openai_embedding_cached(sentence)], 
+                [openai_embedding_cached(doc_question.text)]
+            )[0][0] if embedding_model == EmbeddingModel.openai 
+            else None
+        )
+    )
 
     # Create tuples and store them in a list
     sentence_similarity_date_tuples = [
@@ -752,9 +777,10 @@ def get_date(soup):
 
 def extract_sentences(
     html: str,
-    query_emb,
+    doc_question,
     event_date: str,
     nlp,
+    embedding_model: EmbeddingModel,
 ) -> List[Tuple[str, float, str]]:
     """
     Extract relevant information from HTML string.
@@ -796,10 +822,11 @@ def extract_sentences(
     # Get List of (sentence, similarity, date) tuples
     similarity_scores = extract_similarity_scores(
         text=text,
-        query_emb=query_emb,
+        doc_question=doc_question,
         event_date=event_date,
         nlp=nlp,
         date=date,
+        embedding_model=embedding_model,
     )
 
     if not similarity_scores:
@@ -883,6 +910,7 @@ def extract_and_sort_sentences(
     urls: List[str],
     event_question: str,
     nlp,
+    embedding_model: EmbeddingModel,
 ) -> List[Tuple[str, float, str]]:
     """
     Extract texts from a list of URLs using Spacy models.
@@ -906,9 +934,6 @@ def extract_and_sort_sentences(
     doc_question = nlp(event_question)
     event_date = extract_event_date(doc_question)
 
-    # Create embedding for event question with Spacy embedder model
-    query_emb = nlp(event_question)
-
     if event_date is None:
         print(
             f"Could not extract precise event date from event question: {event_question}"
@@ -925,9 +950,10 @@ def extract_and_sort_sentences(
                 # Extract relevant information for the event question
                 extracted_sentences = extract_sentences(
                     html=result.text,
-                    query_emb=query_emb,
+                    doc_question=doc_question,
                     event_date=event_date,
                     nlp=nlp,
+                    embedding_model=embedding_model,
                 )
 
                 # Delete the result object to free memory
@@ -1002,6 +1028,7 @@ def fetch_additional_information(
     google_api_key: str,
     google_engine: str,
     nlp,
+    embedding_model: EmbeddingModel,
     engine: str = "gpt-3.5-turbo",
     temperature: float = 0.5,
     max_compl_tokens: int = 500,
@@ -1072,6 +1099,7 @@ def fetch_additional_information(
         urls=urls,
         event_question=event_question,
         nlp=nlp,
+        embedding_model=embedding_model,
     )
 
     # Join the sorted sentences and group them by date
@@ -1086,6 +1114,7 @@ def research(
     max_tokens: int = None,
     temperature: int = None,
     engine: str = "gpt-3.5-turbo",
+    embedding_model: EmbeddingModel = EmbeddingModel.spacy,
 ) -> str:
     prompt = f"\"{prompt}\""
     max_compl_tokens =  max_tokens or DEFAULT_OPENAI_SETTINGS["max_compl_tokens"]
@@ -1121,6 +1150,7 @@ def research(
         max_add_words=max_add_words,
         google_api_key=os.getenv("GOOGLE_SEARCH_API_KEY"),
         google_engine=os.getenv("GOOGLE_SEARCH_ENGINE_ID"),
+        embedding_model=embedding_model,
     )
 
     # Truncate additional information to stay within the chat completion token limit of 4096
