@@ -3,46 +3,46 @@ import json
 import os
 import typing as t
 
+from evo_researcher.functions.evaluate_question import evaluate_question, EvalautedQuestion
+from evo_researcher.functions.rephrase_question import rephrase_question
 from evo_researcher.functions.research import research as research_evo
 from evo_researcher.autonolas.research import (
+    EmbeddingModel,
     make_prediction,
+    Prediction as LLMCompletionPredictionDict,
     research as research_autonolas,
 )
-from evo_researcher.benchmark.utils import Prediction
+from evo_researcher.benchmark.utils import (
+    Prediction, 
+    OutcomePrediction, 
+    EvalautedQuestion,
+)
 
 
-def parse_prediction_str(prediction: str) -> Prediction:
+def _make_prediction(
+    market_question: str, additional_information: str, evaluation_information: t.Optional[EvalautedQuestion], engine: str, temperature: float
+) -> Prediction:
     """
-    Parse a prediction string of the form:
-
-    ```json
-    {
-        "p_yes": 0.6,
-        "p_no": 0.4,
-        "confidence": 0.8,
-        "info_utility": 0.9
-    }
-    ```
-
-    into a Prediction object
+    We prompt model to output a simple flat JSON and convert it to a more structured pydantic model here.
     """
-    start_index = prediction.find("{")
-    end_index = prediction.rfind("}")
-    prediction = prediction[start_index : end_index + 1]
-    prediction_json = json.loads(prediction)
+    prediction = make_prediction(
+        prompt=market_question, additional_information=additional_information, engine=engine, temperature=temperature
+    )
+    return completion_prediction_json_to_pydantic_model(prediction, evaluation_information)
+
+
+def completion_prediction_json_to_pydantic_model(
+    completion_prediction: LLMCompletionPredictionDict, 
+    evaluation_information: t.Optional[EvalautedQuestion],
+) -> Prediction:
     return Prediction(
-        p_yes=prediction_json["p_yes"],
-        confidence=prediction_json["confidence"],
-        info_utility=prediction_json["info_utility"],
+        evaluation=evaluation_information,
+        outcome_prediction=OutcomePrediction(
+            p_yes=completion_prediction["p_yes"],
+            confidence=completion_prediction["confidence"],
+            info_utility=completion_prediction["info_utility"],
+        ),
     )
-
-
-def _make_prediction(market_question: str, additional_information: str) -> Prediction:
-    prediction: str = make_prediction(
-        prompt=market_question, additional_information=additional_information
-    )
-    prediction: Prediction = parse_prediction_str(prediction)
-    return prediction
 
 
 class AbstractBenchmarkedAgent:
@@ -50,40 +50,141 @@ class AbstractBenchmarkedAgent:
         self.agent_name = agent_name
         self.max_workers = max_workers  # Limit the number of workers that can run this worker in parallel threads
 
-    def research_and_predict(self, market_question: str) -> Prediction:
+    def evaluate(self, market_question: str) -> EvalautedQuestion:
         raise NotImplementedError
 
+    def research(self, market_question: str) -> t.Optional[str]:
+        raise NotImplementedError
 
+    def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
+        raise NotImplementedError
+
+    def evaluate_research_predict(self, market_question: str) -> Prediction:
+        eval = self.evaluate(market_question=market_question)
+        if not eval.is_predictable:
+            return Prediction(evaluation=eval)
+        researched = self.research(market_question=market_question)
+        if researched is None:
+            return Prediction(evaluation=eval)
+        return self.predict(
+            market_question=market_question, 
+            researched=researched,
+            evaluated=eval,
+        )
+
+      
 class OlasAgent(AbstractBenchmarkedAgent):
-    def __init__(self, model: str):
-        super().__init__(agent_name="olas")
+    def __init__(self, model: str, temperature: float, agent_name: str = "olas", max_workers: t.Optional[int] = None, embedding_model: EmbeddingModel = EmbeddingModel.spacy):
+        super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model = model
+        self.temperature = temperature
+        self.embedding_model = embedding_model
 
-    def research_and_predict(self, market_question: str) -> Prediction:
-        report = research_autonolas(
-            prompt=market_question,
-            engine=self.model,
-        )
-        return _make_prediction(
-            market_question=market_question, additional_information=report
-        )
+    def evaluate(self, market_question: str) -> EvalautedQuestion:
+        return evaluate_question(question=market_question)
 
+    def research(self, market_question: str) -> t.Optional[str]:
+        try:
+            return research_autonolas(
+                prompt=market_question,
+                engine=self.model,
+                embedding_model=self.embedding_model,
+            )
+        except ValueError as e:
+            print(f"Error in OlasAgent's research: {e}")
+            return None
+        
+    def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
+        try:
+            return _make_prediction(
+                market_question=market_question,
+                additional_information=researched,
+                evaluation_information=evaluated,
+                engine=self.model,
+                temperature=self.temperature,
+            )
+        except ValueError as e:
+            print(f"Error in OlasAgent's predict: {e}")
+            return Prediction(evaluation=evaluated)
 
 class EvoAgent(AbstractBenchmarkedAgent):
-    def __init__(self, model: str):
-        super().__init__(agent_name="evo", max_workers=4)
+    def __init__(self, model: str, temperature: float, agent_name: str = "evo", max_workers: t.Optional[int] = None):
+        super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model = model
+        self.temperature = temperature
 
-    def research_and_predict(self, market_question: str) -> Prediction:
+    def evaluate(self, market_question: str) -> EvalautedQuestion:
+        return evaluate_question(question=market_question)
+
+    def research(self, market_question: str) -> t.Optional[str]:
         dotenv.load_dotenv()
         open_ai_key = os.getenv("OPENAI_API_KEY")
         tavily_key = os.getenv("TAVILY_API_KEY")
-        report, _ = research_evo(
-            goal=market_question,
-            openai_key=open_ai_key,
-            tavily_key=tavily_key,
-            model=self.model,
+        try:
+            report, _ = research_evo(
+                goal=market_question,
+                openai_key=open_ai_key,
+                tavily_key=tavily_key,
+                model=self.model,
+            )
+            return report
+        except ValueError as e:
+            print(f"Error in EvoAgent's research: {e}")
+            return None
+
+    def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
+        try:
+            return _make_prediction(
+                market_question=market_question, 
+                additional_information=researched,
+                evaluation_information=evaluated,
+                engine=self.model,
+                temperature=self.temperature,
+            )
+        except ValueError as e:
+            print(f"Error in EvoAgent's predict: {e}")
+            return Prediction(evaluation=evaluated)
+
+
+class RephrasingOlasAgent(OlasAgent):
+    def __init__(
+        self,
+        model: str,
+        temperature: float,
+        agent_name: str = "reph-olas",
+        max_workers: t.Optional[int] = None,
+        embedding_model: EmbeddingModel = EmbeddingModel.spacy,
+    ):
+        super().__init__(
+            model=model,
+            temperature=temperature,
+            embedding_model=embedding_model,
+            agent_name=agent_name,
+            max_workers=max_workers,
         )
-        return _make_prediction(
-            market_question=market_question, additional_information=report
-        )
+
+    def research(self, market_question: str) -> t.Optional[str]:
+        questions = rephrase_question(question=market_question)
+
+        report_original = super().research(market_question=questions.original_question)
+        report_negated = super().research(market_question=questions.negated_question)
+        report_universal = super().research(market_question=questions.open_ended_question)
+
+        report_concat = "\n\n---\n\n".join([
+            f"### {r_name}\n\n{r}"
+            for r_name, r in [
+                ("Research based on the question", report_original), 
+                ("Research based on the negated question", report_negated), 
+                ("Research based on the universal search query", report_universal)
+            ] 
+            if r is not None
+        ])
+
+        return report_concat
+
+
+AGENTS = [
+    OlasAgent,
+    RephrasingOlasAgent,
+    EvoAgent,
+]
