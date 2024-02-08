@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from evo_researcher.functions.evaluate_question import EvalautedQuestion
 
 
-class MarketSource(Enum):
+class MarketSource(str, Enum):
     MANIFOLD = "manifold"
     POLYMARKET = "polymarket"
 
@@ -167,6 +167,10 @@ def get_llm_api_call_cost(model: str, prompt_tokens: int, completion_tokens) -> 
         "gpt-4-1106-preview": {
             "prompt_tokens": 0.01,
             "completion_tokens": 0.03,
+        },
+        "gpt-3.5-turbo-0125": {
+            "prompt_tokens": 0.0005,
+            "completion_tokens": 0.0015,
         },
     }
     if model not in model_costs:
