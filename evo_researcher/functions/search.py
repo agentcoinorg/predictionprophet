@@ -1,14 +1,24 @@
+import requests
 from evo_researcher.functions.web_search import WebSearchResult, web_search
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-def search(queries: list[str], api_key: str, filter = lambda x: True) -> list[tuple[str, WebSearchResult]]:
+
+def safe_web_search(query: str, max_results=5) -> list[WebSearchResult]:
+    try:
+        return web_search(query, max_results)
+    except requests.exceptions.HTTPError as e:
+        print(f"Error in web_search: {e}")
+        return []
+
+
+def search(queries: list[str], filter = lambda x: True) -> list[tuple[str, WebSearchResult]]:
     results: list[list[WebSearchResult]] = []
     results_with_queries: list[tuple[str, WebSearchResult]] = []
 
     # Each result will have a query associated with it
     # We only want to keep the results that are unique
     with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(web_search, query, api_key) for query in queries}
+        futures = {executor.submit(safe_web_search, query) for query in queries}
         for future in as_completed(futures):
             results.append(future.result())
 

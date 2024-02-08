@@ -74,7 +74,7 @@ class AbstractBenchmarkedAgent:
 
       
 class OlasAgent(AbstractBenchmarkedAgent):
-    def __init__(self, model: str, temperature: float, agent_name: str = "olas", max_workers: t.Optional[int] = None, embedding_model: EmbeddingModel = EmbeddingModel.spacy):
+    def __init__(self, model: str, temperature: float = 0.0, agent_name: str = "olas", max_workers: t.Optional[int] = None, embedding_model: EmbeddingModel = EmbeddingModel.spacy):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model = model
         self.temperature = temperature
@@ -108,10 +108,11 @@ class OlasAgent(AbstractBenchmarkedAgent):
             return Prediction(evaluation=evaluated)
 
 class EvoAgent(AbstractBenchmarkedAgent):
-    def __init__(self, model: str, temperature: float, agent_name: str = "evo", max_workers: t.Optional[int] = None):
+    def __init__(self, model: str, temperature: float = 0.0, agent_name: str = "evo", use_summaries: bool = False, max_workers: t.Optional[int] = None):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model = model
         self.temperature = temperature
+        self.use_summaries = use_summaries
 
     def evaluate(self, market_question: str) -> EvalautedQuestion:
         return evaluate_question(question=market_question)
@@ -126,6 +127,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
                 openai_key=open_ai_key,
                 tavily_key=tavily_key,
                 model=self.model,
+                use_summaries=self.use_summaries,
             )
             return report
         except ValueError as e:
@@ -150,7 +152,7 @@ class RephrasingOlasAgent(OlasAgent):
     def __init__(
         self,
         model: str,
-        temperature: float,
+        temperature: float = 0.0,
         agent_name: str = "reph-olas",
         max_workers: t.Optional[int] = None,
         embedding_model: EmbeddingModel = EmbeddingModel.spacy,
