@@ -59,9 +59,8 @@ def research(
             output_file = "information.txt"
         elif agent == "evo":
             open_ai_key = os.getenv("OPENAI_API_KEY")
-            tavily_key =  os.getenv("TAVILY_API_KEY")
             
-            (report, chunks) = evo_research(goal=prompt, openai_key=open_ai_key, tavily_key=tavily_key, model="gpt-4-1106-preview")
+            (report, chunks) = evo_research(goal=prompt, openai_key=open_ai_key, model="gpt-4-1106-preview")
             end = time.time()
             
             dir_name = create_output_file(chunks, report)

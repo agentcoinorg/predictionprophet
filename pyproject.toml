@@ -28,6 +28,7 @@ streamlit = "^1.30.0"
 watchdog = "^3.0.0"
 scipy = "^1.12.0"
 scikit-learn = "^1.4.0"
+typer = "^0.9.0"
 
 [tool.poetry.extras]
 pysqlite3-binary = ["pysqlite3-binary"]
