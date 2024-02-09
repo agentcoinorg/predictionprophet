@@ -1,20 +1,36 @@
+import requests
+import typing as t
 from evo_researcher.functions.web_search import WebSearchResult, web_search
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-def search(queries: list[str], api_key: str, filter = lambda x: True) -> list[tuple[str, WebSearchResult]]:
-    results: list[list[WebSearchResult]] = []
-    results_with_queries: list[tuple[str, WebSearchResult]] = []
+
+def safe_web_search(query: str, max_results=5) -> t.Optional[list[WebSearchResult]]:
+    try:
+        return web_search(query, max_results)
+    except requests.exceptions.HTTPError as e:
+        print(f"Error in web_search: {e}")
+        return None
+
+
+def search(queries: list[str], filter = lambda x: True) -> list[tuple[str, WebSearchResult]]:
+    maybe_results: list[t.Optional[list[WebSearchResult]]] = []
 
     # Each result will have a query associated with it
     # We only want to keep the results that are unique
     with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(web_search, query, api_key) for query in queries}
+        futures = {executor.submit(safe_web_search, query) for query in queries}
         for future in as_completed(futures):
-            results.append(future.result())
+            maybe_results.append(future.result())
+
+    results = [result for result in maybe_results if result is not None]
+    if len(results) != len(maybe_results):
+        print(f"Warning: {len(maybe_results) - len(results)} queries out of {len(maybe_results)} failed to return results.")
+
+    results_with_queries: list[tuple[str, WebSearchResult]] = []
 
     for i in range(len(results)):
         for result in results[i]:
-            if result.url not in [existing_result.url for (_,existing_result) in results_with_queries]:
+            if result.url not in [existing_result.url for (_, existing_result) in results_with_queries]:
                 if filter(result):
                   results_with_queries.append((queries[i], result))
 
