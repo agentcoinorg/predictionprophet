@@ -1,6 +1,7 @@
 
 import os
 import math
+import tenacity
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Any, Dict, Generator, List, Optional, Tuple, TypedDict
 from datetime import datetime, timezone
@@ -314,14 +315,16 @@ class Prediction(TypedDict):
     info_utility: float
 
 
-def search_google(query: str, api_key: str, engine: str, num: int = 3) -> List[str]:
+@tenacity.retry(stop=tenacity.stop_after_attempt(3), wait=tenacity.wait_fixed(1), reraise=True)
+@persistent_inmemory_cache
+def search_google(query: str, num: int = 3) -> List[str]:
     """Search Google using a custom search engine."""
-    service = build("customsearch", "v1", developerKey=api_key)
+    service = build("customsearch", "v1", developerKey=os.getenv("GOOGLE_SEARCH_API_KEY"))
     search = (
         service.cse()
         .list(
             q=query,
-            cx=engine,
+            cx=os.getenv("GOOGLE_SEARCH_ENGINE_ID"),
             num=num,
         )
         .execute()
@@ -426,18 +429,30 @@ def truncate_additional_information(
     else:
         add_trunc_enc = add_enc[: -int(len_add_enc - max_add_tokens)]
         return enc.decode(add_trunc_enc)
+    
+
+def safe_get_urls_from_query(query: str, num: int = 3) -> List[str]:
+    try:
+        return get_urls_from_query(query, num)
+    except ValueError as e:
+        print(f"Error in get_urls_from_query: {e}")
+        return []
+
+
+def get_urls_from_query(
+    query: str, num: int = 3
+) -> List[str]:
+    return get_urls_from_queries(queries=[query], num=num)
 
 
 def get_urls_from_queries(
-    queries: List[str], api_key: str, engine: str, num: int = 3
+    queries: List[str], num: int = 3
 ) -> List[str]:
     """
     Fetch unique URLs from search engine queries, limiting the number of URLs per query.
 
     Args:
         queries (List[str]): List of search engine queries.
-        api_key (str): API key for the search engine.
-        engine (str): Custom google search engine ID.
         num (int, optional): Number of returned URLs per query. Defaults to 3.
 
     Raises:
@@ -456,8 +471,6 @@ def get_urls_from_queries(
     for query in queries:
         fetched_urls = search_google(
             query=query,
-            api_key=api_key,
-            engine=engine,
             num=max_num_fetch,  # Limit the number of returned URLs per query
         )
 
@@ -1025,8 +1038,6 @@ def join_and_group_sentences(
 def fetch_additional_information(
     event_question: str,
     max_add_words: int,
-    google_api_key: str,
-    google_engine: str,
     nlp,
     embedding_model: EmbeddingModel,
     engine: str = "gpt-3.5-turbo",
@@ -1039,8 +1050,6 @@ def fetch_additional_information(
     Args:
         event_question (str): The question related to the event.
         max_add_words (int): The maximum number of words allowed for additional information.
-        google_api_key (str): The API key for the Google service.
-        google_engine (str): The Google engine to be used.
         temperature (float): The temperature parameter for the engine.
         engine (str): The openai engine. Defaults to "gpt-3.5-turbo".
         temperature (float): The temperature parameter for the engine. Defaults to 1.0.
@@ -1075,7 +1084,6 @@ def fetch_additional_information(
             max_tokens=max_compl_tokens,
             n=1, 
             timeout=120,
-            stop=None
         ) |
         StrOutputParser()
     )
@@ -1090,8 +1098,6 @@ def fetch_additional_information(
     # Get URLs from queries
     urls = get_urls_from_queries(
         json_data["queries"],
-        api_key=google_api_key,
-        engine=google_engine,
     )
 
     # Extract relevant sentences from URLs
@@ -1148,8 +1154,6 @@ def research(
         max_compl_tokens=max_compl_tokens,
         nlp=nlp,
         max_add_words=max_add_words,
-        google_api_key=os.getenv("GOOGLE_SEARCH_API_KEY"),
-        google_engine=os.getenv("GOOGLE_SEARCH_ENGINE_ID"),
         embedding_model=embedding_model,
     )
 

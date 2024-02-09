@@ -11,7 +11,6 @@ from evo_researcher.functions.cache import persistent_inmemory_cache
 @persistent_inmemory_cache
 def web_search(query: str, max_results=5) -> list[WebSearchResult]:
     tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
-    print(f"-- Searching the web for {query} --")
     response = tavily.search(
         query=query,
         search_depth="advanced",

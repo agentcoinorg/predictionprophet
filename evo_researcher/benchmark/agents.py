@@ -120,12 +120,10 @@ class EvoAgent(AbstractBenchmarkedAgent):
     def research(self, market_question: str) -> t.Optional[str]:
         dotenv.load_dotenv()
         open_ai_key = os.getenv("OPENAI_API_KEY")
-        tavily_key = os.getenv("TAVILY_API_KEY")
         try:
             report, _ = research_evo(
                 goal=market_question,
                 openai_key=open_ai_key,
-                tavily_key=tavily_key,
                 model=self.model,
                 use_summaries=self.use_summaries,
             )

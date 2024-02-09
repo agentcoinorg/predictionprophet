@@ -23,7 +23,7 @@ def research(
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, api_key=openai_key)
     queries = rerank_subqueries(queries=queries, goal=goal, api_key=openai_key)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
 
-    search_results_with_queries = search(queries, tavily_key, lambda result: not result["url"].startswith("https://www.youtube"))
+    search_results_with_queries = search(queries, lambda result: not result["url"].startswith("https://www.youtube"))
 
     if not search_results_with_queries:
         raise ValueError(f"No search results found for the goal {goal}.")
