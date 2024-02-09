@@ -1,6 +1,34 @@
 from langchain_community.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
+from evo_researcher.functions.cache import persistent_inmemory_cache
+
+
+@persistent_inmemory_cache
+def prepare_summary(goal: str, content: str, model: str):
+    prompt_template = """Write comprehensive summary of the following web content, that provides relevant information to answer the question: '{goal}'.
+But cut the fluff and keep it up to the point.
+Write in bullet points.
+    
+Content:
+
+{content}
+"""
+    evaluation_prompt = ChatPromptTemplate.from_template(template=prompt_template)
+
+    research_evaluation_chain = (
+        evaluation_prompt |
+        ChatOpenAI(model=model) |
+        StrOutputParser()
+    )
+
+    response = research_evaluation_chain.invoke({
+        "goal": goal,
+        "content": content
+    })
+
+    return response
+
 
 def prepare_report(goal: str, scraped: list[str], model: str, api_key: str):
     evaluation_prompt_template = """

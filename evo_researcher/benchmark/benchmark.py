@@ -1,11 +1,11 @@
-import argparse
+import typer
 import concurrent.futures
 import numpy as np
 import os
 import pandas as pd
 import time
 import typing as t
-
+from collections import defaultdict
 from langchain_community.callbacks import get_openai_callback
 
 from evo_researcher.benchmark.agents import (
@@ -22,7 +22,7 @@ from evo_researcher.benchmark.utils import (
     get_markets,
     should_not_happen,
 )
-from evo_researcher.functions.cache import ENABLE_CACHE
+from evo_researcher.functions.cache import ENABLE_CACHE 
 
 
 class Benchmarker:
@@ -32,9 +32,11 @@ class Benchmarker:
         agents: t.List[AbstractBenchmarkedAgent],
         metric_fns: t.Dict[str, t.Callable] = {},
         cache_path: t.Optional[str] = None,
+        only_cached: bool = False,
     ):
-        self.markets: t.List[Market] = markets
         self.registered_agents: t.List[AbstractBenchmarkedAgent] = agents
+        if len(set(a.agent_name for a in self.registered_agents)) != len(self.registered_agents):
+            raise ValueError("Agents must have unique names")
 
         # Predictions
         self.cache_path = cache_path
@@ -42,6 +44,12 @@ class Benchmarker:
             self.predictions = PredictionsCache.load(path=self.cache_path)
         else:
             self.predictions = PredictionsCache(predictions={})
+
+        self.only_cached = only_cached
+        self.markets: list[Market] = [
+            m for m in markets 
+            if all(self.predictions.has_market(agent_name=agent.agent_name, question=m.question) for agent in self.registered_agents)
+        ] if self.only_cached else markets
 
         # Metrics
         self.metric_fns = metric_fns
@@ -130,8 +138,8 @@ class Benchmarker:
                         prediction=prediction,
                         market_question=market_question,
                     )
-                if self.cache_path:
-                    self.predictions.save(self.cache_path)
+                    if self.cache_path:
+                        self.predictions.save(self.cache_path)
 
     @staticmethod
     def filter_predictions_for_answered(predictions: list[Prediction], markets: list[Market]) -> t.Tuple[list[Prediction], list[Market]]:
@@ -281,6 +289,51 @@ class Benchmarker:
             ]
         markets_summary[f"reference p_yes"] = [m.p_yes for m in self.markets]
         return markets_summary
+    
+    def calculate_expected_returns(self, prediction: Prediction, market: Market):
+        if not prediction.is_answered:
+            return None
+
+        # TODO: Add support for different bet sizes and calculate shares based on the market's odds.
+        bet_units = 10  # Assuming the agent always bet 10 units per market.
+        receive_shares = 20  # Because we assume markets trades at 50/50.
+        buy_yes_threshold = 0.5  # If the agent's prediction is > 50% it should buy "yes", otherwise "no".
+
+        yes_shares = receive_shares if prediction.outcome_prediction.p_yes > buy_yes_threshold else 0
+        no_shares = receive_shares if prediction.outcome_prediction.p_yes <= buy_yes_threshold else 0
+        
+        expected_returns_pct = (
+            yes_shares * market.p_yes  
+            + no_shares * (1 - market.p_yes)
+            - bet_units
+        )
+        expected_returns = 100 * expected_returns_pct / bet_units
+
+        return expected_returns
+
+    def compute_expected_returns_summary(self):
+        overall_summary = defaultdict(list)
+
+        for agent in self.registered_agents:
+            expected_returns = []
+
+            for market in self.markets:
+                if (prediction := self.get_prediction(agent.agent_name, market.question)).is_answered:
+                    expected_returns.append(self.calculate_expected_returns(prediction, market))
+
+            overall_summary["Agent"].append(agent.agent_name)
+            overall_summary["Mean expected value"].append(np.mean(expected_returns))
+            overall_summary["Total expected value"].append(np.sum(expected_returns))
+
+        per_market = defaultdict(list)
+
+        for market in self.markets:
+            per_market["Market Question"].append(market.question)
+
+            for agent in self.registered_agents:
+                per_market[agent.agent_name].append(self.calculate_expected_returns(self.get_prediction(agent.agent_name, market.question), market))
+
+        return dict(overall_summary), dict(per_market)
 
     def generate_markdown_report(self):
         md = "# Comparison Report\n\n"
@@ -289,34 +342,45 @@ class Benchmarker:
         md += "\n\n"
         md += "## Markets\n\n"
         md += pd.DataFrame(self.get_markets_summary()).to_markdown(index=False)
+        md += "\n\n"
+        md += "## Expected value\n\n"
+        overall_summary, per_market = self.compute_expected_returns_summary()
+        md += pd.DataFrame(overall_summary).to_markdown(index=False)
+        md += "\n\n"
+        md += pd.DataFrame(per_market).to_markdown(index=False)
         return md
 
 
-if __name__ == "__main__":
-    args = argparse.ArgumentParser()
-    args.add_argument(
-        "--output",
-        type=str,
-        default="./benchmark_report.md",
-    )
-    args.add_argument(
-        "--reference",
-        type=str,
-        choices=[ms.value for ms in MarketSource],
-        default="manifold",
-    )
-    args = args.parse_args()
+def main(
+    n: int = 10,
+    output: str = "./benchmark_report.md",
+    reference: MarketSource = MarketSource.MANIFOLD,
+    max_workers: int = 1,
+    cache_path: t.Optional[str] = "predictions_cache.json",
+    only_cached: bool = False,
+) -> None:
+    markets = get_markets(number=n, source=reference)
 
     benchmarker = Benchmarker(
-        markets=get_markets(number=3, source=MarketSource(args.reference)),
+        markets=markets,
         agents=[
-            OlasAgent(model="gpt-3.5-turbo"),  # TODO use same models!
-            EvoAgent(model="gpt-4-1106-preview"),
+            OlasAgent(model="gpt-3.5-turbo", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo"),  
+            OlasAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo-0125"),  
+            EvoAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="evo_gpt-3.5-turbo-0125_summary", use_summaries=True),
+            EvoAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="evo_gpt-3.5-turbo-0125"),
+            # EvoAgent(model="gpt-4-1106-preview", max_workers=max_workers, agent_name="evo_gpt-4-1106-preview"),  # Too expensive to be enabled by default.
         ],
+        cache_path=cache_path,
+        only_cached=only_cached,
     )
+
     benchmarker.run_agents()
     md = benchmarker.generate_markdown_report()
 
-    with open(args.output, "w") as f:
-        print(f"Writing benchmark report to: {args.output}")
+    with open(output, "w") as f:
+        print(f"Writing benchmark report to: {output}")
         f.write(md)
+
+
+if __name__ == "__main__":
+    typer.run(main)

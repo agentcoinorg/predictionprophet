@@ -3,7 +3,12 @@ from markdownify import markdownify
 import requests
 from bs4 import BeautifulSoup
 from requests import Response
+import tenacity
+from evo_researcher.functions.cache import persistent_inmemory_cache
 
+
+@tenacity.retry(stop=tenacity.stop_after_attempt(3), wait=tenacity.wait_fixed(1), reraise=True)
+@persistent_inmemory_cache
 def fetch_html(url: str, timeout: int) -> Response:
     headers = {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:107.0) Gecko/20100101 Firefox/107.0"
@@ -11,8 +16,8 @@ def fetch_html(url: str, timeout: int) -> Response:
     response = requests.get(url, headers=headers, timeout=timeout)
     return response
 
+
 def web_scrape(url: str, timeout: int = 10000) -> tuple[str, str]:
-    print(f"-- Scraping {url} --")
     try:
         response = fetch_html(url=url, timeout=timeout)
 

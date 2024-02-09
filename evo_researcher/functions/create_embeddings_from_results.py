@@ -20,9 +20,6 @@ def create_embeddings_from_results(results: list[WebScrapeResult], text_splitter
         text_splits = text_splitter.split_text(scrape_result.content)
         texts += text_splits
         metadatas += [scrape_result.dict() for _ in text_splits]
-        
-    print(f"Created {len(texts)} embeddings")
-    print(f"Created {len(metadatas)} metadatas")      
 
     collection.add_texts(
         texts=texts,
