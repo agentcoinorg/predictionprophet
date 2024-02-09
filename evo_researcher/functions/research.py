@@ -2,7 +2,7 @@ import os
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from evo_researcher.functions.create_embeddings_from_results import create_embeddings_from_results
 from evo_researcher.functions.generate_subqueries import generate_subqueries
-from evo_researcher.functions.prepare_report import prepare_report, evaluate_page, prepare_summary
+from evo_researcher.functions.prepare_report import prepare_report, prepare_summary
 
 from evo_researcher.functions.rerank_subqueries import rerank_subqueries
 from evo_researcher.functions.scrape_results import scrape_results

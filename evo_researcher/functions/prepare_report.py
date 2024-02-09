@@ -5,32 +5,6 @@ from evo_researcher.functions.cache import persistent_inmemory_cache
 
 
 @persistent_inmemory_cache
-def evaluate_page(question: str, page_content: str, model: str) -> str:
-    prompt_template = f"""For the question: '{question}', do you think that the following page content is relevant?
-
-Write max 1 sentence summary about why you think it is or it isn't relevant and then write a single word answer "yes" (if you think it is relevant) or "no" (if you think it is not relevant).
-
-Content:
-```
-{page_content}
-```
-"""
-    prompt = ChatPromptTemplate.from_template(template=prompt_template)
-
-    research_evaluation_chain = (
-        prompt |
-        ChatOpenAI(model=model, temperature=0) |
-        StrOutputParser()
-    )
-
-    response = research_evaluation_chain.invoke({
-        "page_content": page_content,
-    })
-
-    return response
-
-
-@persistent_inmemory_cache
 def prepare_summary(goal: str, content: str, model: str):
     prompt_template = """Write comprehensive summary of the following web content, that provides relevant information to answer the question: '{goal}'.
 But cut the fluff and keep it up to the point.
