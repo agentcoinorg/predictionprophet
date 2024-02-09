@@ -1,5 +1,5 @@
 from langchain.prompts import PromptTemplate
-from langchain_community.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.llm import LLMChain

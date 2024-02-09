@@ -21,10 +21,10 @@ import spacy
 import spacy.util
 import tiktoken
 
-from langchain_community.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
 from dateutil import parser
 from evo_researcher.functions.cache import persistent_inmemory_cache
@@ -946,11 +946,6 @@ def extract_and_sort_sentences(
     # Process the event question with spacy
     doc_question = nlp(event_question)
     event_date = extract_event_date(doc_question)
-
-    if event_date is None:
-        print(
-            f"Could not extract precise event date from event question: {event_question}"
-        )
 
     # Process URLs in batches
     for batch in process_in_batches(urls=urls):

@@ -6,7 +6,7 @@ except ImportError:
     print("pysqlite3-binary not found, using sqlite3 instead.")
 
 
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain.vectorstores.chroma import Chroma
 from evo_researcher.models.WebScrapeResult import WebScrapeResult
 

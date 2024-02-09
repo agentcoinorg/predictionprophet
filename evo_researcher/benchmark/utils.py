@@ -56,7 +56,7 @@ class PredictionsCache(BaseModel):
     def add_prediction(self, agent_name: str, question: str, prediction: t.Optional[Prediction]):
         if agent_name not in self.predictions:
             self.predictions[agent_name] = {}
-        assert question not in self.predictions[agent_name]
+        assert question not in self.predictions[agent_name], f"Question `{question}` already exists in the cache."
         self.predictions[agent_name][question] = prediction
 
     def save(self, path: str):
