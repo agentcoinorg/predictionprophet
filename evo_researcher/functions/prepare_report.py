@@ -4,6 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from evo_researcher.functions.cache import persistent_inmemory_cache
+from evo_researcher.functions.utils import trim_to_n_tokens
 
 
 @persistent_inmemory_cache
@@ -16,10 +17,7 @@ Content:
 
 {content}
 """
-    encoder = tiktoken.encoding_for_model(model)
-    while trim_content_to_tokens and len(encoder.encode(content)) > trim_content_to_tokens:
-        content = content[:-128]
-
+    content = trim_to_n_tokens(content, trim_content_to_tokens, model) if trim_content_to_tokens else content
     evaluation_prompt = ChatPromptTemplate.from_template(template=prompt_template)
 
     research_evaluation_chain = (
