@@ -290,7 +290,7 @@ class Benchmarker:
         markets_summary[f"reference p_yes"] = [m.p_yes for m in self.markets]
         return markets_summary
     
-    def calculate_expected_value(self, prediction: Prediction, market: Market):
+    def calculate_expected_returns(self, prediction: Prediction, market: Market):
         if not prediction.is_answered:
             return None
 
@@ -302,27 +302,28 @@ class Benchmarker:
         yes_shares = receive_shares if prediction.outcome_prediction.p_yes > buy_yes_threshold else 0
         no_shares = receive_shares if prediction.outcome_prediction.p_yes <= buy_yes_threshold else 0
         
-        expected_value = (
+        expected_returns_pct = (
             yes_shares * market.p_yes  
             + no_shares * (1 - market.p_yes)
             - bet_units
         )
+        expected_returns = 100 * expected_returns_pct / bet_units
 
-        return expected_value
+        return expected_returns
 
-    def compute_expected_values_summary(self):
+    def compute_expected_returns_summary(self):
         overall_summary = defaultdict(list)
 
         for agent in self.registered_agents:
-            expected_values = []
+            expected_returns = []
 
             for market in self.markets:
                 if (prediction := self.get_prediction(agent.agent_name, market.question)).is_answered:
-                    expected_values.append(self.calculate_expected_value(prediction, market))
+                    expected_returns.append(self.calculate_expected_returns(prediction, market))
 
             overall_summary["Agent"].append(agent.agent_name)
-            overall_summary["Mean expected value"].append(np.mean(expected_values))
-            overall_summary["Total expected value"].append(np.sum(expected_values))
+            overall_summary["Mean expected value"].append(np.mean(expected_returns))
+            overall_summary["Total expected value"].append(np.sum(expected_returns))
 
         per_market = defaultdict(list)
 
@@ -330,7 +331,7 @@ class Benchmarker:
             per_market["Market Question"].append(market.question)
 
             for agent in self.registered_agents:
-                per_market[agent.agent_name].append(self.calculate_expected_value(self.get_prediction(agent.agent_name, market.question), market))
+                per_market[agent.agent_name].append(self.calculate_expected_returns(self.get_prediction(agent.agent_name, market.question), market))
 
         return dict(overall_summary), dict(per_market)
 
@@ -343,7 +344,7 @@ class Benchmarker:
         md += pd.DataFrame(self.get_markets_summary()).to_markdown(index=False)
         md += "\n\n"
         md += "## Expected value\n\n"
-        overall_summary, per_market = self.compute_expected_values_summary()
+        overall_summary, per_market = self.compute_expected_returns_summary()
         md += pd.DataFrame(overall_summary).to_markdown(index=False)
         md += "\n\n"
         md += pd.DataFrame(per_market).to_markdown(index=False)
