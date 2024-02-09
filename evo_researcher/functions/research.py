@@ -47,7 +47,8 @@ def research(
         vector_result_texts += [result.page_content for result in top_k_per_query_results if result.page_content not in vector_result_texts]
 
         for x in top_k_per_query_results:
-            url_to_content_deemed_most_useful[x.metadata["url"]] = x.page_content
+            # `x.metadata["content"]` holds the whole url's web page, so it's ok to overwrite the value of the same url.
+            url_to_content_deemed_most_useful[x.metadata["url"]] = x.metadata["content"]
 
     vector_result_texts = [
         prepare_summary(goal, content, "gpt-3.5-turbo-0125")  # Hard code gpt-3.5-turbo-0125, because it would be very costly with gpt-4.
