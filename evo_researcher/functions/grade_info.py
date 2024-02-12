@@ -100,7 +100,7 @@ def grade_info(question: str, information: str) -> str:
         "information": information
     })
     
-    grades = formatting_chain.invoke({
+    grades: str = formatting_chain.invoke({
         "report": report
     })
     

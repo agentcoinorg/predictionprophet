@@ -26,7 +26,7 @@ Content:
         StrOutputParser()
     )
 
-    response = research_evaluation_chain.invoke({
+    response: str = research_evaluation_chain.invoke({
         "goal": goal,
         "content": content
     })
@@ -64,7 +64,7 @@ def prepare_report(goal: str, scraped: list[str], model: str) -> str:
         StrOutputParser()
     )
 
-    response = research_evaluation_chain.invoke({
+    response: str = research_evaluation_chain.invoke({
         "search_results": scraped,
         "goal": goal
     })

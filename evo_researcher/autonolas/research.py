@@ -657,7 +657,8 @@ def concatenate_short_sentences(sentences: list[str], len_sentence_threshold: in
 @persistent_inmemory_cache
 def openai_embedding_cached(text: str, model: str = "text-embedding-ada-002") -> list[float]:
     emb = OpenAIEmbeddings(model=model)
-    return emb.embed_query(text)
+    vector: list[float] = emb.embed_query(text)
+    return vector
 
 
 def extract_similarity_scores(
@@ -1182,7 +1183,7 @@ def make_prediction(
 
     # Get probability that is based on the token's top logprobs.
     decision, probability = None, None
-    for token in check_not_none(generation.generations[0][0].generation_info)["logprobs"]["content"]:
+    for token in check_not_none(generation.generations[0][0].generation_info)["logprobs"]["content"]:  
         # Check if the token is a decision token, we prompt the model for it to be there, so it is in 99% of cases.
         if token["token"] in ("y", "n"):
             decision = token["token"]

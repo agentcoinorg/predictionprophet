@@ -21,7 +21,7 @@ def rerank_subqueries(queries: list[str], goal: str) -> list[str]:
         StrOutputParser()
     )
 
-    responses = rerank_results_chain.invoke({
+    responses: str = rerank_results_chain.invoke({
         "goal": goal,
         "queries": "\n---query---\n".join(queries)
     })
