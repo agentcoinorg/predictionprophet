@@ -315,7 +315,7 @@ class Benchmarker:
 
         return expected_returns
 
-    def compute_expected_returns_summary(self) -> t.Tuple[dict[str, list[str | float]], dict[str, list[str | float]]]:
+    def compute_expected_returns_summary(self) -> t.Tuple[dict[str, list[str | float]], dict[str, list[str | float | None]]]:
         overall_summary: dict[str, list[str | float]] = defaultdict(list)
 
         for agent in self.registered_agents:
@@ -330,13 +330,13 @@ class Benchmarker:
             overall_summary["Median expected returns"].append(float(np.median(expected_returns)))
             overall_summary["Total expected returns"].append(float(np.sum(expected_returns)))
 
-        per_market: dict[str, list[str | float]]  = defaultdict(list)
+        per_market: dict[str, list[str | float | None]]  = defaultdict(list)
 
         for market in self.markets:
             per_market["Market Question"].append(market.question)
 
             for agent in self.registered_agents:
-                per_market[agent.agent_name].append(check_not_none(self.calculate_expected_returns(self.get_prediction(agent.agent_name, market.question), market)))
+                per_market[agent.agent_name].append(self.calculate_expected_returns(self.get_prediction(agent.agent_name, market.question), market))
 
         return dict(overall_summary), dict(per_market)
 
