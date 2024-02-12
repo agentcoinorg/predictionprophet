@@ -370,11 +370,6 @@ def main(
     if len(markets) != len(markets_deduplicated):
         print(f"Warning: Deduplicated markets from {len(markets)} to {len(markets_deduplicated)}.")
 
-    # import json
-    # x = json.load(open("predictions_cache.json"))
-    # m = set(x["predictions"]["olas_gpt-3.5-turbo"].keys())
-    # markets_deduplicated = [y for y in markets_deduplicated if y.question in m]
-
     benchmarker = Benchmarker(
         markets=markets_deduplicated,
         agents=[
