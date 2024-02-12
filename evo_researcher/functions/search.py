@@ -4,7 +4,7 @@ from evo_researcher.functions.web_search import WebSearchResult, web_search
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-def safe_web_search(query: str, max_results=5) -> t.Optional[list[WebSearchResult]]:
+def safe_web_search(query: str, max_results: int = 5) -> t.Optional[list[WebSearchResult]]:
     try:
         return web_search(query, max_results)
     except requests.exceptions.HTTPError as e:
@@ -12,7 +12,7 @@ def safe_web_search(query: str, max_results=5) -> t.Optional[list[WebSearchResul
         return None
 
 
-def search(queries: list[str], filter = lambda x: True) -> list[tuple[str, WebSearchResult]]:
+def search(queries: list[str], filter: t.Callable[[WebSearchResult], bool] = lambda x: True) -> list[tuple[str, WebSearchResult]]:
     maybe_results: list[t.Optional[list[WebSearchResult]]] = []
 
     # Each result will have a query associated with it

@@ -25,7 +25,7 @@ def main(
     markets = get_markets(n, source)
 
     summary = defaultdict(list)
-    links = defaultdict(dict)
+    links: dict[str, dict[str, list[str]]] = defaultdict(dict)
 
     for market in tqdm(markets):
         results = {

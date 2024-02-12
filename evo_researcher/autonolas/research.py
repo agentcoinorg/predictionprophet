@@ -27,6 +27,7 @@ from langchain.schema.output_parser import StrOutputParser
 from langchain_openai import OpenAIEmbeddings
 
 from dateutil import parser
+from evo_researcher.functions.utils import check_not_none
 from evo_researcher.functions.cache import persistent_inmemory_cache
 from evo_researcher.functions.parallelism import par_map
 
@@ -345,7 +346,7 @@ def download_spacy_model(model_name: str) -> None:
         print(f"{model_name} is already installed.")
 
 
-def extract_event_date(doc_question) -> Optional[str]:
+def extract_event_date(doc_question: spacy.tokens.Doc) -> Optional[str]:
     """
     Extracts the event date from the event question if present.
 
@@ -365,7 +366,7 @@ def extract_event_date(doc_question) -> Optional[str]:
 
     # If event date not formatted as YMD or not found, return None
     try:
-        datetime.strptime(event_date_ymd, "%Y-%m-%d")
+        datetime.strptime(event_date_ymd, "%Y-%m-%d")  # type: ignore
     except (ValueError, TypeError):
         return None
     else:
@@ -486,7 +487,7 @@ def get_urls_from_queries(
     return list(results)
 
 
-def standardize_date(date_text):
+def standardize_date(date_text: str) -> str | None:
     """
     Standardizes a given date string to the format 'YYYY-MM-DD' or 'MM-DD' if possible.
 
@@ -528,8 +529,8 @@ def standardize_date(date_text):
 
 
 def get_context_around_isolated_event_date(
-    doc_text, event_date_ymd, len_sentence_threshold, max_context=50
-):
+    doc_text: spacy.tokens.Doc, event_date_ymd: str, len_sentence_threshold: int, max_context: int = 50
+) -> list[str]:
     """
     Extract sentences around isolated dates within the text.
 
@@ -556,7 +557,7 @@ def get_context_around_isolated_event_date(
             f"The maximum number of words must be less than or equal to 300."
         )
 
-    contexts_list = []
+    contexts_list: list[str] = []
     len_doc_text = len(doc_text)
 
     # Extract the month and day from the event date
@@ -630,8 +631,8 @@ def get_context_around_isolated_event_date(
     return contexts_list
 
 
-def concatenate_short_sentences(sentences, len_sentence_threshold):
-    modified_sentences = []
+def concatenate_short_sentences(sentences: list[str], len_sentence_threshold: int) -> list[str]:
+    modified_sentences: list[str] = []
     i = 0
     while i < len(sentences):
         sentence = sentences[i]
@@ -661,9 +662,9 @@ def openai_embedding_cached(text: str, model: str = "text-embedding-ada-002") ->
 
 def extract_similarity_scores(
     text: str,
-    doc_question,
-    event_date: str,
-    nlp,
+    doc_question: spacy.tokens.Doc,
+    event_date: str | None,
+    nlp: spacy.Language,
     date: str,
     embedding_model: EmbeddingModel,
 ) -> List[Tuple[str, float, str]]:
@@ -684,7 +685,7 @@ def extract_similarity_scores(
     len_sentence_threshold = 10
     num_sentences_threshold = 1000
     sentences = []
-    event_date_sentences = []
+    event_date_sentences: list[str] = []
     seen = set()
 
     # Truncate text for performance optimization
@@ -746,7 +747,7 @@ def extract_similarity_scores(
     return sentence_similarity_date_tuples
 
 
-def get_date(soup):
+def get_date(soup: BeautifulSoup) -> str:
     """
     Retrieves the release and modification dates from the soup object containing the HTML tree.
 
@@ -790,9 +791,9 @@ def get_date(soup):
 
 def extract_sentences(
     html: str,
-    doc_question,
-    event_date: str,
-    nlp,
+    doc_question: spacy.tokens.Doc,
+    event_date: str | None,
+    nlp: spacy.Language,
     embedding_model: EmbeddingModel,
 ) -> List[Tuple[str, float, str]]:
     """
@@ -850,7 +851,7 @@ def extract_sentences(
 
 def process_in_batches(
     urls: List[str], batch_size: int = 15, timeout: int = 10
-) -> Generator[None, None, List[Tuple[Future, str]]]:
+) -> Generator[List[Tuple[Future[requests.models.Response], str]], None, None]:
     """
     Process URLs in batches using a generator and thread pool executor.
 
@@ -922,7 +923,7 @@ def process_in_batches(
 def extract_and_sort_sentences(
     urls: List[str],
     event_question: str,
-    nlp,
+    nlp: spacy.Language,
     embedding_model: EmbeddingModel,
 ) -> List[Tuple[str, float, str]]:
     """
@@ -1033,7 +1034,7 @@ def join_and_group_sentences(
 def fetch_additional_information(
     event_question: str,
     max_add_words: int,
-    nlp,
+    nlp: spacy.Language,
     embedding_model: EmbeddingModel,
     engine: str = "gpt-3.5-turbo",
     temperature: float = 0.5,
@@ -1074,11 +1075,11 @@ def fetch_additional_information(
     research_chain = (
         research_prompt |
         ChatOpenAI(
-            model=engine,
+            model_name=engine,
             temperature=temperature,
             max_tokens=max_compl_tokens,
             n=1, 
-            timeout=120,
+            request_timeout=120,
         ) |
         StrOutputParser()
     )
@@ -1112,8 +1113,8 @@ def fetch_additional_information(
 
 def research(
     prompt: str,
-    max_tokens: int = None,
-    temperature: int = None,
+    max_tokens: int | None = None,
+    temperature: float | None = None,
     engine: str = "gpt-3.5-turbo",
     embedding_model: EmbeddingModel = EmbeddingModel.spacy,
 ) -> str:
@@ -1126,7 +1127,7 @@ def research(
     nlp = spacy.load("en_core_web_md")
 
     # Extract the event question from the prompt
-    event_question = re.search(r"\"(.+?)\"", prompt).group(1)
+    event_question = check_not_none(re.search(r"\"(.+?)\"", prompt)).group(1)
     if not event_question:
         raise ValueError("No event question found in prompt.")
 
@@ -1167,17 +1168,13 @@ def make_prediction(
     additional_information: str,
     temperature: float = 0.7,
     engine: str = "gpt-3.5-turbo-1106",
-    **kwargs,
 ) -> Prediction:
-    api_keys: dict[str, str] = kwargs.get("api_keys", {})
-    open_ai_key = api_keys.get('openai', os.getenv("OPENAI_API_KEY"))
-    
     current_time_utc = datetime.now(timezone.utc)
     formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
 
     prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
 
-    llm = ChatOpenAI(model=engine, temperature=temperature, openai_api_key=open_ai_key)
+    llm = ChatOpenAI(model_name=engine, temperature=temperature)
     formatted_messages = prediction_prompt.format_messages(user_prompt=prompt, additional_information=additional_information, timestamp=formatted_time_utc)
     generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5)
 
@@ -1185,7 +1182,7 @@ def make_prediction(
 
     # Get probability that is based on the token's top logprobs.
     decision, probability = None, None
-    for token in generation.generations[0][0].generation_info["logprobs"]["content"]:
+    for token in check_not_none(generation.generations[0][0].generation_info)["logprobs"]["content"]:
         # Check if the token is a decision token, we prompt the model for it to be there, so it is in 99% of cases.
         if token["token"] in ("y", "n"):
             decision = token["token"]
@@ -1195,7 +1192,7 @@ def make_prediction(
     if decision is None or probability is None:
         raise ValueError(f"No decision found in completion from {engine=}, {completion=}, {formatted_messages=}")
 
-    response = json.loads(clean_completion_json(completion))
+    response: Prediction = json.loads(clean_completion_json(completion))
     response["decision"] = decision
     response["decision_token_prob"] = probability
     

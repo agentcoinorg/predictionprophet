@@ -9,10 +9,11 @@ except ImportError:
 from langchain_openai import OpenAIEmbeddings
 from langchain.vectorstores.chroma import Chroma
 from evo_researcher.models.WebScrapeResult import WebScrapeResult
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
-def create_embeddings_from_results(results: list[WebScrapeResult], text_splitter, api_key: str) -> Chroma:
-    collection = Chroma(embedding_function=OpenAIEmbeddings(openai_api_key=api_key))
+def create_embeddings_from_results(results: list[WebScrapeResult], text_splitter: RecursiveCharacterTextSplitter) -> Chroma:
+    collection = Chroma(embedding_function=OpenAIEmbeddings())
     texts = []
     metadatas = []
 

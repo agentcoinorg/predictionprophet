@@ -1,3 +1,4 @@
+import typing as t
 from pydantic import BaseModel
 
 
@@ -8,5 +9,5 @@ class WebSearchResult(BaseModel):
     relevancy: float
     query: str
     
-    def __getitem__(self, item):
-        return getattr(self, item)
+    def __getitem__(self, item: t.Any) -> t.Union[str, float]:
+        return t.cast(t.Union[str, float], getattr(self, item))  # Cast because fields on this model have either str or float.

@@ -110,7 +110,7 @@ How well Twitter sticks to its own rules about misinformation and keeping electi
 How Twitter might shift its policies based on what people think and any government rules that might come up as the elections get closer.
 """
 
-def test_grading():
+def test_grading() -> None:
     high_quality = grade_info(question=question, information=highq_information_1)
     vagueness = grade_info(question=question, information=vagueness_information_1)
     bias = grade_info(question=question, information=bias_information_1)

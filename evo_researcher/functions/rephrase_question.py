@@ -35,7 +35,7 @@ def rephrase_question(
     open_ended_question: What is the color of the sky?
     """
     tokenizer = tiktoken.encoding_for_model(engine)
-    llm = ChatOpenAI(model=engine, temperature=0.0)
+    llm = ChatOpenAI(model_name=engine, temperature=0.0)
 
     prompt = ChatPromptTemplate.from_template(template=QUESTION_REPHRASE_PROMPT)
     messages = prompt.format_messages(question=question)
