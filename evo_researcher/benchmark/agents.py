@@ -1,5 +1,5 @@
 import dotenv
-import json
+import random
 import os
 import typing as t
 
@@ -71,6 +71,51 @@ class AbstractBenchmarkedAgent:
             researched=researched,
             evaluated=eval,
         )
+    
+
+class RandomAgent(AbstractBenchmarkedAgent):
+    def evaluate(self, market_question: str) -> EvalautedQuestion:
+        return EvalautedQuestion(question=market_question, is_predictable=True)
+    
+    def research(self, market_question: str) -> str:
+        return ""  # No research for a random agent, but can't be None.
+    
+    def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
+        p_yes, confidence = random.random(), random.random()
+        return Prediction(
+            evaluation=evaluated,
+            outcome_prediction=OutcomePrediction(
+                p_yes=p_yes,
+                confidence=confidence,
+                info_utility=None,
+            ),
+        )
+    
+
+class QuestionOnlyAgent(AbstractBenchmarkedAgent):
+    def __init__(self, model: str, temperature: float = 0.0, agent_name: str = "question-only", max_workers: t.Optional[int] = None):
+        super().__init__(agent_name=agent_name, max_workers=max_workers)
+        self.model = model
+        self.temperature = temperature
+        
+    def evaluate(self, market_question: str) -> EvalautedQuestion:
+        return EvalautedQuestion(question=market_question, is_predictable=True)
+    
+    def research(self, market_question: str) -> str:
+        return ""  # No research for a question-only agent, but can't be None.
+    
+    def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
+        try:
+            return _make_prediction(
+                market_question=market_question,
+                additional_information=researched,
+                evaluation_information=evaluated,
+                engine=self.model,
+                temperature=self.temperature,
+            )
+        except ValueError as e:
+            print(f"Error in QuestionOnlyAgent's predict: {e}")
+            return Prediction(evaluation=evaluated)
 
       
 class OlasAgent(AbstractBenchmarkedAgent):
@@ -106,6 +151,7 @@ class OlasAgent(AbstractBenchmarkedAgent):
         except ValueError as e:
             print(f"Error in OlasAgent's predict: {e}")
             return Prediction(evaluation=evaluated)
+
 
 class EvoAgent(AbstractBenchmarkedAgent):
     def __init__(self, model: str, temperature: float = 0.0, agent_name: str = "evo", use_summaries: bool = False, max_workers: t.Optional[int] = None):
@@ -187,4 +233,6 @@ AGENTS = [
     OlasAgent,
     RephrasingOlasAgent,
     EvoAgent,
+    RandomAgent,
+    QuestionOnlyAgent,
 ]
