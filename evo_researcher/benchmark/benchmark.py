@@ -375,12 +375,12 @@ def main(
             RandomAgent(agent_name="random", max_workers=max_workers),
             QuestionOnlyAgent(model="gpt-3.5-turbo-0125", agent_name="question-only_gpt-3.5-turbo-0125", max_workers=max_workers),
             FixedAgent(fixed_answer=False, agent_name="fixed-no", max_workers=max_workers),
-            # OlasAgent(model="gpt-3.5-turbo", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo_t0.7", temperature=0.7),  # Reference configuration.
-            # OlasAgent(model="gpt-3.5-turbo", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo"),  
-            # OlasAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo-0125"),  
-            # OlasAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo-0125_openai-embeddings", embedding_model=EmbeddingModel.openai),  
-            # EvoAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="evo_gpt-3.5-turbo-0125_summary", use_summaries=True),
-            # EvoAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="evo_gpt-3.5-turbo-0125"),
+            OlasAgent(model="gpt-3.5-turbo", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo_t0.7", temperature=0.7),  # Reference configuration.
+            OlasAgent(model="gpt-3.5-turbo", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo"),  
+            OlasAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo-0125"),  
+            OlasAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo-0125_openai-embeddings", embedding_model=EmbeddingModel.openai),  
+            EvoAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="evo_gpt-3.5-turbo-0125_summary", use_summaries=True),
+            EvoAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="evo_gpt-3.5-turbo-0125"),
             # EvoAgent(model="gpt-4-1106-preview", max_workers=max_workers, agent_name="evo_gpt-4-1106-preview"),  # Too expensive to be enabled by default.
         ],
         cache_path=cache_path,
