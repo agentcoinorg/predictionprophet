@@ -92,6 +92,29 @@ class RandomAgent(AbstractBenchmarkedAgent):
         )
     
 
+class FixedAgent(AbstractBenchmarkedAgent):
+    def __init__(self, fixed_answer: bool, agent_name: str, max_workers: int | None = None):
+        super().__init__(agent_name, max_workers)
+        self.fixed_answer = fixed_answer
+
+    def evaluate(self, market_question: str) -> EvalautedQuestion:
+        return EvalautedQuestion(question=market_question, is_predictable=True)
+    
+    def research(self, market_question: str) -> str:
+        return ""  # No research for a fixed agent, but can't be None.
+    
+    def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
+        p_yes, confidence = 1.0 if self.fixed_answer else 0.0, 1.0 
+        return Prediction(
+            evaluation=evaluated,
+            outcome_prediction=OutcomePrediction(
+                p_yes=p_yes,
+                confidence=confidence,
+                info_utility=None,
+            ),
+        )
+    
+
 class QuestionOnlyAgent(AbstractBenchmarkedAgent):
     def __init__(self, model: str, temperature: float = 0.0, agent_name: str = "question-only", max_workers: t.Optional[int] = None):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
@@ -235,4 +258,5 @@ AGENTS = [
     EvoAgent,
     RandomAgent,
     QuestionOnlyAgent,
+    FixedAgent,
 ]
