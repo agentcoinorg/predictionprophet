@@ -22,7 +22,7 @@ class Market(BaseModel):
     outcomePrices: list[float] | None
 
     @validator("outcomePrices", pre=True)
-    def _validate_outcome_prices(cls, value: t.Any) -> list[float] | None:
+    def _validate_outcome_prices(cls, value: list[float] | None) -> list[float] | None:
         if value is None:
             return None
         if len(value) != 2:
@@ -131,7 +131,7 @@ def get_manifold_markets(
 def get_polymarket_markets(
     number: int = 100, excluded_questions: t.List[str] = [], active: bool | None = True, closed: bool | None = False
 ) -> t.List[Market]:
-    params = {
+    params: dict[str, str | int] = {
         "_limit": number + len(excluded_questions),
     }
     if active is not None:
