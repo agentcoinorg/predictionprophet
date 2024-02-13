@@ -8,7 +8,7 @@ import typing as t
 from tqdm import tqdm
 from collections import defaultdict
 from langchain_community.callbacks import get_openai_callback
-
+from sklearn.metrics import precision_score, recall_score
 from evo_researcher.functions.utils import check_not_none
 from evo_researcher.autonolas.research import EmbeddingModel
 from evo_researcher.benchmark.agents import (
@@ -72,6 +72,10 @@ class Benchmarker:
                 predictions, markets, tolerance=0.2
             ),
             "% correct outcome": self._compute_correct_outcome_percentage,
+            "% precision for `yes`": lambda predictions, markets: self._compute_precision_and_recall_percentages(predictions, markets, pos_label=1)[0],
+            "% precision for `no`": lambda predictions, markets: self._compute_precision_and_recall_percentages(predictions, markets, pos_label=0)[0],
+            "% recall for `yes`": lambda predictions, markets: self._compute_precision_and_recall_percentages(predictions, markets, pos_label=1)[1],
+            "% recall for `no`": lambda predictions, markets: self._compute_precision_and_recall_percentages(predictions, markets, pos_label=0)[1],
             "confidence/p_yes error correlation": self._compute_confidence_p_yes_error_correlation,
             "Mean info_utility": self._compute_mean_info_utility,
             "Proportion answerable": self._compute_ratio_evaluated_as_answerable,
@@ -212,6 +216,21 @@ class Benchmarker:
                 correct_outcome_count += 1
 
         return (100 * correct_outcome_count) / len(predictions)
+    
+    def _compute_precision_and_recall_percentages(
+            self, predictions: t.List[Prediction], markets: t.List[Market], pos_label: int
+    ) -> tuple[float | None, float | None]:
+        predictions, markets = self.filter_predictions_for_answered(predictions, markets)
+        if not predictions:
+            return None, None
+        
+        ground_truth = [m.p_yes > 0.5 for m in markets]
+        y_pred = [check_not_none(p.outcome_prediction).p_yes > 0.5 for p in predictions]
+
+        precision = precision_score(ground_truth, y_pred, pos_label=pos_label, zero_division=0.0)
+        recall = recall_score(ground_truth, y_pred, pos_label=pos_label, zero_division=0.0)
+
+        return precision * 100, recall * 100
 
     def _compute_confidence_p_yes_error_correlation(
         self, predictions: t.List[Prediction], markets: t.List[Market]
@@ -368,6 +387,8 @@ def main(
     markets_deduplicated = list(({m.question: m for m in markets}.values()))  
     if len(markets) != len(markets_deduplicated):
         print(f"Warning: Deduplicated markets from {len(markets)} to {len(markets_deduplicated)}.")
+
+    print(f"Found {len(markets_deduplicated)} markets.")
 
     benchmarker = Benchmarker(
         markets=markets_deduplicated,
