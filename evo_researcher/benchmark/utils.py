@@ -49,6 +49,10 @@ class OutcomePrediction(BaseModel):
     confidence: float
     info_utility: t.Optional[float]
 
+    @property
+    def binary_answer(self) -> bool:
+        return self.p_yes > 0.5
+
 
 class Prediction(BaseModel):
     evaluation: t.Optional[EvalautedQuestion]

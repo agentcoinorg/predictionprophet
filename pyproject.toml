@@ -6,7 +6,7 @@ authors = ["Nestor Amesty <nestor@polywrap.io>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "~3.10"
 langchain = "0.1.6"
 beautifulsoup4 = "4.12.2"
 click = "8.0.2"
@@ -14,7 +14,7 @@ markdownify = "0.11.6"
 pandas = "2.1.1"
 pytest = "7.2.1"
 openai = "1.10.0"
-chromadb = "0.4.12"
+chromadb = "0.4.22"
 spacy = "3.7.2"
 google-api-python-client = "2.95.0"
 tiktoken = "0.5.2"
@@ -32,6 +32,7 @@ scikit-learn = "^1.4.0"
 typer = "^0.9.0"
 types-requests = "^2.31.0.20240125"
 types-python-dateutil = "^2.8.19.20240106"
+prediction-market-agent-tooling = {git="https://github.com/gnosis/prediction-market-agent-tooling.git", branch="main"}
 
 [tool.poetry.extras]
 pysqlite3-binary = ["pysqlite3-binary"]
