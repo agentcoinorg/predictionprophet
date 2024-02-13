@@ -318,21 +318,35 @@ class Benchmarker:
 
         # TODO: Add support for different bet sizes and calculate shares based on the market's odds.
         bet_units = 10  # Assuming the agent always bet 10 units per market.
-        receive_shares = 20  # Because we assume markets trades at 50/50.
         buy_yes_threshold = 0.5  # If the agent's prediction is > 50% it should buy "yes", otherwise "no".
 
         assert prediction.outcome_prediction is not None
-        yes_shares = receive_shares if prediction.outcome_prediction.p_yes > buy_yes_threshold else 0
-        no_shares = receive_shares if prediction.outcome_prediction.p_yes <= buy_yes_threshold else 0
-        
-        expected_returns_pct = (
+        # Assume that market starts at 50/50 and so the price is 0.5 at the time we are buying it,
+        # we can't use {yes,no}_outcome_price atm, because it would just cancel out to EV = 0.0,
+        # as it's the same as the probability.
+        yes_shares = (
+            bet_units / 0.5  # market.yes_outcome_price  
+            if prediction.outcome_prediction.p_yes > buy_yes_threshold and market.yes_outcome_price > 0
+            else 0
+        )
+        no_shares = (
+            bet_units / 0.5  # market.no_outcome_price  
+            if prediction.outcome_prediction.p_yes <= buy_yes_threshold and market.no_outcome_price > 0
+            else 0
+        )
+
+        # If we don't bet, we don't have any expected returns.
+        if yes_shares == 0 and no_shares == 0:
+            return None
+  
+        expected_value = (
             yes_shares * market.p_yes  
             + no_shares * (1 - market.p_yes)
             - bet_units
         )
-        expected_returns = 100 * expected_returns_pct / bet_units
+        expected_returns_perc = 100 * expected_value / bet_units
 
-        return expected_returns
+        return expected_returns_perc
 
     def compute_expected_returns_summary(self) -> t.Tuple[dict[str, list[str | float]], dict[str, list[str | float | None]]]:
         overall_summary: dict[str, list[str | float]] = defaultdict(list)
@@ -341,8 +355,8 @@ class Benchmarker:
             expected_returns = []
 
             for market in self.markets:
-                if (prediction := self.get_prediction(agent.agent_name, market.question)).is_answered:
-                    expected_returns.append(check_not_none(self.calculate_expected_returns(prediction, market)))
+                if (prediction := self.get_prediction(agent.agent_name, market.question)).is_answered and (expected_return := self.calculate_expected_returns(prediction, market)) is not None:
+                    expected_returns.append(expected_return)
 
             overall_summary["Agent"].append(agent.agent_name)
             overall_summary["Mean expected returns"].append(float(np.mean(expected_returns)))

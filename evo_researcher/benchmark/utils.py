@@ -2,7 +2,7 @@ from enum import Enum
 import json
 import requests
 import typing as t
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from evo_researcher.functions.evaluate_question import EvalautedQuestion
 
 
@@ -18,6 +18,30 @@ class Market(BaseModel):
     p_yes: float
     volume: float
     is_resolved: bool
+    resolution: str | None
+    outcomePrices: list[float] | None
+
+    @validator("outcomePrices", pre=True)
+    def _validate_outcome_prices(cls, value: t.Any) -> list[float] | None:
+        if value is None:
+            return None
+        if len(value) != 2:
+            raise ValueError("outcomePrices must have exactly 2 elements.")
+        return value
+    
+    @property
+    def p_no(self) -> float:
+        return 1 - self.p_yes
+
+    @property
+    def yes_outcome_price(self) -> float:
+        # Use the outcome price if available, otherwise assume it's p_yes.
+        return self.outcomePrices[0] if self.outcomePrices else self.p_yes
+    
+    @property
+    def no_outcome_price(self) -> float:
+        # Use the outcome price if available, otherwise assume it's p_yes.
+        return self.outcomePrices[1] if self.outcomePrices else 1 - self.p_yes
 
 
 class OutcomePrediction(BaseModel):
@@ -70,13 +94,13 @@ class PredictionsCache(BaseModel):
 
 
 def get_manifold_markets(
-    number: int = 100, excluded_questions: t.List[str] = []
+    number: int = 100, excluded_questions: t.List[str] = [], filter_: t.Literal["open", "closed", "resolved", "closing-this-month", "closing-next-month"] = "open"
 ) -> t.List[Market]:
     url = "https://api.manifold.markets/v0/search-markets"
     params = {
         "term": "",
         "sort": "liquidity",
-        "filter": "open",
+        "filter": filter_,
         "limit": f"{number + len(excluded_questions)}",
         "contractType": "BINARY",  # TODO support CATEGORICAL markets
     }
@@ -97,7 +121,6 @@ def get_manifold_markets(
         return {mapping.get(k, k): v for k, v in old.items()}
 
     markets = [Market.parse_obj(_map_fields(m, fields_map)) for m in markets_json]
-    markets = [m for m in markets if not m.is_resolved]
 
     # Filter out markets with excluded questions
     markets = [m for m in markets if m.question not in excluded_questions]
@@ -106,16 +129,21 @@ def get_manifold_markets(
 
 
 def get_polymarket_markets(
-    number: int = 100, excluded_questions: t.List[str] = []
+    number: int = 100, excluded_questions: t.List[str] = [], active: bool | None = True, closed: bool | None = False
 ) -> t.List[Market]:
-    if number > 100:
-        raise ValueError("Polymarket API only returns 100 markets at a time")
-
-    api_uri = f"https://strapi-matic.poly.market/markets?_limit={number + len(excluded_questions)}&active=true&closed=false"
-    ms_json = requests.get(api_uri).json()
+    params = {
+        "_limit": number + len(excluded_questions),
+    }
+    if active is not None:
+        params["active"] = "true" if active else "false"
+    if closed is not None:
+        params["closed"] = "true" if closed else "false"
+    api_uri = f"https://strapi-matic.poly.market/markets"
+    ms_json = requests.get(api_uri, params=params).json()
     markets: t.List[Market] = []
     for m_json in ms_json:
         # Skip non-binary markets. Unfortunately no way to filter in the API call
+        # TODO support CATEGORICAL markets
         if m_json["outcomes"] != ["Yes", "No"]:
             continue
 
@@ -127,7 +155,8 @@ def get_polymarket_markets(
             Market(
                 question=m_json["question"],
                 url=f"https://polymarket.com/event/{m_json['slug']}",
-                p_yes=m_json["outcomePrices"][0],
+                p_yes=m_json["outcomePrices"][0],  # For binary markets on Polymarket, the first outcome is "Yes" and outcomePrices are equal to probabilities.
+                outcomePrices=m_json["outcomePrices"],
                 volume=m_json["volume"],
                 is_resolved=False,
                 source=MarketSource.POLYMARKET,
