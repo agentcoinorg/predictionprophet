@@ -11,7 +11,6 @@ from evo_researcher.functions.search import search
 def research(
     goal: str,
     openai_key: str,
-    tavily_key: str,
     use_summaries: bool,
     model: str = "gpt-4-1106-preview",
     initial_subqueries_limit: int = 20,
@@ -51,7 +50,7 @@ def research(
             url_to_content_deemed_most_useful[x.metadata["url"]] = x.metadata["content"]
 
     vector_result_texts = [
-        prepare_summary(goal, content, "gpt-3.5-turbo-0125")  # Hard code gpt-3.5-turbo-0125, because it would be very costly with gpt-4.
+        prepare_summary(goal, content, "gpt-3.5-turbo-0125", trim_content_to_tokens=14_000)  # Hard code gpt-3.5-turbo-0125, because it would be very costly with gpt-4.
         for content in url_to_content_deemed_most_useful.values()
     ] if use_summaries else vector_result_texts
     

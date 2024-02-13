@@ -1,11 +1,14 @@
-from langchain_community.chat_models import ChatOpenAI
+import tiktoken
+import typing as t
+from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from evo_researcher.functions.cache import persistent_inmemory_cache
+from evo_researcher.functions.utils import trim_to_n_tokens
 
 
 @persistent_inmemory_cache
-def prepare_summary(goal: str, content: str, model: str):
+def prepare_summary(goal: str, content: str, model: str, trim_content_to_tokens: t.Optional[int] = None):
     prompt_template = """Write comprehensive summary of the following web content, that provides relevant information to answer the question: '{goal}'.
 But cut the fluff and keep it up to the point.
 Write in bullet points.
@@ -14,6 +17,7 @@ Content:
 
 {content}
 """
+    content = trim_to_n_tokens(content, trim_content_to_tokens, model) if trim_content_to_tokens else content
     evaluation_prompt = ChatPromptTemplate.from_template(template=prompt_template)
 
     research_evaluation_chain = (

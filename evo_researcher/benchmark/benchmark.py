@@ -5,9 +5,11 @@ import os
 import pandas as pd
 import time
 import typing as t
+from tqdm import tqdm
 from collections import defaultdict
 from langchain_community.callbacks import get_openai_callback
 
+from evo_researcher.autonolas.research import EmbeddingModel
 from evo_researcher.benchmark.agents import (
     AbstractBenchmarkedAgent,
     EvoAgent,
@@ -91,7 +93,7 @@ class Benchmarker:
         return self.predictions.get_prediction(agent_name=agent_name, question=question)
 
     def run_agents(self):
-        for agent in self.registered_agents:
+        for agent in tqdm(self.registered_agents, desc="Running agents"):
             # Filter out cached predictions
             markets_to_run = [
                 m
@@ -127,11 +129,8 @@ class Benchmarker:
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers=agent.max_workers
             ) as executor:
-                future_to_market = {
-                    executor.submit(get_prediction_result, market): market
-                    for market in markets_to_run
-                }
-                for future in concurrent.futures.as_completed(future_to_market):
+                futures = [executor.submit(get_prediction_result, market) for market in markets_to_run]
+                for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures), desc=f"Running {agent.agent_name}"):
                     market_question, prediction = future.result()
                     self.add_prediction(
                         agent=agent,
@@ -322,8 +321,9 @@ class Benchmarker:
                     expected_returns.append(self.calculate_expected_returns(prediction, market))
 
             overall_summary["Agent"].append(agent.agent_name)
-            overall_summary["Mean expected value"].append(np.mean(expected_returns))
-            overall_summary["Total expected value"].append(np.sum(expected_returns))
+            overall_summary["Mean expected returns"].append(np.mean(expected_returns))
+            overall_summary["Median expected returns"].append(np.median(expected_returns))
+            overall_summary["Total expected returns"].append(np.sum(expected_returns))
 
         per_market = defaultdict(list)
 
@@ -360,12 +360,17 @@ def main(
     only_cached: bool = False,
 ) -> None:
     markets = get_markets(number=n, source=reference)
+    markets_deduplicated = list(({m.question: m for m in markets}.values()))  
+    if len(markets) != len(markets_deduplicated):
+        print(f"Warning: Deduplicated markets from {len(markets)} to {len(markets_deduplicated)}.")
 
     benchmarker = Benchmarker(
-        markets=markets,
+        markets=markets_deduplicated,
         agents=[
+            OlasAgent(model="gpt-3.5-turbo", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo_t0.7", temperature=0.7),  # Reference configuration.
             OlasAgent(model="gpt-3.5-turbo", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo"),  
             OlasAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo-0125"),  
+            OlasAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo-0125_openai-embeddings", embedding_model=EmbeddingModel.openai),  
             EvoAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="evo_gpt-3.5-turbo-0125_summary", use_summaries=True),
             EvoAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="evo_gpt-3.5-turbo-0125"),
             # EvoAgent(model="gpt-4-1106-preview", max_workers=max_workers, agent_name="evo_gpt-4-1106-preview"),  # Too expensive to be enabled by default.
