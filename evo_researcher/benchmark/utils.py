@@ -18,8 +18,8 @@ class Market(BaseModel):
     p_yes: float
     volume: float
     is_resolved: bool
-    resolution: str | None
-    outcomePrices: list[float] | None
+    resolution: str | None = None
+    outcomePrices: list[float] | None = None
 
     @validator("outcomePrices", pre=True)
     def _validate_outcome_prices(cls, value: list[float] | None) -> list[float] | None:
@@ -55,8 +55,8 @@ class OutcomePrediction(BaseModel):
 
 
 class Prediction(BaseModel):
-    evaluation: t.Optional[EvalautedQuestion]
-    outcome_prediction: t.Optional[OutcomePrediction]
+    evaluation: t.Optional[EvalautedQuestion] = None
+    outcome_prediction: t.Optional[OutcomePrediction] = None
     
     time: t.Optional[float] = None
     cost: t.Optional[float] = None

@@ -22,7 +22,7 @@ Content:
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model_name=model) |
+        ChatOpenAI(model=model) |
         StrOutputParser()
     )
 
@@ -60,7 +60,7 @@ def prepare_report(goal: str, scraped: list[str], model: str) -> str:
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model_name=model) |
+        ChatOpenAI(model=model) |
         StrOutputParser()
     )
 

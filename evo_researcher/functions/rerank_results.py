@@ -19,7 +19,7 @@ def rerank_results(results: list[str], goal: str) -> list[str]:
 
     rerank_results_chain = (
         rerank_results_prompt |
-        ChatOpenAI(model_name="gpt-4-1106-preview") |
+        ChatOpenAI(model="gpt-4-1106-preview") |
         CommaSeparatedListOutputParser()
     )
 
