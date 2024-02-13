@@ -71,9 +71,9 @@ def deploy(
     fname = deploy_to_gcp(
         requirements_file=f"{current_dir}/../pyproject.toml",
         extra_deps=[
-            "git+https://github.com/polywrap/evo.researcher.git@main"
+            "git+https://github.com/polywrap/evo.researcher.git@peter/pmat"
         ],
-        function_file=f"{current_dir}/agent.py",
+        function_file=os.path.abspath(__file__),
         market_type=MarketType.MANIFOLD,
         api_keys={
             "MANIFOLD_API_KEY": APIKeys().manifold_api_key,
