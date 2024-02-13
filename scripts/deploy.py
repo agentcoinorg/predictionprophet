@@ -79,7 +79,7 @@ def deploy(
             "MANIFOLD_API_KEY": APIKeys().manifold_api_key,
             "DEPLOYABLE_AGENT_NAME": deployable_agent_name,
         },
-        memory=256,
+        memory=512,
     )
 
     # Check that the function is deployed
