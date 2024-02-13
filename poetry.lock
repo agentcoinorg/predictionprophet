@@ -3318,13 +3318,13 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "posthog"
-version = "3.4.0"
+version = "3.4.1"
 description = "Integrate PostHog into any python application."
 optional = false
 python-versions = "*"
 files = [
-    {file = "posthog-3.4.0-py2.py3-none-any.whl", hash = "sha256:922bdc1721a18f7275363130042b4be9bb49c88b3e9d1b30b0b3d33a664b3f10"},
-    {file = "posthog-3.4.0.tar.gz", hash = "sha256:0b9fd6861353e67e289fad26fce72a78a1ec09abd9a3c725b9ab7e1edee3da37"},
+    {file = "posthog-3.4.1-py2.py3-none-any.whl", hash = "sha256:8f9e01fc223d113ad1b7fc66516bd2b7b745cb460802b757795d4cec16d91696"},
+    {file = "posthog-3.4.1.tar.gz", hash = "sha256:cbdae309e65172dcb7b921c611914139eb46a8a8f38266c2b51d78b60582af9d"},
 ]
 
 [package.dependencies]
@@ -3364,8 +3364,8 @@ web3 = "^6.15.1"
 [package.source]
 type = "git"
 url = "https://github.com/gnosis/prediction-market-agent-tooling.git"
-reference = "main"
-resolved_reference = "e876089f5dbe28af8cb53e101b6ce997e588e0c0"
+reference = "peter/reqs-optional"
+resolved_reference = "a5d210609b89edf69def9a9adee044a1c5c99ad9"
 
 [[package]]
 name = "preshed"
@@ -5926,4 +5926,4 @@ pysqlite3-binary = ["pysqlite3-binary"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.10"
-content-hash = "8d143ec2584606b8e8a74cef2c489b1ac77809934eb35f4f011862861a096269"
+content-hash = "9f4c7166879a4544b8354945ecab6a2feeb9145fdc3794eba655d4cf653863e5"

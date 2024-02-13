@@ -67,9 +67,8 @@ def deploy(
     if deployable_agent_name not in DEPLOYABLE_AGENTS:
         raise ValueError(f"Invalid agent name: {deployable_agent_name}")
 
-    current_dir = os.path.dirname(os.path.realpath(__file__))
     fname = deploy_to_gcp(
-        requirements_file=f"{current_dir}/../pyproject.toml",
+        requirements_file=None,
         extra_deps=[
             "git+https://github.com/polywrap/evo.researcher.git@peter/pmat"
         ],
@@ -77,6 +76,7 @@ def deploy(
         market_type=MarketType.MANIFOLD,
         api_keys={
             "MANIFOLD_API_KEY": APIKeys().manifold_api_key,
+            "OPENAI_API_KEY": os.environ["OPENAI_API_KEY"],
             "DEPLOYABLE_AGENT_NAME": deployable_agent_name,
         },
         memory=512,
