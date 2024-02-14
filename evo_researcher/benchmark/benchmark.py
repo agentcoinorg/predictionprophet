@@ -14,6 +14,9 @@ from evo_researcher.benchmark.agents import (
     AbstractBenchmarkedAgent,
     EvoAgent,
     OlasAgent,
+    RandomAgent,
+    QuestionOnlyAgent,
+    FixedAgent,
 )
 from evo_researcher.benchmark.utils import (
     Market,
@@ -170,10 +173,11 @@ class Benchmarker:
         self, predictions: t.List[Prediction], markets: t.List[Market]
     ):
         predictions, markets = self.filter_predictions_for_answered(predictions, markets)
-        if not predictions:
+        predictions_with_info_utility = [p for p in predictions if p.outcome_prediction.info_utility is not None]
+        if not predictions_with_info_utility:
             return None
-        mean_info_utility = sum([p.outcome_prediction.info_utility for p in predictions]) / len(
-            predictions
+        mean_info_utility = sum([p.outcome_prediction.info_utility for p in predictions_with_info_utility]) / len(
+            predictions_with_info_utility
         )
         return mean_info_utility
 
@@ -367,6 +371,9 @@ def main(
     benchmarker = Benchmarker(
         markets=markets_deduplicated,
         agents=[
+            RandomAgent(agent_name="random", max_workers=max_workers),
+            QuestionOnlyAgent(model="gpt-3.5-turbo-0125", agent_name="question-only_gpt-3.5-turbo-0125", max_workers=max_workers),
+            FixedAgent(fixed_answer=False, agent_name="fixed-no", max_workers=max_workers),
             OlasAgent(model="gpt-3.5-turbo", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo_t0.7", temperature=0.7),  # Reference configuration.
             OlasAgent(model="gpt-3.5-turbo", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo"),  
             OlasAgent(model="gpt-3.5-turbo-0125", max_workers=max_workers, agent_name="olas_gpt-3.5-turbo-0125"),  
