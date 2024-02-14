@@ -12,7 +12,7 @@ def research(
     goal: str,
     use_summaries: bool,
     model: str = "gpt-4-1106-preview",
-    initial_subqueries_limit: int = 4,
+    initial_subqueries_limit: int = 20,
     subqueries_limit: int = 4,
     scrape_content_split_chunk_size: int = 800,
     scrape_content_split_chunk_overlap: int = 225,
