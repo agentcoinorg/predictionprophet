@@ -1076,11 +1076,11 @@ def fetch_additional_information(
     research_chain = (
         research_prompt |
         ChatOpenAI(
-            model_name=engine,
+            model=engine,
             temperature=temperature,
             max_tokens=max_compl_tokens,
             n=1, 
-            request_timeout=120,
+            timeout=120,
         ) |
         StrOutputParser()
     )

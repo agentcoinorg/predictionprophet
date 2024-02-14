@@ -22,7 +22,7 @@ Content:
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model_name=model) |
+        ChatOpenAI(model=model) |
         StrOutputParser()
     )
 
