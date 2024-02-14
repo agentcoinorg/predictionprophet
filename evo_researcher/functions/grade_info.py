@@ -70,7 +70,7 @@ def grade_info(question: str, information: str) -> str:
     planning_prompt = ChatPromptTemplate.from_template(template=grading_planning_prompt_template)
     formatting_prompt = ChatPromptTemplate.from_template(template=grading_format_prompt_template)
     
-    llm = ChatOpenAI(model_name="gpt-4-1106-preview", temperature=0)
+    llm = ChatOpenAI(model="gpt-4-1106-preview", temperature=0)
     
     planning_chain = (
         planning_prompt |

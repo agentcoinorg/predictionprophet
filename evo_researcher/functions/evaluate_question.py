@@ -38,7 +38,7 @@ def evaluate_question(
     """
     Evaluate if the question is actually answerable.
     """
-    llm = ChatOpenAI(model_name=engine, temperature=0.0)
+    llm = ChatOpenAI(model=engine, temperature=0.0)
 
     prompt = ChatPromptTemplate.from_template(template=prompt_template)
     messages = prompt.format_messages(question=question)

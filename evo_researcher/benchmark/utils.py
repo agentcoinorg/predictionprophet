@@ -18,8 +18,8 @@ class Market(BaseModel):
     p_yes: float
     volume: float
     is_resolved: bool
-    resolution: str | None
-    outcomePrices: list[float] | None
+    resolution: str | None = None
+    outcomePrices: list[float] | None = None
 
     @validator("outcomePrices", pre=True)
     def _validate_outcome_prices(cls, value: list[float] | None) -> list[float] | None:
@@ -49,10 +49,14 @@ class OutcomePrediction(BaseModel):
     confidence: float
     info_utility: t.Optional[float]
 
+    @property
+    def binary_answer(self) -> bool:
+        return self.p_yes > 0.5
+
 
 class Prediction(BaseModel):
-    evaluation: t.Optional[EvalautedQuestion]
-    outcome_prediction: t.Optional[OutcomePrediction]
+    evaluation: t.Optional[EvalautedQuestion] = None
+    outcome_prediction: t.Optional[OutcomePrediction] = None
     
     time: t.Optional[float] = None
     cost: t.Optional[float] = None

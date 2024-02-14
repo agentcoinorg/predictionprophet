@@ -1076,11 +1076,11 @@ def fetch_additional_information(
     research_chain = (
         research_prompt |
         ChatOpenAI(
-            model_name=engine,
+            model=engine,
             temperature=temperature,
             max_tokens=max_compl_tokens,
             n=1, 
-            request_timeout=120,
+            timeout=120,
         ) |
         StrOutputParser()
     )
@@ -1175,7 +1175,7 @@ def make_prediction(
 
     prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
 
-    llm = ChatOpenAI(model_name=engine, temperature=temperature)
+    llm = ChatOpenAI(model=engine, temperature=temperature)
     formatted_messages = prediction_prompt.format_messages(user_prompt=prompt, additional_information=additional_information, timestamp=formatted_time_utc)
     generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5)
 
