@@ -135,11 +135,8 @@ class Benchmarker:
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers=agent.max_workers
             ) as executor:
-                future_to_market = {
-                    executor.submit(get_prediction_result, market): market
-                    for market in markets_to_run
-                }
-                for future in concurrent.futures.as_completed(future_to_market):
+                futures = [executor.submit(get_prediction_result, market) for market in markets_to_run]
+                for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures), desc=f"Running {agent.agent_name}"):
                     market_question, prediction = future.result()
                     self.add_prediction(
                         agent=agent,
@@ -313,10 +310,14 @@ class Benchmarker:
         return markets_summary
     
     def calculate_expected_returns(self, prediction: Prediction, market: Market) -> float | None:
+        """
+        The expected value if betting on a binary market in its initialized state of 50:50 'yes' and 'no' shares, with the assumption that the correct `p_yes` is that of the market.
+        """
         if not prediction.is_answered:
             return None
 
-        # TODO: Add support for different bet sizes and calculate shares based on the market's odds.
+        # TODO: Add support for different bet sizes -- if we bet a low amount (such as <10 units), the real shares will be very close to that we calculate below (bet_units / share_price),
+        # but if one bets a lot, it will change the share price along the way, and so he/she receives less than `bet_units / share_price`, but it's more complicated to calculate.
         bet_units = 10  # Assuming the agent always bet 10 units per market.
         buy_yes_threshold = 0.5  # If the agent's prediction is > 50% it should buy "yes", otherwise "no".
 
