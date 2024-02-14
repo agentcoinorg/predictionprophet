@@ -131,11 +131,8 @@ class Benchmarker:
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers=agent.max_workers
             ) as executor:
-                future_to_market = {
-                    executor.submit(get_prediction_result, market): market
-                    for market in markets_to_run
-                }
-                for future in concurrent.futures.as_completed(future_to_market):
+                futures = [executor.submit(get_prediction_result, market) for market in markets_to_run]
+                for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures), desc=f"Running {agent.agent_name}"):
                     market_question, prediction = future.result()
                     self.add_prediction(
                         agent=agent,
