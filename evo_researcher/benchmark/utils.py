@@ -38,14 +38,14 @@ class Prediction(BaseModel):
         return self.outcome_prediction is not None
 
 
-AgentPredictions = t.Dict[str, t.Optional[Prediction]]
+AgentPredictions = t.Dict[str, Prediction]
 Predictions = t.Dict[str, AgentPredictions]
 
 
 class PredictionsCache(BaseModel):
     predictions: Predictions
 
-    def get_prediction(self, agent_name: str, question: str) -> t.Optional[Prediction]:
+    def get_prediction(self, agent_name: str, question: str) -> Prediction:
         return self.predictions[agent_name][question]
 
     def has_market(self, agent_name: str, question: str) -> bool:
@@ -53,13 +53,13 @@ class PredictionsCache(BaseModel):
             agent_name in self.predictions and question in self.predictions[agent_name]
         )
 
-    def add_prediction(self, agent_name: str, question: str, prediction: t.Optional[Prediction]):
+    def add_prediction(self, agent_name: str, question: str, prediction: Prediction) -> None:
         if agent_name not in self.predictions:
             self.predictions[agent_name] = {}
         assert question not in self.predictions[agent_name], f"Question `{question}` already exists in the cache."
         self.predictions[agent_name][question] = prediction
 
-    def save(self, path: str):
+    def save(self, path: str) -> None:
         with open(path, "w") as f:
             json.dump(self.dict(), f, indent=2)
 
@@ -93,7 +93,7 @@ def get_manifold_markets(
         "isResolved": "is_resolved",
     }
 
-    def _map_fields(old: dict, mapping: dict) -> dict:
+    def _map_fields(old: dict[str, str], mapping: dict[str, str]) -> dict[str, str]:
         return {mapping.get(k, k): v for k, v in old.items()}
 
     markets = [Market.parse_obj(_map_fields(m, fields_map)) for m in markets_json]
@@ -153,7 +153,7 @@ def get_markets(
         raise ValueError(f"Unknown market source: {source}")
 
 
-def get_llm_api_call_cost(model: str, prompt_tokens: int, completion_tokens) -> float:
+def get_llm_api_call_cost(model: str, prompt_tokens: int, completion_tokens: float) -> float:
     """
     In older versions of langchain, the cost calculation doesn't work for
     newer models. This is a temporary workaround to get the cost.

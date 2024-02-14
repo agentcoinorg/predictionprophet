@@ -8,7 +8,7 @@ import typing as t
 import streamlit as st
 from enum import Enum
 from evo_researcher.benchmark.utils import get_markets, MarketSource
-from evo_researcher.benchmark.agents import AbstractBenchmarkedAgent, AGENTS, EmbeddingModel
+from evo_researcher.benchmark.agents import AbstractBenchmarkedAgent, AGENTS, EmbeddingModel, EvalautedQuestion
 
 SENTINTEL = object()
 
@@ -29,17 +29,17 @@ if not agent_class_names:
 # Duplicate the classes if we want to see the same agent, but with a different config.
 with st.expander("Duplicate agents", expanded=False):
     st.write("Optionally, you can duplicate the number of times class is selected. This is useful if you want to compare the same agent with different configurations.")
-    agent_name_to_n_times = {agent_name: st.number_input(f"Number of times to duplicate {agent_name}", value=1) for agent_name in agent_class_names}
+    agent_name_to_n_times: dict[str, int] = {agent_name: int(st.number_input(f"Number of times to duplicate {agent_name}", value=1)) for agent_name in agent_class_names}
 
 # Get the agent classes from the names.
-agent_classes = []
+agent_classes: list[t.Type[AbstractBenchmarkedAgent]] = []
 for agent_class in AGENTS:
     if agent_class.__name__ in agent_class_names:
-        agent_classes.extend([agent_class] * agent_name_to_n_times[agent_class.__name__])
+        agent_classes.extend([agent_class for _ in range(agent_name_to_n_times[agent_class.__name__])])
 
 # Ask the user to provide a question.
 custom_question_input = st.checkbox("Provide a custom question", value=False)
-question = (st.text_input("Question") if custom_question_input else st.selectbox("Select a question", [m.question for m in markets])).strip()
+question = (st.text_input("Question") if custom_question_input else st.selectbox("Select a question", [m.question for m in markets]))
 if not question:
     st.warning("Please enter a question.")
     st.stop()
@@ -62,8 +62,8 @@ with st.expander("Show agent's parameters", expanded=False):
             arg_name: arg_default
             for arg_name, arg_default in zip(
                 # Only last arguments can have a default value, so we need to slice the args list.
-                inspect_class_init.args[-len(inspect_class_init.defaults):], 
-                inspect_class_init.defaults,
+                inspect_class_init.args[-(len(inspect_class_init.defaults or [])):], 
+                inspect_class_init.defaults or [],
             )
         }
         default_arguments = {
@@ -88,7 +88,7 @@ with st.expander("Show agent's parameters", expanded=False):
                 if input_type in (int, float)
                 else 
                 # Convert strings to Enum, if the default value is an Enum.
-                input_type(column.text_input(arg_name, default_value, key=f"{idx}-{arg_name}").replace(f"{default_value.__class__.__name__}.", ""))
+                input_type(str(column.text_input(arg_name, default_value, key=f"{idx}-{arg_name}")).replace(f"{default_value.__class__.__name__}.", ""))
                 if isinstance(default_value, Enum)
                 else
                 # Default to just a text input.
@@ -105,7 +105,6 @@ show_research = st.checkbox("Show research", value=False)
 
 for idx, (column, agent) in enumerate(zip(st.columns(len(agents)), agents)):
     # Optionally, do the evaluation.
-    evaluated = None
     if do_question_evaluation:
         with st.spinner("Evaluating..."):
             evaluated = agent.evaluate(market_question=question) 
@@ -118,6 +117,8 @@ Is predictable: `{evaluated.is_predictable}`
             column.error("The agent thinks this question is not predictable.")
             if not column.checkbox("Show research and prediction anyway"):
                 st.stop()
+    else:
+        evaluated = EvalautedQuestion(question=question, is_predictable=True)
 
     # Do the research and prediction.
     with st.spinner("Researching..."):

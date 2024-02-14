@@ -7,7 +7,7 @@ from langchain.chains.summarize import ReduceDocumentsChain, StuffDocumentsChain
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 def summarize(objective: str, content: str) -> str:
-    llm = ChatOpenAI(temperature = 0, model = "gpt-3.5-turbo-16k-0613")
+    llm = ChatOpenAI(temperature = 0, model_name = "gpt-3.5-turbo-16k-0613")
     
     map_template = """
     The following is a set of documents
@@ -58,7 +58,7 @@ def summarize(objective: str, content: str) -> str:
     text_splitter = RecursiveCharacterTextSplitter(separators=["\n\n", "\n"], chunk_size = 10000, chunk_overlap=500)
     docs = text_splitter.create_documents([content])
     
-    response = map_reduce_chain.run(docs=docs, objective=objective)
+    response: str = map_reduce_chain.run(docs=docs, objective=objective)
     
     return response
 

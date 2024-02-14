@@ -11,7 +11,7 @@ from evo_researcher.functions.research import research as evo_research
 load_dotenv()
 AVAILABLE_AGENTS = ["autonolas", "evo"]
 
-def create_output_file(info: str, report: str = None) -> str:
+def create_output_file(info: str, report: str | None = None) -> str:
     outputs_dir = 'outputs'
     os.makedirs(outputs_dir, exist_ok=True)
 
@@ -22,7 +22,7 @@ def create_output_file(info: str, report: str = None) -> str:
     with open(info_file_path, 'w') as file:
         file.write(info)
     
-    if report != None:    
+    if report is not None:    
         report_file_path = os.path.join(dir_name, 'report.md')
         with open(report_file_path, 'w') as file:
             file.write(report)
@@ -39,7 +39,7 @@ def read_text_file(file_path: str) -> str:
         return f"An error occurred: {e}"
 
 @click.group()
-def cli():
+def cli() -> None:
     pass
     
 @cli.command()
@@ -48,7 +48,7 @@ def cli():
 def research(
     prompt: str,
     agent: str
-):
+) -> None:
     start = time.time()
     with get_openai_callback() as cb:
         if agent == "autonolas":
@@ -58,9 +58,7 @@ def research(
             dir_name = create_output_file(research_response)
             output_file = "information.txt"
         elif agent == "evo":
-            open_ai_key = os.getenv("OPENAI_API_KEY")
-            
-            (report, chunks) = evo_research(goal=prompt, openai_key=open_ai_key, model="gpt-4-1106-preview")
+            (report, chunks) = evo_research(goal=prompt, model="gpt-4-1106-preview", use_summaries=False)
             end = time.time()
             
             dir_name = create_output_file(chunks, report)
@@ -77,7 +75,7 @@ def research(
 @cli.command()
 @click.argument('prompt')
 @click.argument('path')
-def evaluate(prompt: str, path: str):
+def evaluate(prompt: str, path: str) -> None:
     information = read_text_file(path)
     scores = grade_info(question=prompt, information=information)
     print(scores)
@@ -86,7 +84,7 @@ def evaluate(prompt: str, path: str):
 @cli.command()
 @click.argument('prompt')
 @click.argument('path')
-def predict(prompt: str, path: str):
+def predict(prompt: str, path: str) -> None:
     information = read_text_file(path)
     
     start = time.time()

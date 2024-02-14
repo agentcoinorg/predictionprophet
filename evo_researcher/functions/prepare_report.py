@@ -8,7 +8,7 @@ from evo_researcher.functions.utils import trim_to_n_tokens
 
 
 @persistent_inmemory_cache
-def prepare_summary(goal: str, content: str, model: str, trim_content_to_tokens: t.Optional[int] = None):
+def prepare_summary(goal: str, content: str, model: str, trim_content_to_tokens: t.Optional[int] = None) -> str:
     prompt_template = """Write comprehensive summary of the following web content, that provides relevant information to answer the question: '{goal}'.
 But cut the fluff and keep it up to the point.
 Write in bullet points.
@@ -22,11 +22,11 @@ Content:
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model=model) |
+        ChatOpenAI(model_name=model) |
         StrOutputParser()
     )
 
-    response = research_evaluation_chain.invoke({
+    response: str = research_evaluation_chain.invoke({
         "goal": goal,
         "content": content
     })
@@ -34,7 +34,7 @@ Content:
     return response
 
 
-def prepare_report(goal: str, scraped: list[str], model: str, api_key: str):
+def prepare_report(goal: str, scraped: list[str], model: str) -> str:
     evaluation_prompt_template = """
     You are a professional researcher. Your goal is to provide a relevant information report
     in order to make an informed prediction for the question: '{goal}'.
@@ -60,11 +60,11 @@ def prepare_report(goal: str, scraped: list[str], model: str, api_key: str):
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model=model, openai_api_key=api_key) |
+        ChatOpenAI(model_name=model) |
         StrOutputParser()
     )
 
-    response = research_evaluation_chain.invoke({
+    response: str = research_evaluation_chain.invoke({
         "search_results": scraped,
         "goal": goal
     })

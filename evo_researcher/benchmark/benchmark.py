@@ -9,6 +9,7 @@ from tqdm import tqdm
 from collections import defaultdict
 from langchain_community.callbacks import get_openai_callback
 
+from evo_researcher.functions.utils import check_not_none
 from evo_researcher.autonolas.research import EmbeddingModel
 from evo_researcher.benchmark.agents import (
     AbstractBenchmarkedAgent,
@@ -35,7 +36,7 @@ class Benchmarker:
         self,
         markets: t.List[Market],
         agents: t.List[AbstractBenchmarkedAgent],
-        metric_fns: t.Dict[str, t.Callable] = {},
+        metric_fns: t.Dict[str, t.Callable[[list[Prediction], list[Market]], str | float | None]] = {},
         cache_path: t.Optional[str] = None,
         only_cached: bool = False,
     ):
@@ -83,19 +84,19 @@ class Benchmarker:
     def add_prediction(
         self,
         agent: AbstractBenchmarkedAgent,
-        prediction: t.Optional[Prediction],
+        prediction: Prediction,
         market_question: str,
-    ):
+    ) -> None:
         self.predictions.add_prediction(
             agent_name=agent.agent_name,
             question=market_question,
             prediction=prediction,
         )
 
-    def get_prediction(self, agent_name: str, question: str) -> t.Optional[Prediction]:
+    def get_prediction(self, agent_name: str, question: str) -> Prediction:
         return self.predictions.get_prediction(agent_name=agent_name, question=question)
 
-    def run_agents(self):
+    def run_agents(self) -> None:
         for agent in tqdm(self.registered_agents, desc="Running agents"):
             # Filter out cached predictions
             markets_to_run = [
@@ -106,15 +107,13 @@ class Benchmarker:
                 )
             ]
 
-            def get_prediction_result(market: Market):
+            def get_prediction_result(market: Market) -> tuple[str, Prediction]:
                 with get_openai_callback() as cb:
                     start = time.time()
                     prediction = agent.evaluate_research_predict(
                         market_question=market.question
                     )
-                    if prediction is None:
-                        return market.question, None
-
+                   
                     # Set time only if we aren't using cache, otherwise it won't be accurate. 
                     prediction.time = time.time() - start if not ENABLE_CACHE else None
 
@@ -152,31 +151,30 @@ class Benchmarker:
                 filtered_markets.append(m)
         return filtered_predictions, filtered_markets
 
-    def _compute_mse(self, predictions: t.List[Prediction], markets: t.List[Market]):
+    def _compute_mse(self, predictions: t.List[Prediction], markets: t.List[Market]) -> float | None:
         predictions, markets = self.filter_predictions_for_answered(predictions, markets)
         if not predictions:
             return None
-        mse = sum([(p.outcome_prediction.p_yes - m.p_yes) ** 2 for p, m in zip(predictions, markets)])
-        mse /= len(predictions)
+        mse = sum([(check_not_none(p.outcome_prediction).p_yes - m.p_yes) ** 2 for p, m in zip(predictions, markets)]) / len(predictions)
         return mse
  
     def _compute_mean_confidence(
         self, predictions: t.List[Prediction], markets: t.List[Market]
-    ):
+    ) -> float | None:
         predictions, markets = self.filter_predictions_for_answered(predictions, markets)
         if not predictions:
             return None
-        mean_confidence = sum([p.outcome_prediction.confidence for p in predictions]) / len(predictions)
+        mean_confidence = sum([check_not_none(p.outcome_prediction).confidence for p in predictions]) / len(predictions)
         return mean_confidence
 
     def _compute_mean_info_utility(
         self, predictions: t.List[Prediction], markets: t.List[Market]
-    ):
+    ) -> float | None:
         predictions, markets = self.filter_predictions_for_answered(predictions, markets)
-        predictions_with_info_utility = [p for p in predictions if p.outcome_prediction.info_utility is not None]
+        predictions_with_info_utility = [p for p in predictions if check_not_none(p.outcome_prediction).info_utility is not None]
         if not predictions_with_info_utility:
             return None
-        mean_info_utility = sum([p.outcome_prediction.info_utility for p in predictions_with_info_utility]) / len(
+        mean_info_utility = sum([check_not_none(check_not_none(p.outcome_prediction).info_utility) for p in predictions_with_info_utility]) / len(
             predictions_with_info_utility
         )
         return mean_info_utility
@@ -186,46 +184,46 @@ class Benchmarker:
         predictions: t.List[Prediction],
         markets: t.List[Market],
         tolerance: float = 0.05,
-    ):
+    ) -> float | None:
         predictions, markets = self.filter_predictions_for_answered(predictions, markets)
         if not predictions:
             return None
 
         within_range_count = 0
         for p, m in zip(predictions, markets):
-            if abs(p.outcome_prediction.p_yes - m.p_yes) <= tolerance:
+            if abs(check_not_none(p.outcome_prediction).p_yes - m.p_yes) <= tolerance:
                 within_range_count += 1
 
         return (100 * within_range_count) / len(predictions)
 
     def _compute_correct_outcome_percentage(
         self, predictions: t.List[Prediction], markets: t.List[Market]
-    ):
+    ) -> float | None:
         predictions, markets = self.filter_predictions_for_answered(predictions, markets)
         if not predictions:
             return None
 
         correct_outcome_count = 0
         for p, m in zip(predictions, markets):
-            if (p.outcome_prediction.p_yes > 0.5 and m.p_yes > 0.5) or (p.outcome_prediction.p_yes < 0.5 and m.p_yes < 0.5):
+            if (check_not_none(p.outcome_prediction).p_yes > 0.5 and m.p_yes > 0.5) or (check_not_none(p.outcome_prediction).p_yes < 0.5 and m.p_yes < 0.5):
                 correct_outcome_count += 1
 
         return (100 * correct_outcome_count) / len(predictions)
 
     def _compute_confidence_p_yes_error_correlation(
         self, predictions: t.List[Prediction], markets: t.List[Market]
-    ):
+    ) -> float | None:
         predictions, markets = self.filter_predictions_for_answered(predictions, markets)
         if not predictions:
             return None
 
-        p_yes_errors = [abs(p.outcome_prediction.p_yes - m.p_yes) for p, m in zip(predictions, markets)]
-        confidences = [p.outcome_prediction.confidence for p in predictions]
-        return np.corrcoef(confidences, p_yes_errors)[0, 1]
+        p_yes_errors = [abs(check_not_none(p.outcome_prediction).p_yes - m.p_yes) for p, m in zip(predictions, markets)]
+        confidences = [check_not_none(p.outcome_prediction).confidence for p in predictions]
+        return float(np.corrcoef(confidences, p_yes_errors)[0, 1])
 
     def _compute_mean_cost(
         self, predictions: t.List[Prediction], markets: t.List[Market]
-    ):
+    ) -> float | None:
         # Note: costs are optional
         costs = [p.cost for p in predictions if p.cost]
         if costs:
@@ -235,7 +233,7 @@ class Benchmarker:
 
     def _compute_mean_time(
         self, predictions: t.List[Prediction], markets: t.List[Market]
-    ):
+    ) -> float | None:
         # Note: times are optional
         times = [p.time for p in predictions if p.time]
         if times:
@@ -243,32 +241,31 @@ class Benchmarker:
         else:
             return None
         
-    def _compute_ratio_evaluated_as_answerable(self, predictions: t.List[Prediction], markets: t.List[Market]):
+    def _compute_ratio_evaluated_as_answerable(self, predictions: t.List[Prediction], markets: t.List[Market]) -> float:
         return sum(1 for p in predictions if p.evaluation and p.evaluation.is_predictable) / len(predictions)
        
-    def _compute_ratio_answered(self, predictions: t.List[Prediction], markets: t.List[Market]):
+    def _compute_ratio_answered(self, predictions: t.List[Prediction], markets: t.List[Market]) -> float:
         return sum(1 for p in predictions if p.is_answered) / len(predictions)
        
     def compute_metrics(self) -> t.Dict[str, t.List[t.Any]]:
-        metrics = {}
-        agents = [a.agent_name for a in self.registered_agents]
-        metrics["Agents"] = agents
+        metrics: dict[str, list[str | float | None]] = {}
+        metrics["Agents"] = [a.agent_name for a in self.registered_agents]
 
         for name, fn in self.metric_fns.items():
             metrics[name] = []
-            for agent in agents:
+            for agent in self.registered_agents:
                 ordered_predictions = [
-                    self.get_prediction(question=market.question, agent_name=agent)
+                    self.get_prediction(question=market.question, agent_name=agent.agent_name)
                     for market in self.markets
                 ]
-                metrics[name].append(fn(predictions=ordered_predictions, markets=self.markets))
+                metrics[name].append(fn(ordered_predictions, self.markets))
 
         return metrics
 
-    def get_markets_summary(self) -> t.Dict[str, t.List[str]]:
+    def get_markets_summary(self) -> t.Dict[str, t.List[str | float]]:
         market_questions = [q.question for q in self.markets]
         urls = [q.url for q in self.markets]
-        markets_summary = {
+        markets_summary: dict[str, list[str | float]] = {
             "Market Question": [
                 f"[{question}]({url})" for question, url in zip(market_questions, urls)
             ],
@@ -293,7 +290,7 @@ class Benchmarker:
         markets_summary[f"reference p_yes"] = [m.p_yes for m in self.markets]
         return markets_summary
     
-    def calculate_expected_returns(self, prediction: Prediction, market: Market):
+    def calculate_expected_returns(self, prediction: Prediction, market: Market) -> float | None:
         if not prediction.is_answered:
             return None
 
@@ -302,6 +299,7 @@ class Benchmarker:
         receive_shares = 20  # Because we assume markets trades at 50/50.
         buy_yes_threshold = 0.5  # If the agent's prediction is > 50% it should buy "yes", otherwise "no".
 
+        assert prediction.outcome_prediction is not None
         yes_shares = receive_shares if prediction.outcome_prediction.p_yes > buy_yes_threshold else 0
         no_shares = receive_shares if prediction.outcome_prediction.p_yes <= buy_yes_threshold else 0
         
@@ -314,22 +312,22 @@ class Benchmarker:
 
         return expected_returns
 
-    def compute_expected_returns_summary(self):
-        overall_summary = defaultdict(list)
+    def compute_expected_returns_summary(self) -> t.Tuple[dict[str, list[str | float]], dict[str, list[str | float | None]]]:
+        overall_summary: dict[str, list[str | float]] = defaultdict(list)
 
         for agent in self.registered_agents:
             expected_returns = []
 
             for market in self.markets:
                 if (prediction := self.get_prediction(agent.agent_name, market.question)).is_answered:
-                    expected_returns.append(self.calculate_expected_returns(prediction, market))
+                    expected_returns.append(check_not_none(self.calculate_expected_returns(prediction, market)))
 
             overall_summary["Agent"].append(agent.agent_name)
-            overall_summary["Mean expected returns"].append(np.mean(expected_returns))
-            overall_summary["Median expected returns"].append(np.median(expected_returns))
-            overall_summary["Total expected returns"].append(np.sum(expected_returns))
+            overall_summary["Mean expected returns"].append(float(np.mean(expected_returns)))
+            overall_summary["Median expected returns"].append(float(np.median(expected_returns)))
+            overall_summary["Total expected returns"].append(float(np.sum(expected_returns)))
 
-        per_market = defaultdict(list)
+        per_market: dict[str, list[str | float | None]]  = defaultdict(list)
 
         for market in self.markets:
             per_market["Market Question"].append(market.question)
@@ -339,7 +337,7 @@ class Benchmarker:
 
         return dict(overall_summary), dict(per_market)
 
-    def generate_markdown_report(self):
+    def generate_markdown_report(self) -> str:
         md = "# Comparison Report\n\n"
         md += "## Summary Statistics\n\n"
         md += pd.DataFrame(self.compute_metrics()).to_markdown(index=False)

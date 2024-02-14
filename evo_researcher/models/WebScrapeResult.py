@@ -1,3 +1,4 @@
+import typing as t
 from pydantic import BaseModel
 
 class WebScrapeResult(BaseModel):
@@ -6,5 +7,5 @@ class WebScrapeResult(BaseModel):
     title: str
     content: str
 
-    def __getitem__(self, item):
-        return getattr(self, item)
+    def __getitem__(self, item: t.Any) -> str:
+        return t.cast(str, getattr(self, item))  # Cast as all fields have str type.

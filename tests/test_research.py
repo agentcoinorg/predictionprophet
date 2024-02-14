@@ -14,8 +14,8 @@ dataset = [
 ]
 
 @pytest.mark.parametrize("question", [pytest.param(question, id=question) for question in dataset])
-def test_research(question: str):
-    evo_research = research(question)
+def test_research(question: str) -> None:
+    evo_research, _ = research(question, use_summaries=False)
     autonolas_research = research_autonolas(question)
     
     evo_research_score = grade_info(information=evo_research, question=question)
