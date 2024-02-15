@@ -6,7 +6,7 @@ import pandas as pd
 from tqdm import tqdm
 from urllib.parse import urlparse
 from collections import defaultdict
-from evo_researcher.benchmark.utils import get_markets, MarketSource
+from prediction_market_agent_tooling.benchmark.utils import get_markets, MarketSource
 from evo_researcher.functions.web_search import web_search
 from evo_researcher.autonolas.research import safe_get_urls_from_query
 

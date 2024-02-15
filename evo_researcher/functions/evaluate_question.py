@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
+from prediction_market_agent_tooling.benchmark.utils import EvaluatedQuestion
 from evo_researcher.functions.cache import persistent_inmemory_cache
 
 
@@ -24,17 +25,13 @@ Then, give your final decision, write either "yes" or "no" about whether the que
 """
 
 
-class EvalautedQuestion(BaseModel):
-    question: str
-    is_predictable: bool
-
 
 @persistent_inmemory_cache
 def evaluate_question(
     question: str,
     engine: str = "gpt-4-1106-preview",
     prompt_template: str = QUESTION_EVALUATE_PROMPT,
-) -> EvalautedQuestion:
+) -> EvaluatedQuestion:
     """
     Evaluate if the question is actually answerable.
     """
@@ -51,7 +48,7 @@ def evaluate_question(
     else:
         raise ValueError(f"Error in evaluate_question for `{question}`: {completion}")
 
-    return EvalautedQuestion(
+    return EvaluatedQuestion(
         question=question, 
         is_predictable=is_predictable
     )

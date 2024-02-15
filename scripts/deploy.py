@@ -12,8 +12,9 @@ from prediction_market_agent_tooling.config import APIKeys
 from flask.wrappers import Request
 import functions_framework
 import random
-from evo_researcher.benchmark.agents import AbstractBenchmarkedAgent, EvoAgent, OlasAgent
+from evo_researcher.benchmark.agents import EvoAgent, OlasAgent
 from pydantic import ConfigDict
+from prediction_market_agent_tooling.benchmark.agents import AbstractBenchmarkedAgent
 from prediction_market_agent_tooling.markets.data_models import AgentMarket
 from prediction_market_agent_tooling.deploy.agent import DeployableAgent
 from prediction_market_agent_tooling.markets.markets import MarketType
