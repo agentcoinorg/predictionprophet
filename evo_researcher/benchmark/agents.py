@@ -1,39 +1,49 @@
-import dotenv
-import random
-import os
 import typing as t
 
-from evo_researcher.functions.evaluate_question import evaluate_question, EvalautedQuestion
+from prediction_market_agent_tooling.benchmark.agents import (
+    AbstractBenchmarkedAgent,
+    FixedAgent,
+    RandomAgent,
+)
+from prediction_market_agent_tooling.benchmark.utils import (
+    EvaluatedQuestion,
+    OutcomePrediction,
+    Prediction,
+)
+
+from evo_researcher.autonolas.research import EmbeddingModel
+from evo_researcher.autonolas.research import Prediction as LLMCompletionPredictionDict
+from evo_researcher.autonolas.research import make_prediction
+from evo_researcher.autonolas.research import research as research_autonolas
+from evo_researcher.functions.evaluate_question import evaluate_question
 from evo_researcher.functions.rephrase_question import rephrase_question
 from evo_researcher.functions.research import research as research_evo
-from evo_researcher.autonolas.research import (
-    EmbeddingModel,
-    make_prediction,
-    Prediction as LLMCompletionPredictionDict,
-    research as research_autonolas,
-)
-from evo_researcher.benchmark.utils import (
-    Prediction, 
-    OutcomePrediction, 
-    EvalautedQuestion,
-)
 
 
 def _make_prediction(
-    market_question: str, additional_information: str, evaluation_information: t.Optional[EvalautedQuestion], engine: str, temperature: float
+    market_question: str,
+    additional_information: str,
+    evaluation_information: t.Optional[EvaluatedQuestion],
+    engine: str,
+    temperature: float,
 ) -> Prediction:
     """
     We prompt model to output a simple flat JSON and convert it to a more structured pydantic model here.
     """
     prediction = make_prediction(
-        prompt=market_question, additional_information=additional_information, engine=engine, temperature=temperature
+        prompt=market_question,
+        additional_information=additional_information,
+        engine=engine,
+        temperature=temperature,
     )
-    return completion_prediction_json_to_pydantic_model(prediction, evaluation_information)
+    return completion_prediction_json_to_pydantic_model(
+        prediction, evaluation_information
+    )
 
 
 def completion_prediction_json_to_pydantic_model(
-    completion_prediction: LLMCompletionPredictionDict, 
-    evaluation_information: t.Optional[EvalautedQuestion],
+    completion_prediction: LLMCompletionPredictionDict,
+    evaluation_information: t.Optional[EvaluatedQuestion],
 ) -> Prediction:
     return Prediction(
         evaluation=evaluation_information,
@@ -45,89 +55,27 @@ def completion_prediction_json_to_pydantic_model(
     )
 
 
-class AbstractBenchmarkedAgent:
-    def __init__(self, agent_name: str, max_workers: t.Optional[int] = None):
-        self.agent_name = agent_name
-        self.max_workers = max_workers  # Limit the number of workers that can run this worker in parallel threads
-
-    def evaluate(self, market_question: str) -> EvalautedQuestion:
-        raise NotImplementedError
-
-    def research(self, market_question: str) -> t.Optional[str]:
-        raise NotImplementedError
-
-    def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
-        raise NotImplementedError
-
-    def evaluate_research_predict(self, market_question: str) -> Prediction:
-        eval = self.evaluate(market_question=market_question)
-        if not eval.is_predictable:
-            return Prediction(evaluation=eval)
-        researched = self.research(market_question=market_question)
-        if researched is None:
-            return Prediction(evaluation=eval)
-        return self.predict(
-            market_question=market_question, 
-            researched=researched,
-            evaluated=eval,
-        )
-    
-
-class RandomAgent(AbstractBenchmarkedAgent):
-    def evaluate(self, market_question: str) -> EvalautedQuestion:
-        return EvalautedQuestion(question=market_question, is_predictable=True)
-    
-    def research(self, market_question: str) -> str:
-        return ""  # No research for a random agent, but can't be None.
-    
-    def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
-        p_yes, confidence = random.random(), random.random()
-        return Prediction(
-            evaluation=evaluated,
-            outcome_prediction=OutcomePrediction(
-                p_yes=p_yes,
-                confidence=confidence,
-                info_utility=None,
-            ),
-        )
-    
-
-class FixedAgent(AbstractBenchmarkedAgent):
-    def __init__(self, fixed_answer: bool, agent_name: str, max_workers: int | None = None):
-        super().__init__(agent_name, max_workers)
-        self.fixed_answer = fixed_answer
-
-    def evaluate(self, market_question: str) -> EvalautedQuestion:
-        return EvalautedQuestion(question=market_question, is_predictable=True)
-    
-    def research(self, market_question: str) -> str:
-        return ""  # No research for a fixed agent, but can't be None.
-    
-    def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
-        p_yes, confidence = 1.0 if self.fixed_answer else 0.0, 1.0 
-        return Prediction(
-            evaluation=evaluated,
-            outcome_prediction=OutcomePrediction(
-                p_yes=p_yes,
-                confidence=confidence,
-                info_utility=None,
-            ),
-        )
-    
-
 class QuestionOnlyAgent(AbstractBenchmarkedAgent):
-    def __init__(self, model: str, temperature: float = 0.0, agent_name: str = "question-only", max_workers: t.Optional[int] = None):
+    def __init__(
+        self,
+        model: str,
+        temperature: float = 0.0,
+        agent_name: str = "question-only",
+        max_workers: t.Optional[int] = None,
+    ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model = model
         self.temperature = temperature
-        
-    def evaluate(self, market_question: str) -> EvalautedQuestion:
-        return EvalautedQuestion(question=market_question, is_predictable=True)
-    
+
+    def evaluate(self, market_question: str) -> EvaluatedQuestion:
+        return EvaluatedQuestion(question=market_question, is_predictable=True)
+
     def research(self, market_question: str) -> str:
         return ""  # No research for a question-only agent, but can't be None.
-    
-    def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
+
+    def predict(
+        self, market_question: str, researched: str, evaluated: EvaluatedQuestion
+    ) -> Prediction:
         try:
             return _make_prediction(
                 market_question=market_question,
@@ -140,15 +88,22 @@ class QuestionOnlyAgent(AbstractBenchmarkedAgent):
             print(f"Error in QuestionOnlyAgent's predict: {e}")
             return Prediction(evaluation=evaluated)
 
-      
+
 class OlasAgent(AbstractBenchmarkedAgent):
-    def __init__(self, model: str, temperature: float = 0.0, agent_name: str = "olas", max_workers: t.Optional[int] = None, embedding_model: EmbeddingModel = EmbeddingModel.spacy):
+    def __init__(
+        self,
+        model: str,
+        temperature: float = 0.0,
+        agent_name: str = "olas",
+        max_workers: t.Optional[int] = None,
+        embedding_model: EmbeddingModel = EmbeddingModel.spacy,
+    ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model = model
         self.temperature = temperature
         self.embedding_model = embedding_model
 
-    def evaluate(self, market_question: str) -> EvalautedQuestion:
+    def evaluate(self, market_question: str) -> EvaluatedQuestion:
         return evaluate_question(question=market_question)
 
     def research(self, market_question: str) -> t.Optional[str]:
@@ -161,8 +116,10 @@ class OlasAgent(AbstractBenchmarkedAgent):
         except ValueError as e:
             print(f"Error in OlasAgent's research: {e}")
             return None
-        
-    def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
+
+    def predict(
+        self, market_question: str, researched: str, evaluated: EvaluatedQuestion
+    ) -> Prediction:
         try:
             return _make_prediction(
                 market_question=market_question,
@@ -177,13 +134,20 @@ class OlasAgent(AbstractBenchmarkedAgent):
 
 
 class EvoAgent(AbstractBenchmarkedAgent):
-    def __init__(self, model: str, temperature: float = 0.0, agent_name: str = "evo", use_summaries: bool = False, max_workers: t.Optional[int] = None):
+    def __init__(
+        self,
+        model: str,
+        temperature: float = 0.0,
+        agent_name: str = "evo",
+        use_summaries: bool = False,
+        max_workers: t.Optional[int] = None,
+    ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model = model
         self.temperature = temperature
         self.use_summaries = use_summaries
 
-    def evaluate(self, market_question: str) -> EvalautedQuestion:
+    def evaluate(self, market_question: str) -> EvaluatedQuestion:
         return evaluate_question(question=market_question)
 
     def research(self, market_question: str) -> t.Optional[str]:
@@ -198,10 +162,12 @@ class EvoAgent(AbstractBenchmarkedAgent):
             print(f"Error in EvoAgent's research: {e}")
             return None
 
-    def predict(self, market_question: str, researched: str, evaluated: EvalautedQuestion) -> Prediction:
+    def predict(
+        self, market_question: str, researched: str, evaluated: EvaluatedQuestion
+    ) -> Prediction:
         try:
             return _make_prediction(
-                market_question=market_question, 
+                market_question=market_question,
                 additional_information=researched,
                 evaluation_information=evaluated,
                 engine=self.model,
@@ -234,17 +200,21 @@ class RephrasingOlasAgent(OlasAgent):
 
         report_original = super().research(market_question=questions.original_question)
         report_negated = super().research(market_question=questions.negated_question)
-        report_universal = super().research(market_question=questions.open_ended_question)
+        report_universal = super().research(
+            market_question=questions.open_ended_question
+        )
 
-        report_concat = "\n\n---\n\n".join([
-            f"### {r_name}\n\n{r}"
-            for r_name, r in [
-                ("Research based on the question", report_original), 
-                ("Research based on the negated question", report_negated), 
-                ("Research based on the universal search query", report_universal)
-            ] 
-            if r is not None
-        ])
+        report_concat = "\n\n---\n\n".join(
+            [
+                f"### {r_name}\n\n{r}"
+                for r_name, r in [
+                    ("Research based on the question", report_original),
+                    ("Research based on the negated question", report_negated),
+                    ("Research based on the universal search query", report_universal),
+                ]
+                if r is not None
+            ]
+        )
 
         return report_concat
 

@@ -6,9 +6,10 @@ Tip: if you specify PYTHONPATH=., streamlit will watch for the changes in all fi
 import inspect
 import typing as t
 import streamlit as st
-from enum import Enum
-from evo_researcher.benchmark.utils import get_markets, MarketSource
-from evo_researcher.benchmark.agents import AbstractBenchmarkedAgent, AGENTS, EmbeddingModel, EvalautedQuestion
+from enum import Enum 
+from prediction_market_agent_tooling.benchmark.utils import EvaluatedQuestion, get_markets, MarketSource
+from prediction_market_agent_tooling.benchmark.agents import AbstractBenchmarkedAgent
+from evo_researcher.benchmark.agents import AGENTS
 
 SENTINTEL = object()
 
@@ -118,7 +119,7 @@ Is predictable: `{evaluated.is_predictable}`
             if not column.checkbox("Show research and prediction anyway"):
                 st.stop()
     else:
-        evaluated = EvalautedQuestion(question=question, is_predictable=True)
+        evaluated = EvaluatedQuestion(question=question, is_predictable=True)
 
     # Do the research and prediction.
     with st.spinner("Researching..."):
