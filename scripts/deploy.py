@@ -31,8 +31,9 @@ class DeployableAgentER(DeployableAgent):
         prediciton = self.agent.evaluate_research_predict(market.question)
         if prediciton.outcome_prediction is None:
             raise ValueError(f"Missing prediction: {prediciton}")
-        return prediciton.outcome_prediction.binary_answer 
-    
+        binary_answer: bool = prediciton.outcome_prediction.binary_answer
+        return binary_answer
+
 
 DEPLOYABLE_AGENTS: dict[str, DeployableAgentER] = {
     "DeployableAgentER_OlasReference": DeployableAgentER(
