@@ -32,7 +32,7 @@ typer = "^0.9.0"
 types-requests = "^2.31.0.20240125"
 types-python-dateutil = "^2.8.19.20240106"
 # TODO: Use pypi package once released.
-prediction-market-agent-tooling = {git="https://github.com/gnosis/prediction-market-agent-tooling.git", branch="evan/benchmark"}
+prediction-market-agent-tooling = {git="https://github.com/gnosis/prediction-market-agent-tooling.git", branch="main"}
 langchain-community = "^0.0.20"
 
 [tool.poetry.extras]

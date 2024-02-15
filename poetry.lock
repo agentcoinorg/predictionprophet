@@ -3400,8 +3400,8 @@ web3 = "^6.15.1"
 [package.source]
 type = "git"
 url = "https://github.com/gnosis/prediction-market-agent-tooling.git"
-reference = "evan/benchmark"
-resolved_reference = "97c46bfa89d9aeec92597ebe3e6decdf0cc9921f"
+reference = "main"
+resolved_reference = "2741963f9f95fe38b6b44b37e8cc3194d0043010"
 
 [[package]]
 name = "preshed"
@@ -5973,4 +5973,4 @@ pysqlite3-binary = ["pysqlite3-binary"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.10"
-content-hash = "1b06a8a7eec5ce80fc5279c95fe1070abdc1622ea4a9230a8d0b3d82b9999457"
+content-hash = "091348dbe7a42f83dbbf4f997c2c3e6ec327c4b2c02bea360e2c182ece3a7f7d"
