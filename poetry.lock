@@ -5973,4 +5973,4 @@ pysqlite3-binary = ["pysqlite3-binary"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.10"
-content-hash = "4f3eb83be35c6d6418a562937ba05c032f9da078f7a186d8d24d3b65efe497c8"
+content-hash = "1b06a8a7eec5ce80fc5279c95fe1070abdc1622ea4a9230a8d0b3d82b9999457"
