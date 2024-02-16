@@ -12,11 +12,11 @@ def scrape_results(results: list[WebSearchResult]) -> list[WebScrapeResult]:
         futures = {executor.submit(web_scrape, result.url) for result in results}
         for future in as_completed(futures):
             (scraped_content, url) = future.result()
-            result = results_by_url[url]
+            websearch_result = results_by_url[url]
             result = WebScrapeResult(
-                query=result.query,
-                url=result.url,
-                title=result.title,
+                query=websearch_result.query,
+                url=websearch_result.url,
+                title=websearch_result.title,
                 content=scraped_content
             )
             

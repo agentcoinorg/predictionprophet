@@ -1,15 +1,15 @@
 from langchain.prompts import ChatPromptTemplate
 from openai import OpenAI
 
-subquery_generation_template = """
-Your goal is to prepare a research plan for {query}.
-
-The plan will consist of multiple web searches separated by commas.
-Return ONLY the web searches, separated by commas and without quotes.
-
-Limit your searches to {search_limit}.
-"""
 def generate_subqueries(query: str, limit: int, api_key: str, model: str) -> list[str]:
+    subquery_generation_template = """
+    Your goal is to prepare a research plan for {query}.
+
+    The plan will consist of multiple web searches separated by commas.
+    Return ONLY the web searches, separated by commas and without quotes.
+
+    Limit your searches to {search_limit}.
+    """
     client = OpenAI(api_key=api_key)
     subquery_generation_prompt = (
         ChatPromptTemplate
