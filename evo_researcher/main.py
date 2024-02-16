@@ -2,16 +2,17 @@ import os
 import uuid
 import click
 import time
+from typing import cast
 from dotenv import load_dotenv
 from langchain.callbacks import get_openai_callback
-from evo_researcher.autonolas.research import make_prediction, research as research_autonolas
+from evo_researcher.autonolas.research import make_prediction
 from evo_researcher.functions.grade_info import grade_info
 from evo_researcher.functions.research import research as evo_research
 
 load_dotenv()
 AVAILABLE_AGENTS = ["autonolas", "evo"]
 
-def create_output_file(info: str, report: str = None) -> str:
+def create_output_file(info: str) -> str:
     outputs_dir = 'outputs'
     os.makedirs(outputs_dir, exist_ok=True)
 
@@ -21,11 +22,6 @@ def create_output_file(info: str, report: str = None) -> str:
     info_file_path = os.path.join(dir_name, 'information.txt')
     with open(info_file_path, 'w') as file:
         file.write(info)
-    
-    if report != None:    
-        report_file_path = os.path.join(dir_name, 'report.md')
-        with open(report_file_path, 'w') as file:
-            file.write(report)
         
     return dir_name
 
@@ -44,36 +40,33 @@ def cli():
     
 @cli.command()
 @click.argument('prompt')
-@click.argument('agent')
 def research(
-    prompt: str,
-    agent: str
+    prompt: str
 ):
     start = time.time()
     with get_openai_callback() as cb:
-        if agent == "autonolas":
-            research_response = research_autonolas(prompt)
-            end = time.time()
-            
-            dir_name = create_output_file(research_response)
-            output_file = "information.txt"
-        elif agent == "evo":
-            open_ai_key = os.getenv("OPENAI_API_KEY")
-            tavily_key =  os.getenv("TAVILY_API_KEY")
-            
-            (report, chunks) = evo_research(goal=prompt, openai_key=open_ai_key, tavily_key=tavily_key, model="gpt-4-1106-preview")
-            end = time.time()
-            
-            dir_name = create_output_file(chunks, report)
-            output_file = "report.md"
-        else:
-            raise Exception(f"Invalid agent. Available agents: {AVAILABLE_AGENTS}")
+        open_ai_key = os.getenv("OPENAI_API_KEY")
+        
+        if (open_ai_key == None):
+            raise Exception("OPENAI_API_KEY required")
+        
+        tavily_key =  os.getenv("TAVILY_API_KEY")
+        
+        if (tavily_key == None):
+            raise Exception("TAVILY_API_KEY required")
+        
+        report = evo_research(goal=prompt, openai_key=cast(str, open_ai_key), tavily_key=cast(str, tavily_key), model="gpt-4-1106-preview")
+        end = time.time()
+        
+        dir_name = create_output_file(report)
+        
+    print(cb)
     
     print(f"Prompt tokens: {cb.prompt_tokens} - Completion tokens: {cb.completion_tokens}")
     print(f"\n\nTime elapsed: {end - start}")
     
-    print(f"\n\nTo evaluate the output, run:\n\npoetry run python ./evo_researcher/main.py evaluate '{prompt}' ./{dir_name}/{output_file}")
-    print(f"\n\nTo make a prediction using this output, run:\n\npoetry run python ./evo_researcher/main.py predict '{prompt}' ./{dir_name}/{output_file}")
+    print(f"\n\nTo evaluate the output, run:\n\npoetry run python ./evo_researcher/main.py evaluate '{prompt}' ./{dir_name}/information.txt")
+    print(f"\n\nTo make a prediction using this output, run:\n\npoetry run python ./evo_researcher/main.py predict '{prompt}' ./{dir_name}/information.txt")
     
 @cli.command()
 @click.argument('prompt')
@@ -98,6 +91,8 @@ def predict(prompt: str, path: str):
     print(prediction)
     print(f"Prompt tokens: {cb.prompt_tokens} - Completion tokens: {cb.completion_tokens}")
     print(f"\n\nTime elapsed: {end - start}")
+    
+    print(cb)
 
 if __name__ == '__main__':
     cli()

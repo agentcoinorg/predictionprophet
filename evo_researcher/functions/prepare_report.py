@@ -1,10 +1,9 @@
-from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser
+from openai import OpenAI
 
 def prepare_report(goal: str, scraped: list[str], model: str, api_key: str):
     evaluation_prompt_template = """
-    You are a professional researcher. Your goal is to provide a relevant information report
+    Your goal is to provide a relevant information report
     in order to make an informed prediction for the question: '{goal}'.
     
     Here are the results of relevant web searches:
@@ -24,17 +23,29 @@ def prepare_report(goal: str, scraped: list[str], model: str, api_key: str):
     Don't limit yourself to just stating each finding; provide a thorough, full and comprehensive analysis of each finding.
     Use markdown syntax. Include as much relevant information as possible and try not to summarize.
     """
-    evaluation_prompt = ChatPromptTemplate.from_template(template=evaluation_prompt_template)
+    evaluation_prompt = (
+        ChatPromptTemplate
+            .from_template(template=evaluation_prompt_template)
+            .format(search_results=scraped, goal=goal)
+    )
+    
+    client = OpenAI(api_key=api_key)
 
-    research_evaluation_chain = (
-        evaluation_prompt |
-        ChatOpenAI(model=model, openai_api_key=api_key) |
-        StrOutputParser()
+    response = client.chat.completions.create(
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a professional researcher"
+            },
+            {
+                "role": "user",
+                "content": evaluation_prompt,
+            }
+        ],
+        model=model,
+        n=1,
+        timeout=90,
+        stop=None,
     )
 
-    response = research_evaluation_chain.invoke({
-        "search_results": scraped,
-        "goal": goal
-    })
-
-    return response
+    return str(response.choices[0].message.content)

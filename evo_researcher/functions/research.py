@@ -1,4 +1,3 @@
-import os
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from evo_researcher.functions.create_embeddings_from_results import create_embeddings_from_results
 from evo_researcher.functions.generate_subqueries import generate_subqueries
@@ -18,9 +17,9 @@ def research(
     scrape_content_split_chunk_size: int = 800,
     scrape_content_split_chunk_overlap: int = 225,
     top_k_per_query: int = 8
-) -> tuple[str, str]:    
-    queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, api_key=openai_key)
-    queries = rerank_subqueries(queries=queries, goal=goal, api_key=openai_key)[:subqueries_limit]
+) -> str:
+    queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, api_key=openai_key, model=model)
+    queries = rerank_subqueries(queries=queries, goal=goal, api_key=openai_key, model=model)[:subqueries_limit]
 
     search_results_with_queries = search(queries, tavily_key, lambda result: not result["url"].startswith("https://www.youtube"))
 
@@ -35,16 +34,13 @@ def research(
     )
     collection = create_embeddings_from_results(scraped, text_splitter, api_key=openai_key)
 
-    vector_result_texts: list[str] = []
-
-    for query in queries:
-        top_k_per_query_results = collection.similarity_search(query, k=top_k_per_query)
-        vector_result_texts += [f"{result.page_content}" for result in top_k_per_query_results]
     
-    chunks = ""
-    for chunk in vector_result_texts:
-        chunks += "- " + chunk + "\n\n"
+    query_results = collection.query(query_texts=queries, n_results=top_k_per_query)
+    vector_result_texts: list[str] = []
+    
+    for documents_list in query_results['documents']:
+        vector_result_texts += [x for x in documents_list]
 
     report = prepare_report(goal, vector_result_texts, api_key=openai_key, model=model)
 
-    return (report, chunks)
+    return report
