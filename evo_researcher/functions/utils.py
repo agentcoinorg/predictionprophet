@@ -1,5 +1,9 @@
 import tiktoken
+import os
+from datetime import datetime
 from typing import NoReturn, Type, TypeVar, Optional
+from googleapiclient.discovery import build
+from evo_researcher.functions.cache import persistent_inmemory_cache
 
 T = TypeVar("T")
 
@@ -52,3 +56,33 @@ def should_not_happen(
 def trim_to_n_tokens(content: str, n: int, model: str) -> str:
     encoder = tiktoken.encoding_for_model(model)
     return encoder.decode(encoder.encode(content)[:n])
+
+
+@persistent_inmemory_cache
+def url_is_older_than(url: str, older_than: datetime) -> bool:
+    service = build("customsearch", "v1", developerKey=os.environ["GOOGLE_SEARCH_API_KEY"])
+    date_restrict = f"d{(datetime.now().date() - older_than.date()).days}"  # {d,w,m,y}N to restrict the search to the last N days, weeks, months or years.
+
+    search = (
+        service
+        .cse()
+        .list(
+            # Possible options: https://developers.google.com/custom-search/v1/reference/rest/v1/cse/list
+            q=url,
+            cx=os.environ["GOOGLE_SEARCH_ENGINE_ID"],
+            num=1,
+            dateRestrict=date_restrict,  
+            # We can also restrict the search to a specific date range, but it seems we can not have restricted date range + relevance sorting, so that is not useful for us.
+            # sort="date:r:20000101:20230101",  #  "YYYYMMDD:YYYYMMDD"
+        )
+        .execute()
+    )
+    return True if int(search["searchInformation"]["totalResults"]) == 0 or not any(url in item["link"] for item in search["items"]) else False
+
+
+def time_restrict_urls(urls: list[str], time_restriction_up_to: datetime) -> list[str]:
+    restricted_urls: list[str] = []
+    for url in urls:
+        if url_is_older_than(url, time_restriction_up_to):
+            restricted_urls.append(url)
+    return restricted_urls

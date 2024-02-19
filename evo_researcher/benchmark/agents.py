@@ -6,16 +6,15 @@ from prediction_market_agent_tooling.benchmark.agents import (
     RandomAgent,
 )
 from prediction_market_agent_tooling.benchmark.utils import (
-    EvaluatedQuestion,
     OutcomePrediction,
     Prediction,
 )
-
+from datetime import datetime
 from evo_researcher.autonolas.research import EmbeddingModel
 from evo_researcher.autonolas.research import Prediction as LLMCompletionPredictionDict
 from evo_researcher.autonolas.research import make_prediction
 from evo_researcher.autonolas.research import research as research_autonolas
-from evo_researcher.functions.evaluate_question import evaluate_question
+from evo_researcher.functions.evaluate_question import is_predictable
 from evo_researcher.functions.rephrase_question import rephrase_question
 from evo_researcher.functions.research import research as research_evo
 
@@ -23,7 +22,6 @@ from evo_researcher.functions.research import research as research_evo
 def _make_prediction(
     market_question: str,
     additional_information: str,
-    evaluation_information: t.Optional[EvaluatedQuestion],
     engine: str,
     temperature: float,
 ) -> Prediction:
@@ -37,16 +35,14 @@ def _make_prediction(
         temperature=temperature,
     )
     return completion_prediction_json_to_pydantic_model(
-        prediction, evaluation_information
+        prediction
     )
 
 
 def completion_prediction_json_to_pydantic_model(
     completion_prediction: LLMCompletionPredictionDict,
-    evaluation_information: t.Optional[EvaluatedQuestion],
 ) -> Prediction:
     return Prediction(
-        evaluation=evaluation_information,
         outcome_prediction=OutcomePrediction(
             p_yes=completion_prediction["p_yes"],
             confidence=completion_prediction["confidence"],
@@ -67,26 +63,24 @@ class QuestionOnlyAgent(AbstractBenchmarkedAgent):
         self.model = model
         self.temperature = temperature
 
-    def evaluate(self, market_question: str) -> EvaluatedQuestion:
-        return EvaluatedQuestion(question=market_question, is_predictable=True)
-
-    def research(self, market_question: str) -> str:
-        return ""  # No research for a question-only agent, but can't be None.
-
     def predict(
-        self, market_question: str, researched: str, evaluated: EvaluatedQuestion
+        self, market_question: str
     ) -> Prediction:
         try:
             return _make_prediction(
                 market_question=market_question,
-                additional_information=researched,
-                evaluation_information=evaluated,
+                additional_information="",
                 engine=self.model,
                 temperature=self.temperature,
             )
         except ValueError as e:
             print(f"Error in QuestionOnlyAgent's predict: {e}")
-            return Prediction(evaluation=evaluated)
+            return Prediction()
+        
+    def predict_restricted(
+        self, market_question: str, time_restriction_up_to: datetime
+    ) -> Prediction:
+        return self.predict(market_question)
 
 
 class OlasAgent(AbstractBenchmarkedAgent):
@@ -103,34 +97,37 @@ class OlasAgent(AbstractBenchmarkedAgent):
         self.temperature = temperature
         self.embedding_model = embedding_model
 
-    def evaluate(self, market_question: str) -> EvaluatedQuestion:
-        return evaluate_question(question=market_question)
+    def is_predictable(self, market_question: str) -> bool:
+        return self.is_predictable_restricted(market_question, None)
 
-    def research(self, market_question: str) -> t.Optional[str]:
-        try:
-            return research_autonolas(
+    def is_predictable_restricted(self, market_question: str, time_restriction_up_to: datetime | None) -> bool:
+        return is_predictable(question=market_question)
+
+    def research_restricted(self, market_question: str, time_restriction_up_to: datetime | None) -> str:
+        return research_autonolas(
                 prompt=market_question,
+                time_restriction_up_to=time_restriction_up_to,
                 engine=self.model,
                 embedding_model=self.embedding_model,
             )
-        except ValueError as e:
-            print(f"Error in OlasAgent's research: {e}")
-            return None
+    
+    def predict(self, market_question: str) -> Prediction:
+        return self.predict_restricted(market_question, None)
 
-    def predict(
-        self, market_question: str, researched: str, evaluated: EvaluatedQuestion
+    def predict_restricted(
+        self, market_question: str, time_restriction_up_to: datetime | None
     ) -> Prediction:
         try:
+            researched = self.research_restricted(market_question=market_question, time_restriction_up_to=time_restriction_up_to)
             return _make_prediction(
                 market_question=market_question,
                 additional_information=researched,
-                evaluation_information=evaluated,
                 engine=self.model,
                 temperature=self.temperature,
             )
         except ValueError as e:
             print(f"Error in OlasAgent's predict: {e}")
-            return Prediction(evaluation=evaluated)
+            return Prediction()
 
 
 class EvoAgent(AbstractBenchmarkedAgent):
@@ -147,35 +144,34 @@ class EvoAgent(AbstractBenchmarkedAgent):
         self.temperature = temperature
         self.use_summaries = use_summaries
 
-    def evaluate(self, market_question: str) -> EvaluatedQuestion:
-        return evaluate_question(question=market_question)
+    def is_predictable(self, market_question: str) -> bool:
+        return self.is_predictable_restricted(market_question, None)
 
-    def research(self, market_question: str) -> t.Optional[str]:
+    def is_predictable_restricted(self, market_question: str, time_restriction_up_to: datetime | None) -> bool:
+        return is_predictable(question=market_question)
+    
+    def predict(self, market_question: str) -> Prediction:
+        return self.predict_restricted(market_question, None)
+
+    def predict_restricted(
+        self, market_question: str, time_restriction_up_to: datetime | None
+    ) -> Prediction:
         try:
             report, _ = research_evo(
                 goal=market_question,
                 model=self.model,
                 use_summaries=self.use_summaries,
+                time_restriction_up_to=time_restriction_up_to,
             )
-            return report
-        except ValueError as e:
-            print(f"Error in EvoAgent's research: {e}")
-            return None
-
-    def predict(
-        self, market_question: str, researched: str, evaluated: EvaluatedQuestion
-    ) -> Prediction:
-        try:
             return _make_prediction(
                 market_question=market_question,
-                additional_information=researched,
-                evaluation_information=evaluated,
+                additional_information=report,
                 engine=self.model,
                 temperature=self.temperature,
             )
         except ValueError as e:
             print(f"Error in EvoAgent's predict: {e}")
-            return Prediction(evaluation=evaluated)
+            return Prediction()
 
 
 class RephrasingOlasAgent(OlasAgent):
@@ -195,14 +191,12 @@ class RephrasingOlasAgent(OlasAgent):
             max_workers=max_workers,
         )
 
-    def research(self, market_question: str) -> t.Optional[str]:
+    def research_restricted(self, market_question: str, time_restriction_up_to: datetime | None) -> str:
         questions = rephrase_question(question=market_question)
 
-        report_original = super().research(market_question=questions.original_question)
-        report_negated = super().research(market_question=questions.negated_question)
-        report_universal = super().research(
-            market_question=questions.open_ended_question
-        )
+        report_original = super().research_restricted(market_question=questions.original_question, time_restriction_up_to=time_restriction_up_to)
+        report_negated = super().research_restricted(market_question=questions.negated_question, time_restriction_up_to=time_restriction_up_to)
+        report_universal = super().research_restricted(market_question=questions.open_ended_question,time_restriction_up_to=time_restriction_up_to)
 
         report_concat = "\n\n---\n\n".join(
             [
