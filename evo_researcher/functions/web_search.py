@@ -15,6 +15,7 @@ def web_search(query: str, max_results: int = 5) -> list[WebSearchResult]:
         query=query,
         search_depth="advanced",
         max_results=max_results,
+        include_raw_content=True,
     )
 
     transformed_results = [
@@ -22,6 +23,7 @@ def web_search(query: str, max_results: int = 5) -> list[WebSearchResult]:
             title=result['title'],
             url=result['url'],
             description=result['content'],
+            raw_content=result['raw_content'],
             relevancy=result['score'],
             query=query
         )
