@@ -3,7 +3,7 @@ import typing as t
 import typer
 from prediction_market_agent_tooling.benchmark.agents import FixedAgent, RandomAgent
 from prediction_market_agent_tooling.benchmark.benchmark import Benchmarker
-from prediction_market_agent_tooling.benchmark.utils import MarketSource, get_markets, MarketFilter
+from prediction_market_agent_tooling.benchmark.utils import MarketSource, get_markets, MarketFilter, MarketSort
 
 from evo_researcher.autonolas.research import EmbeddingModel
 from evo_researcher.benchmark.agents import EvoAgent, OlasAgent, QuestionOnlyAgent
@@ -15,11 +15,16 @@ def main(
     output: str = "./benchmark_report.md",
     reference: MarketSource = MarketSource.MANIFOLD,
     filter: MarketFilter = MarketFilter.open,
+    sort: MarketSort | None = None,
     max_workers: int = 1,
     cache_path: t.Optional[str] = "predictions_cache.json",
     only_cached: bool = False,
 ) -> None:
-    markets = get_markets(number=n, source=reference, filter_=filter)
+    """
+    Polymarket usually contains higher quality questions, 
+    but on Manifold, addiotionally to filtering by MarketFilter.resolved, you can sort by MarketSort.newest.
+    """
+    markets = get_markets(number=n, source=reference, filter_=filter, sort=sort)
     markets_deduplicated = list(({m.question: m for m in markets}.values()))
     if len(markets) != len(markets_deduplicated):
         print(
