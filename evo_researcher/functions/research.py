@@ -3,7 +3,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from evo_researcher.functions.create_embeddings_from_results import create_embeddings_from_results
 from evo_researcher.functions.generate_subqueries import generate_subqueries
 from evo_researcher.functions.prepare_report import prepare_report, prepare_summary
-
+from evo_researcher.models.WebScrapeResult import WebScrapeResult
 from evo_researcher.functions.rerank_subqueries import rerank_subqueries
 from evo_researcher.functions.scrape_results import scrape_results
 from evo_researcher.functions.search import search
@@ -16,7 +16,8 @@ def research(
     subqueries_limit: int = 4,
     scrape_content_split_chunk_size: int = 800,
     scrape_content_split_chunk_overlap: int = 225,
-    top_k_per_query: int = 8
+    top_k_per_query: int = 8,
+    use_tavily_raw_content: bool = False,
 ) -> tuple[str, str]:    
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit)
     queries = rerank_subqueries(queries=queries, goal=goal)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
@@ -27,7 +28,12 @@ def research(
         raise ValueError(f"No search results found for the goal {goal}.")
 
     scrape_args = [result for (_, result) in search_results_with_queries]
-    scraped = scrape_results(scrape_args)
+    scraped = scrape_results(scrape_args) if not use_tavily_raw_content else [WebScrapeResult(
+        query=result.query,
+        url=result.url,
+        title=result.title,
+        content=result.raw_content,
+    ) for result in scrape_args]
     scraped = [result for result in scraped if result.content != ""]
 
     text_splitter = RecursiveCharacterTextSplitter(

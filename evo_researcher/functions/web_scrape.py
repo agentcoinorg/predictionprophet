@@ -17,7 +17,7 @@ def fetch_html(url: str, timeout: int) -> Response:
     return response
 
 
-def web_scrape(url: str, timeout: int = 10000) -> tuple[str, str]:
+def web_scrape(url: str, timeout: int = 10000) -> str:
     try:
         response = fetch_html(url=url, timeout=timeout)
 
@@ -32,18 +32,18 @@ def web_scrape(url: str, timeout: int = 10000) -> tuple[str, str]:
             [x.extract() for x in soup.findAll('image')]
             [x.extract() for x in soup.findAll('img')]
             
-            text = soup.get_text()
+            text: str = soup.get_text()
             text = markdownify(text)
             text = "  ".join([x.strip() for x in text.split("\n")])
             text = " ".join([x.strip() for x in text.split("  ")])
             
-            return (text, url)
+            return text
         else:
             print("Non-HTML content received")
             logging.warning("Non-HTML content received")
-            return ("", url)
+            return ""
 
     except requests.RequestException as e:
         print(f"HTTP request failed: {e}")
         logging.error(f"HTTP request failed: {e}")
-        return ("", url)
+        return ""

@@ -4,7 +4,7 @@ from typing import Callable, TypeVar
 from concurrent.futures import Executor
 from concurrent.futures.thread import ThreadPoolExecutor
 
-THREADPOOL = ThreadPoolExecutor(int(os.getenv("THREADPOOL_N_THREADS", 50)))
+THREADPOOL = ThreadPoolExecutor(int(os.getenv("THREADPOOL_N_THREADS", 5)))
 
 A = TypeVar("A")
 B = TypeVar("B")

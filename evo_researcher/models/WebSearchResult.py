@@ -6,6 +6,7 @@ class WebSearchResult(BaseModel):
     title: str
     url: str
     description: str
+    raw_content: str
     relevancy: float
     query: str
     
