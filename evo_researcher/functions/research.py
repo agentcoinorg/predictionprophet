@@ -21,8 +21,8 @@ def research(
     time_restriction_up_to: datetime | None = None,
     use_tavily_raw_content: bool = False,
 ) -> tuple[str, str]:    
-    queries = generate_subqueries(query=goal, limit=initial_subqueries_limit)
-    queries = rerank_subqueries(queries=queries, goal=goal)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
+    queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model)
+    queries = rerank_subqueries(queries=queries, goal=goal, model=model)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
 
     search_results_with_queries = search(
         queries, 
