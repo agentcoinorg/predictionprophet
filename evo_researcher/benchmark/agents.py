@@ -137,12 +137,14 @@ class EvoAgent(AbstractBenchmarkedAgent):
         temperature: float = 0.0,
         agent_name: str = "evo",
         use_summaries: bool = False,
+        use_tavily_raw_content: bool = False,
         max_workers: t.Optional[int] = None,
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model = model
         self.temperature = temperature
         self.use_summaries = use_summaries
+        self.use_tavily_raw_content = use_tavily_raw_content
 
     def is_predictable(self, market_question: str) -> bool:
         return self.is_predictable_restricted(market_question, None)
@@ -161,6 +163,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
                 goal=market_question,
                 model=self.model,
                 use_summaries=self.use_summaries,
+                use_tavily_raw_content=self.use_tavily_raw_content,
                 time_restriction_up_to=time_restriction_up_to,
             )
             return _make_prediction(
