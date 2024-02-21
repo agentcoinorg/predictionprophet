@@ -22,7 +22,7 @@ def main(
 ) -> None:
     """
     Polymarket usually contains higher quality questions, 
-    but on Manifold, addiotionally to filtering by MarketFilter.resolved, you can sort by MarketSort.newest.
+    but on Manifold, additionally to filtering by MarketFilter.resolved, you can sort by MarketSort.newest.
     """
     markets = get_markets(number=n, source=reference, filter_=filter, sort=sort)
     markets_deduplicated = list(({m.question: m for m in markets}.values()))
