@@ -70,6 +70,19 @@ def main(
                 max_workers=max_workers,
                 agent_name="evo_gpt-3.5-turbo-0125",
             ),
+            EvoAgent(
+                model="gpt-3.5-turbo-0125",
+                max_workers=max_workers,
+                agent_name="evo_gpt-3.5-turbo-0125_summary_tavilyrawcontent",
+                use_summaries=True,
+                use_tavily_raw_content=True,
+            ),
+            EvoAgent(
+                model="gpt-3.5-turbo-0125",
+                max_workers=max_workers,
+                agent_name="evo_gpt-3.5-turbo-0125_tavilyrawcontent",
+                use_tavily_raw_content=True,
+            ),
             # EvoAgent(model="gpt-4-1106-preview", max_workers=max_workers, agent_name="evo_gpt-4-1106-preview"),  # Too expensive to be enabled by default.
         ],
         cache_path=cache_path,

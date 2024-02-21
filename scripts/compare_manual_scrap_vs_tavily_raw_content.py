@@ -22,7 +22,7 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("### Tavily's raw content")
     st.write(search[index].url)
-    st.write(f"{len(search[index].raw_content.split())} words")
+    st.write(f"{len((search[index].raw_content or '').split())} words")
     st.markdown("---")
     st.write(search[index].raw_content)
 

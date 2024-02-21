@@ -38,7 +38,7 @@ def research(
         url=result.url,
         title=result.title,
         content=result.raw_content,
-    ) for result in scrape_args]
+    ) for result in scrape_args if result.raw_content]
     scraped = [result for result in scraped if result.content != ""]
 
     text_splitter = RecursiveCharacterTextSplitter(
