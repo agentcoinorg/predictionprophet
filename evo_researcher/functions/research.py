@@ -18,16 +18,12 @@ def research(
     scrape_content_split_chunk_size: int = 800,
     scrape_content_split_chunk_overlap: int = 225,
     top_k_per_query: int = 8,
-    time_restriction_up_to: datetime | None = None,
     use_tavily_raw_content: bool = False,
 ) -> tuple[str, str]:    
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model)
     queries = rerank_subqueries(queries=queries, goal=goal, model=model)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
 
-    search_results_with_queries = search(
-        queries, 
-        lambda result: (not result.url.startswith("https://www.youtube") and (time_restriction_up_to is None or len(time_restrict_urls([result.url], time_restriction_up_to)) > 0))
-    )
+    search_results_with_queries = search(queries, lambda result: not result.url.startswith("https://www.youtube"))
 
     if not search_results_with_queries:
         raise ValueError(f"No search results found for the goal {goal}.")

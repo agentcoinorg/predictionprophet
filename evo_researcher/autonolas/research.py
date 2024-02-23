@@ -432,25 +432,19 @@ def truncate_additional_information(
         return enc.decode(add_trunc_enc)
     
 
-def safe_get_urls_from_query(query: str, num: int = 3, time_restriction_up_to: datetime | None = None) -> List[str]:
+def safe_get_urls_from_query(query: str, num: int = 3) -> List[str]:
     try:
-        return get_urls_from_query(query, num, time_restriction_up_to)
+        return get_urls_from_query(query, num)
     except ValueError as e:
         print(f"Error in get_urls_from_query: {e}")
         return []
 
 
-def get_urls_from_query(
-    query: str, num: int = 3, time_restriction_up_to: datetime | None = None
-) -> List[str]:
-    return get_urls_from_queries(queries=[query], num=num, time_restriction_up_to=time_restriction_up_to)
+def get_urls_from_query(query: str, num: int = 3) -> List[str]:
+    return get_urls_from_queries(queries=[query], num=num)
 
 
-def get_urls_from_queries(
-    queries: List[str], 
-    num: int = 3,
-    time_restriction_up_to: datetime | None = None,
-) -> List[str]:
+def get_urls_from_queries(queries: List[str], num: int = 3) -> List[str]:
     """
     Fetch unique URLs from search engine queries, limiting the number of URLs per query.
 
@@ -476,7 +470,6 @@ def get_urls_from_queries(
             query=query,
             num=max_num_fetch,  # Limit the number of returned URLs per query
         )
-        fetched_urls = time_restrict_urls(fetched_urls, time_restriction_up_to) if time_restriction_up_to else fetched_urls
 
         # Add only unique URLs up to 'num' per query, omitting PDF and 'download' URLs
         count = 0
@@ -1040,7 +1033,6 @@ def fetch_additional_information(
     max_add_words: int,
     nlp: spacy.Language,
     embedding_model: EmbeddingModel,
-    time_restriction_up_to: datetime | None = None,
     engine: str = "gpt-3.5-turbo",
     temperature: float = 0.5,
     max_compl_tokens: int = 500,
@@ -1097,9 +1089,7 @@ def fetch_additional_information(
         raise ValueError(f"The response from {engine=} could not be parsed as JSON: {response=}") from e
 
     # Get URLs from queries
-    urls = get_urls_from_queries(
-        json_data["queries"], time_restriction_up_to=time_restriction_up_to
-    )
+    urls = get_urls_from_queries(json_data["queries"])
 
     # Extract relevant sentences from URLs
     relevant_sentences_sorted = extract_and_sort_sentences(
@@ -1118,7 +1108,6 @@ def fetch_additional_information(
 
 def research(
     prompt: str,
-    time_restriction_up_to: datetime | None = None,
     max_tokens: int | None = None,
     temperature: float | None = None,
     engine: str = "gpt-3.5-turbo",
@@ -1157,7 +1146,6 @@ def research(
         nlp=nlp,
         max_add_words=max_add_words,
         embedding_model=embedding_model,
-        time_restriction_up_to=time_restriction_up_to,
     )
 
     # Truncate additional information to stay within the chat completion token limit of 4096
