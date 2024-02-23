@@ -12,10 +12,13 @@ DEPLOYABLE_AGENTS = [
 
 
 def deploy(
-    deployable_agent_name: str,
-    manifold_api_key_secret_name: str,
-    openai_api_key_secret_name: str,
-    tavity_api_key_secret_name: str,
+    market_type: MarketType,
+    deployable_agent_name: str = typer.Option(),
+    manifold_api_key_secret_name: str = typer.Option(),
+    openai_api_key_secret_name: str = typer.Option(),
+    tavity_api_key_secret_name: str = typer.Option(),
+    bet_from_address: str = typer.Option(),
+    bet_from_private_key_secret_name: str = typer.Option(),
 ) -> None:
     """
     Script to execute locally to deploy the agent to GCP.
@@ -29,16 +32,20 @@ def deploy(
     
     chosen_agent_class().deploy_gcp(
         repository="git+https://github.com/polywrap/evo.researcher.git@peter/new-deployment",
-        market_type=MarketType.MANIFOLD,
+        market_type=market_type,
         memory=1024,
         labels={
             "owner": getpass.getuser().lower(),
             "deployable_agent_name": deployable_agent_name.lower(),
         },
+        env_vars={
+            "BET_FROM_ADDRESS": bet_from_address,
+        },
         secrets={
             "MANIFOLD_API_KEY": f"{manifold_api_key_secret_name}:latest",
             "OPENAI_API_KEY": f"{openai_api_key_secret_name}:latest",
             "TAVILY_API_KEY": f"{tavity_api_key_secret_name}:latest",
+            "BET_FROM_PRIVATE_KEY": f"{bet_from_private_key_secret_name}:latest",
         },
     )
 

@@ -3370,13 +3370,13 @@ test = ["coverage", "flake8", "freezegun (==0.3.15)", "mock (>=2.0.0)", "pylint"
 
 [[package]]
 name = "prediction-market-agent-tooling"
-version = "0.2.7"
+version = "0.2.8"
 description = "Tools to benchmark, deploy and monitor prediction market agents."
 optional = false
 python-versions = ">=3.10,<3.12"
 files = [
-    {file = "prediction_market_agent_tooling-0.2.7-py3-none-any.whl", hash = "sha256:896032e0ddbd238b2ef6c244e6fe72f8ff9e7deb798d2974650ee08b53569979"},
-    {file = "prediction_market_agent_tooling-0.2.7.tar.gz", hash = "sha256:f5e6273f50c9186e8b1a405566fa3d99c4d167c3310af3c278c7c2c51b9b1f34"},
+    {file = "prediction_market_agent_tooling-0.2.8-py3-none-any.whl", hash = "sha256:55a73892bf4704a9b7f1cda20d3c16b829092416019c5894119d5f56450f6f2c"},
+    {file = "prediction_market_agent_tooling-0.2.8.tar.gz", hash = "sha256:f138a654c081fe2f9f4bc8799fbef841eb57e7a8adf82db29502a7608a838897"},
 ]
 
 [package.dependencies]
@@ -5965,4 +5965,4 @@ pysqlite3-binary = ["pysqlite3-binary"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.10"
-content-hash = "d5ea5b760e727b294647659047d3a5074a43f1688cd8b111d3a04b5049724b66"
+content-hash = "ba1da56409bcc081fbc4a7f0be5bb05f372d5f42cf815a5fca1a9c04a9ac3734"
