@@ -15,6 +15,7 @@ def deploy(
     deployable_agent_name: str,
     manifold_api_key_secret_name: str,
     openai_api_key_secret_name: str,
+    tavity_api_key_secret_name: str,
 ) -> None:
     """
     Script to execute locally to deploy the agent to GCP.
@@ -37,6 +38,7 @@ def deploy(
         secrets={
             "MANIFOLD_API_KEY": f"{manifold_api_key_secret_name}:latest",
             "OPENAI_API_KEY": f"{openai_api_key_secret_name}:latest",
+            "TAVILY_API_KEY": f"{tavity_api_key_secret_name}:latest",
         },
     )
 
