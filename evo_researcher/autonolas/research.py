@@ -1094,7 +1094,7 @@ def fetch_additional_information(
 
     # Get URLs from queries
     urls = get_urls_from_queries(
-        json_data["queries"]
+        json_data["queries"],
     )
 
     # Extract relevant sentences from URLs
