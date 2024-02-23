@@ -7,7 +7,7 @@ import inspect
 import typing as t
 import streamlit as st
 from enum import Enum 
-from prediction_market_agent_tooling.benchmark.utils import EvaluatedQuestion, get_markets, MarketSource
+from prediction_market_agent_tooling.benchmark.utils import get_markets, MarketSource
 from prediction_market_agent_tooling.benchmark.agents import AbstractBenchmarkedAgent
 from evo_researcher.benchmark.agents import AGENTS
 
@@ -101,42 +101,27 @@ with st.expander("Show agent's parameters", expanded=False):
         agents.append(agent)
 
 # Use checkboxes instead of expanders, because expanders don't work inside of columns.
-show_evaluation = st.checkbox("Show evaluation", value=False)
-show_research = st.checkbox("Show research", value=False)
+show_evaluation = st.checkbox("Show evaluation", value=False) if do_question_evaluation else False
 
 for idx, (column, agent) in enumerate(zip(st.columns(len(agents)), agents)):
     # Optionally, do the evaluation.
     if do_question_evaluation:
         with st.spinner("Evaluating..."):
-            evaluated = agent.evaluate(market_question=question) 
+            is_predictable = agent.is_predictable(market_question=question) 
         if show_evaluation:
             column.markdown(f"""## Evaluation
 
-Is predictable: `{evaluated.is_predictable}`
+Is predictable: `{is_predictable}`
 """)
-        if not evaluated.is_predictable:
+        if not is_predictable:
             column.error("The agent thinks this question is not predictable.")
-            if not column.checkbox("Show research and prediction anyway"):
+            if not column.checkbox("Show prediction anyway"):
                 st.stop()
     else:
-        evaluated = EvaluatedQuestion(question=question, is_predictable=True)
-
-    # Do the research and prediction.
-    with st.spinner("Researching..."):
-        researched = agent.research(market_question=question)
-    if not researched:
-        column.error("No research report was generated.")
-        st.stop()
-    if show_research:
-        column.markdown(f"""## Research report
-                    
-```
-{researched}     
-```
-""")
+        is_predictable = True
 
     with st.spinner("Predicting..."):
-        prediction = agent.predict(market_question=question, researched=researched, evaluated=evaluated)
+        prediction = agent.predict(market_question=question)
     with column.expander("Show agent's prediction", expanded=False):
         column.markdown(f"""## Prediction
 
