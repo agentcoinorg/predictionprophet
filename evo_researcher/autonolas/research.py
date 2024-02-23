@@ -440,11 +440,15 @@ def safe_get_urls_from_query(query: str, num: int = 3) -> List[str]:
         return []
 
 
-def get_urls_from_query(query: str, num: int = 3) -> List[str]:
+def get_urls_from_query(
+    query: str, num: int = 3
+) -> List[str]:
     return get_urls_from_queries(queries=[query], num=num)
 
 
-def get_urls_from_queries(queries: List[str], num: int = 3) -> List[str]:
+def get_urls_from_queries(
+    queries: List[str], num: int = 3
+) -> List[str]:
     """
     Fetch unique URLs from search engine queries, limiting the number of URLs per query.
 
@@ -1089,7 +1093,9 @@ def fetch_additional_information(
         raise ValueError(f"The response from {engine=} could not be parsed as JSON: {response=}") from e
 
     # Get URLs from queries
-    urls = get_urls_from_queries(json_data["queries"])
+    urls = get_urls_from_queries(
+        json_data["queries"]
+    )
 
     # Extract relevant sentences from URLs
     relevant_sentences_sorted = extract_and_sort_sentences(
