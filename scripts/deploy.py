@@ -47,6 +47,7 @@ def deploy(
             "TAVILY_API_KEY": f"{tavity_api_key_secret_name}:latest",
             "BET_FROM_PRIVATE_KEY": f"{bet_from_private_key_secret_name}:latest",
         },
+        cron_schedule="0 */2 * * *",
     )
 
 
