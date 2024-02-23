@@ -70,8 +70,8 @@ def deploy(
             "deployable_agent_name": deployable_agent_name.lower(),
         },
         secrets={
-            "MANIFOLD_API_KEY": manifold_api_key_secret_name,
-            "OPENAI_API_KEY": openai_api_key_secret_name,
+            "MANIFOLD_API_KEY": f"{manifold_api_key_secret_name}:latest",
+            "OPENAI_API_KEY": f"{openai_api_key_secret_name}:latest",
         },
     )
 
