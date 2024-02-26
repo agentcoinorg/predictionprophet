@@ -5,8 +5,9 @@ from git import Repo
 from datetime import datetime
 from prediction_market_agent_tooling.markets.markets import MarketType
 from prediction_market_agent_tooling.deploy.agent import MonitorConfig
+from prediction_market_agent_tooling.deploy.gcp.utils import gcp_get_secret_value
 from evo_researcher.deployment.models import DeployableAgentER, DeployableAgentER_EvoGPT3, DeployableAgentER_OlasEmbeddingOA
-
+from prediction_market_agent_tooling.markets.manifold.api import get_authenticated_user
 
 DEPLOYABLE_AGENTS = [
     DeployableAgentER_EvoGPT3,
@@ -17,7 +18,6 @@ DEPLOYABLE_AGENTS = [
 def deploy(
     market_type: MarketType,
     deployable_agent_name: str = typer.Option(),
-    manifold_user_id: str = typer.Option(),
     manifold_api_key_secret_name: str = typer.Option(),
     openai_api_key_secret_name: str = typer.Option(),
     tavity_api_key_secret_name: str = typer.Option(),
@@ -54,7 +54,7 @@ def deploy(
         cron_schedule="0 */2 * * *",
         monitor_config=MonitorConfig(
             start_time=start_time or datetime.utcnow(),
-            manifold_user_id=manifold_user_id,
+            manifold_user_id=get_authenticated_user(gcp_get_secret_value(manifold_api_key_secret_name)).id,
             omen_public_key=bet_from_address,
         ),
     )
