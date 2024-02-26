@@ -446,10 +446,7 @@ def get_urls_from_query(
     return get_urls_from_queries(queries=[query], num=num)
 
 
-def get_urls_from_queries(
-    queries: List[str], 
-    num: int = 3,
-) -> List[str]:
+def get_urls_from_queries(queries: List[str], num: int = 3) -> List[str]:
     """
     Fetch unique URLs from search engine queries, limiting the number of URLs per query.
 
@@ -1095,7 +1092,7 @@ def fetch_additional_information(
 
     # Get URLs from queries
     urls = get_urls_from_queries(
-        json_data["queries"]
+        json_data["queries"],
     )
 
     # Extract relevant sentences from URLs
