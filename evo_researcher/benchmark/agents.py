@@ -12,12 +12,15 @@ from prediction_market_agent_tooling.benchmark.utils import (
 from datetime import datetime
 from evo_researcher.autonolas.research import EmbeddingModel
 from evo_researcher.autonolas.research import Prediction as LLMCompletionPredictionDict
-from evo_researcher.autonolas.research import make_prediction
+from evo_researcher.autonolas.research import make_prediction, get_urls_from_queries
 from evo_researcher.autonolas.research import research as research_autonolas
 from evo_researcher.functions.evaluate_question import is_predictable
 from evo_researcher.functions.rephrase_question import rephrase_question
 from evo_researcher.functions.research import research as research_evo
-
+from evo_researcher.functions.utils import url_is_older_than
+from evo_researcher.models.WebSearchResult import WebSearchResult
+from unittest.mock import patch
+from evo_researcher.functions.search import search
 
 def _make_prediction(
     market_question: str,
@@ -98,27 +101,21 @@ class OlasAgent(AbstractBenchmarkedAgent):
         self.embedding_model = embedding_model
 
     def is_predictable(self, market_question: str) -> bool:
-        return self.is_predictable_restricted(market_question, None)
-
-    def is_predictable_restricted(self, market_question: str, time_restriction_up_to: datetime | None) -> bool:
         return is_predictable(question=market_question)
 
-    def research_restricted(self, market_question: str, time_restriction_up_to: datetime | None) -> str:
-        return research_autonolas(
-                prompt=market_question,
-                time_restriction_up_to=time_restriction_up_to,
-                engine=self.model,
-                embedding_model=self.embedding_model,
-            )
+    def is_predictable_restricted(self, market_question: str, time_restriction_up_to: datetime) -> bool:
+        return is_predictable(question=market_question)
     
-    def predict(self, market_question: str) -> Prediction:
-        return self.predict_restricted(market_question, None)
+    def research(self, market_question: str) -> str:
+        return research_autonolas(
+            prompt=market_question,
+            engine=self.model,
+            embedding_model=self.embedding_model,
+        )
 
-    def predict_restricted(
-        self, market_question: str, time_restriction_up_to: datetime | None
-    ) -> Prediction:
+    def predict(self, market_question: str) -> Prediction:
         try:
-            researched = self.research_restricted(market_question=market_question, time_restriction_up_to=time_restriction_up_to)
+            researched = self.research(market_question=market_question)
             return _make_prediction(
                 market_question=market_question,
                 additional_information=researched,
@@ -128,6 +125,20 @@ class OlasAgent(AbstractBenchmarkedAgent):
         except ValueError as e:
             print(f"Error in OlasAgent's predict: {e}")
             return Prediction()
+
+    def predict_restricted(
+        self, market_question: str, time_restriction_up_to: datetime
+    ) -> Prediction:
+        def side_effect(*args: t.Any, **kwargs: t.Any) -> list[str]:
+            results: list[str] = get_urls_from_queries(*args, **kwargs)
+            results_filtered = [
+                url for url in results
+                if url_is_older_than(url, time_restriction_up_to)
+            ]
+            return results_filtered
+    
+        with patch('evo_researcher.autonolas.research.get_urls_from_queries', side_effect=side_effect, autospec=True):
+            return self.predict(market_question)
 
 
 class EvoAgent(AbstractBenchmarkedAgent):
@@ -147,24 +158,18 @@ class EvoAgent(AbstractBenchmarkedAgent):
         self.use_tavily_raw_content = use_tavily_raw_content
 
     def is_predictable(self, market_question: str) -> bool:
-        return self.is_predictable_restricted(market_question, None)
+        return is_predictable(question=market_question)
 
-    def is_predictable_restricted(self, market_question: str, time_restriction_up_to: datetime | None) -> bool:
+    def is_predictable_restricted(self, market_question: str, time_restriction_up_to: datetime) -> bool:
         return is_predictable(question=market_question)
     
     def predict(self, market_question: str) -> Prediction:
-        return self.predict_restricted(market_question, None)
-
-    def predict_restricted(
-        self, market_question: str, time_restriction_up_to: datetime | None
-    ) -> Prediction:
         try:
             report, _ = research_evo(
                 goal=market_question,
                 model=self.model,
                 use_summaries=self.use_summaries,
                 use_tavily_raw_content=self.use_tavily_raw_content,
-                time_restriction_up_to=time_restriction_up_to,
             )
             return _make_prediction(
                 market_question=market_question,
@@ -175,6 +180,20 @@ class EvoAgent(AbstractBenchmarkedAgent):
         except ValueError as e:
             print(f"Error in EvoAgent's predict: {e}")
             return Prediction()
+
+    def predict_restricted(
+        self, market_question: str, time_restriction_up_to: datetime
+    ) -> Prediction:
+        def side_effect(*args: t.Any, **kwargs: t.Any) -> list[tuple[str, WebSearchResult]]:
+            results: list[tuple[str, WebSearchResult]] = search(*args, **kwargs)
+            results_filtered = [
+                r for r in results
+                if url_is_older_than(r[1].url, time_restriction_up_to)
+            ]
+            return results_filtered
+    
+        with patch('evo_researcher.functions.research.search', side_effect=side_effect, autospec=True):
+            return self.predict(market_question)
 
 
 class RephrasingOlasAgent(OlasAgent):
@@ -194,12 +213,12 @@ class RephrasingOlasAgent(OlasAgent):
             max_workers=max_workers,
         )
 
-    def research_restricted(self, market_question: str, time_restriction_up_to: datetime | None) -> str:
+    def research(self, market_question: str) -> str:
         questions = rephrase_question(question=market_question)
 
-        report_original = super().research_restricted(market_question=questions.original_question, time_restriction_up_to=time_restriction_up_to)
-        report_negated = super().research_restricted(market_question=questions.negated_question, time_restriction_up_to=time_restriction_up_to)
-        report_universal = super().research_restricted(market_question=questions.open_ended_question,time_restriction_up_to=time_restriction_up_to)
+        report_original = super().research(market_question=questions.original_question)
+        report_negated = super().research(market_question=questions.negated_question)
+        report_universal = super().research(market_question=questions.open_ended_question)
 
         report_concat = "\n\n---\n\n".join(
             [
