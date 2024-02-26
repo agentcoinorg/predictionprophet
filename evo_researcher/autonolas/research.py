@@ -1035,7 +1035,6 @@ def fetch_additional_information(
     max_add_words: int,
     nlp: spacy.Language,
     embedding_model: EmbeddingModel,
-    time_restriction_up_to: datetime | None = None,
     engine: str = "gpt-3.5-turbo",
     temperature: float = 0.5,
     max_compl_tokens: int = 500,
@@ -1113,7 +1112,6 @@ def fetch_additional_information(
 
 def research(
     prompt: str,
-    time_restriction_up_to: datetime | None = None,
     max_tokens: int | None = None,
     temperature: float | None = None,
     engine: str = "gpt-3.5-turbo",
@@ -1152,7 +1150,6 @@ def research(
         nlp=nlp,
         max_add_words=max_add_words,
         embedding_model=embedding_model,
-        time_restriction_up_to=time_restriction_up_to,
     )
 
     # Truncate additional information to stay within the chat completion token limit of 4096
