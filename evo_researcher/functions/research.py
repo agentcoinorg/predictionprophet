@@ -7,7 +7,6 @@ from evo_researcher.models.WebScrapeResult import WebScrapeResult
 from evo_researcher.functions.rerank_subqueries import rerank_subqueries
 from evo_researcher.functions.scrape_results import scrape_results
 from evo_researcher.functions.search import search
-from evo_researcher.functions.utils import 
 
 def research(
     goal: str,
