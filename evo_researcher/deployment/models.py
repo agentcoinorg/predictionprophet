@@ -22,6 +22,7 @@ class DeployableAgentER(DeployableAgent):
         return []
     
     def calculate_bet_amount(self, answer: bool, market: AgentMarket) -> BetAmount:
+        amount: Decimal
         if isinstance(market, ManifoldAgentMarket) :
             # Manifold won't give us fractional Mana, so bet the minimum amount to win at least 1 Mana.
             amount = market.get_minimum_bet_to_win(answer, amount_to_win=1) 
