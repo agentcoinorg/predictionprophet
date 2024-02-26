@@ -6,24 +6,25 @@ from prediction_market_agent_tooling.benchmark.agents import (
     RandomAgent,
 )
 from prediction_market_agent_tooling.benchmark.utils import (
-    EvaluatedQuestion,
     OutcomePrediction,
     Prediction,
 )
-
+from datetime import datetime
 from evo_researcher.autonolas.research import EmbeddingModel
 from evo_researcher.autonolas.research import Prediction as LLMCompletionPredictionDict
-from evo_researcher.autonolas.research import make_prediction
+from evo_researcher.autonolas.research import make_prediction, get_urls_from_queries
 from evo_researcher.autonolas.research import research as research_autonolas
-from evo_researcher.functions.evaluate_question import evaluate_question
+from evo_researcher.functions.evaluate_question import is_predictable
 from evo_researcher.functions.rephrase_question import rephrase_question
 from evo_researcher.functions.research import research as research_evo
-
+from evo_researcher.functions.utils import url_is_older_than
+from evo_researcher.models.WebSearchResult import WebSearchResult
+from unittest.mock import patch
+from evo_researcher.functions.search import search
 
 def _make_prediction(
     market_question: str,
     additional_information: str,
-    evaluation_information: t.Optional[EvaluatedQuestion],
     engine: str,
     temperature: float,
 ) -> Prediction:
@@ -37,16 +38,14 @@ def _make_prediction(
         temperature=temperature,
     )
     return completion_prediction_json_to_pydantic_model(
-        prediction, evaluation_information
+        prediction
     )
 
 
 def completion_prediction_json_to_pydantic_model(
     completion_prediction: LLMCompletionPredictionDict,
-    evaluation_information: t.Optional[EvaluatedQuestion],
 ) -> Prediction:
     return Prediction(
-        evaluation=evaluation_information,
         outcome_prediction=OutcomePrediction(
             p_yes=completion_prediction["p_yes"],
             confidence=completion_prediction["confidence"],
@@ -67,26 +66,24 @@ class QuestionOnlyAgent(AbstractBenchmarkedAgent):
         self.model = model
         self.temperature = temperature
 
-    def evaluate(self, market_question: str) -> EvaluatedQuestion:
-        return EvaluatedQuestion(question=market_question, is_predictable=True)
-
-    def research(self, market_question: str) -> str:
-        return ""  # No research for a question-only agent, but can't be None.
-
     def predict(
-        self, market_question: str, researched: str, evaluated: EvaluatedQuestion
+        self, market_question: str
     ) -> Prediction:
         try:
             return _make_prediction(
                 market_question=market_question,
-                additional_information=researched,
-                evaluation_information=evaluated,
+                additional_information="",
                 engine=self.model,
                 temperature=self.temperature,
             )
         except ValueError as e:
             print(f"Error in QuestionOnlyAgent's predict: {e}")
-            return Prediction(evaluation=evaluated)
+            return Prediction()
+        
+    def predict_restricted(
+        self, market_question: str, time_restriction_up_to: datetime
+    ) -> Prediction:
+        return self.predict(market_question)
 
 
 class OlasAgent(AbstractBenchmarkedAgent):
@@ -103,34 +100,45 @@ class OlasAgent(AbstractBenchmarkedAgent):
         self.temperature = temperature
         self.embedding_model = embedding_model
 
-    def evaluate(self, market_question: str) -> EvaluatedQuestion:
-        return evaluate_question(question=market_question)
+    def is_predictable(self, market_question: str) -> bool:
+        return is_predictable(question=market_question)
 
-    def research(self, market_question: str) -> t.Optional[str]:
-        try:
-            return research_autonolas(
-                prompt=market_question,
-                engine=self.model,
-                embedding_model=self.embedding_model,
-            )
-        except ValueError as e:
-            print(f"Error in OlasAgent's research: {e}")
-            return None
+    def is_predictable_restricted(self, market_question: str, time_restriction_up_to: datetime) -> bool:
+        return is_predictable(question=market_question)
+    
+    def research(self, market_question: str) -> str:
+        return research_autonolas(
+            prompt=market_question,
+            engine=self.model,
+            embedding_model=self.embedding_model,
+        )
 
-    def predict(
-        self, market_question: str, researched: str, evaluated: EvaluatedQuestion
-    ) -> Prediction:
+    def predict(self, market_question: str) -> Prediction:
         try:
+            researched = self.research(market_question=market_question)
             return _make_prediction(
                 market_question=market_question,
                 additional_information=researched,
-                evaluation_information=evaluated,
                 engine=self.model,
                 temperature=self.temperature,
             )
         except ValueError as e:
             print(f"Error in OlasAgent's predict: {e}")
-            return Prediction(evaluation=evaluated)
+            return Prediction()
+
+    def predict_restricted(
+        self, market_question: str, time_restriction_up_to: datetime
+    ) -> Prediction:
+        def side_effect(*args: t.Any, **kwargs: t.Any) -> list[str]:
+            results: list[str] = get_urls_from_queries(*args, **kwargs)
+            results_filtered = [
+                url for url in results
+                if url_is_older_than(url, time_restriction_up_to)
+            ]
+            return results_filtered
+    
+        with patch('evo_researcher.autonolas.research.get_urls_from_queries', side_effect=side_effect, autospec=True):
+            return self.predict(market_question)
 
 
 class EvoAgent(AbstractBenchmarkedAgent):
@@ -140,42 +148,52 @@ class EvoAgent(AbstractBenchmarkedAgent):
         temperature: float = 0.0,
         agent_name: str = "evo",
         use_summaries: bool = False,
+        use_tavily_raw_content: bool = False,
         max_workers: t.Optional[int] = None,
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model = model
         self.temperature = temperature
         self.use_summaries = use_summaries
+        self.use_tavily_raw_content = use_tavily_raw_content
 
-    def evaluate(self, market_question: str) -> EvaluatedQuestion:
-        return evaluate_question(question=market_question)
+    def is_predictable(self, market_question: str) -> bool:
+        return is_predictable(question=market_question)
 
-    def research(self, market_question: str) -> t.Optional[str]:
+    def is_predictable_restricted(self, market_question: str, time_restriction_up_to: datetime) -> bool:
+        return is_predictable(question=market_question)
+    
+    def predict(self, market_question: str) -> Prediction:
         try:
             report, _ = research_evo(
                 goal=market_question,
                 model=self.model,
                 use_summaries=self.use_summaries,
+                use_tavily_raw_content=self.use_tavily_raw_content,
             )
-            return report
-        except ValueError as e:
-            print(f"Error in EvoAgent's research: {e}")
-            return None
-
-    def predict(
-        self, market_question: str, researched: str, evaluated: EvaluatedQuestion
-    ) -> Prediction:
-        try:
             return _make_prediction(
                 market_question=market_question,
-                additional_information=researched,
-                evaluation_information=evaluated,
+                additional_information=report,
                 engine=self.model,
                 temperature=self.temperature,
             )
         except ValueError as e:
             print(f"Error in EvoAgent's predict: {e}")
-            return Prediction(evaluation=evaluated)
+            return Prediction()
+
+    def predict_restricted(
+        self, market_question: str, time_restriction_up_to: datetime
+    ) -> Prediction:
+        def side_effect(*args: t.Any, **kwargs: t.Any) -> list[tuple[str, WebSearchResult]]:
+            results: list[tuple[str, WebSearchResult]] = search(*args, **kwargs)
+            results_filtered = [
+                r for r in results
+                if url_is_older_than(r[1].url, time_restriction_up_to)
+            ]
+            return results_filtered
+    
+        with patch('evo_researcher.functions.research.search', side_effect=side_effect, autospec=True):
+            return self.predict(market_question)
 
 
 class RephrasingOlasAgent(OlasAgent):
@@ -195,14 +213,12 @@ class RephrasingOlasAgent(OlasAgent):
             max_workers=max_workers,
         )
 
-    def research(self, market_question: str) -> t.Optional[str]:
+    def research_restricted(self, market_question: str) -> str:
         questions = rephrase_question(question=market_question)
 
         report_original = super().research(market_question=questions.original_question)
         report_negated = super().research(market_question=questions.negated_question)
-        report_universal = super().research(
-            market_question=questions.open_ended_question
-        )
+        report_universal = super().research(market_question=questions.open_ended_question)
 
         report_concat = "\n\n---\n\n".join(
             [

@@ -19,7 +19,7 @@ def test_parse_result_str_to_json() -> None:
         "```\n"
     )
     prediction: bm.Prediction = completion_prediction_json_to_pydantic_model(
-        json.loads(clean_completion_json(prediction_str)), None
+        json.loads(clean_completion_json(prediction_str))
     )
     assert prediction.outcome_prediction is not None
     assert prediction.outcome_prediction.p_yes == 0.6

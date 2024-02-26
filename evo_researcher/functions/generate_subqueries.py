@@ -10,12 +10,12 @@ Return ONLY the web searches, separated by commas and without quotes.
 
 Limit your searches to {search_limit}.
 """
-def generate_subqueries(query: str, limit: int) -> list[str]:
+def generate_subqueries(query: str, limit: int, model: str) -> list[str]:
     subquery_generation_prompt = ChatPromptTemplate.from_template(template=subquery_generation_template)
 
     subquery_generation_chain = (
         subquery_generation_prompt |
-        ChatOpenAI(model="gpt-4-1106-preview") |
+        ChatOpenAI(model=model) |
         CommaSeparatedListOutputParser()
     )
 

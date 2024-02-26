@@ -1,5 +1,5 @@
 import pytest
-from evo_researcher.functions.evaluate_question import evaluate_question
+from evo_researcher.functions.evaluate_question import is_predictable
 
 
 @pytest.mark.parametrize("question, answerable", [
@@ -11,5 +11,4 @@ from evo_researcher.functions.evaluate_question import evaluate_question
     ("Did COVID-19 come from a laboratory?", False),
 ])
 def test_evaluate_question(question: str, answerable: bool) -> None:
-    eval = evaluate_question(question=question)
-    assert eval.is_predictable == answerable,  f"Question is not evaluated correctly, see the completion: {eval.is_predictable}"
+    assert is_predictable(question=question) == answerable,  f"Question is not evaluated correctly, see the completion: {is_predictable}"

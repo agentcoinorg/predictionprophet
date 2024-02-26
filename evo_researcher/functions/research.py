@@ -1,4 +1,4 @@
-import os
+from datetime import datetime
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from evo_researcher.functions.create_embeddings_from_results import create_embeddings_from_results
 from evo_researcher.functions.generate_subqueries import generate_subqueries
@@ -7,6 +7,7 @@ from evo_researcher.models.WebScrapeResult import WebScrapeResult
 from evo_researcher.functions.rerank_subqueries import rerank_subqueries
 from evo_researcher.functions.scrape_results import scrape_results
 from evo_researcher.functions.search import search
+from evo_researcher.functions.utils import time_restrict_urls
 
 def research(
     goal: str,
@@ -19,8 +20,8 @@ def research(
     top_k_per_query: int = 8,
     use_tavily_raw_content: bool = False,
 ) -> tuple[str, str]:    
-    queries = generate_subqueries(query=goal, limit=initial_subqueries_limit)
-    queries = rerank_subqueries(queries=queries, goal=goal)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
+    queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model)
+    queries = rerank_subqueries(queries=queries, goal=goal, model=model)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
 
     search_results_with_queries = search(queries, lambda result: not result.url.startswith("https://www.youtube"))
 
@@ -33,7 +34,7 @@ def research(
         url=result.url,
         title=result.title,
         content=result.raw_content,
-    ) for result in scrape_args]
+    ) for result in scrape_args if result.raw_content]
     scraped = [result for result in scraped if result.content != ""]
 
     text_splitter = RecursiveCharacterTextSplitter(
