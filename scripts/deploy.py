@@ -1,6 +1,7 @@
 import typer
 import getpass
 import typing as t
+from git import Repo
 from datetime import datetime
 from prediction_market_agent_tooling.markets.markets import MarketType
 from prediction_market_agent_tooling.deploy.agent import MonitorConfig
@@ -35,7 +36,7 @@ def deploy(
     chosen_agent_class: t.Type[DeployableAgentER] = [agent for agent in DEPLOYABLE_AGENTS if agent.__name__ == deployable_agent_name][0]
     
     chosen_agent_class().deploy_gcp(
-        repository="git+https://github.com/polywrap/evo.researcher.git@peter/new-deployment",
+        repository=f"git+https://github.com/polywrap/evo.researcher.git@{Repo('.').active_branch.name}",
         market_type=market_type,
         memory=1024,
         labels={
