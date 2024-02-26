@@ -27,7 +27,7 @@ from langchain.schema.output_parser import StrOutputParser
 from langchain_openai import OpenAIEmbeddings
 
 from dateutil import parser
-from evo_researcher.functions.utils import check_not_none, time_restrict_urls
+from evo_researcher.functions.utils import check_not_none
 from evo_researcher.functions.cache import persistent_inmemory_cache
 from evo_researcher.functions.parallelism import par_map
 
