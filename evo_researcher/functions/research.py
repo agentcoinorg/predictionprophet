@@ -26,7 +26,7 @@ def research(
 
     search_results_with_queries = search(
         queries, 
-        lambda result: (not result.url.startswith("https://www.youtube") and (time_restriction_up_to is None or len(time_restrict_urls([result.url], time_restriction_up_to)) > 0))
+        lambda result: not result.url.startswith("https://www.youtube")
     )
 
     if not search_results_with_queries:
