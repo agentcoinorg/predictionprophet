@@ -1,7 +1,9 @@
 import typer
 import getpass
 import typing as t
+from datetime import datetime
 from prediction_market_agent_tooling.markets.markets import MarketType
+from prediction_market_agent_tooling.deploy.agent import MonitorConfig
 from evo_researcher.deployment.models import DeployableAgentER, DeployableAgentER_EvoGPT3, DeployableAgentER_OlasEmbeddingOA
 
 
@@ -14,6 +16,7 @@ DEPLOYABLE_AGENTS = [
 def deploy(
     market_type: MarketType,
     deployable_agent_name: str = typer.Option(),
+    manifold_user_id: str = typer.Option(),
     manifold_api_key_secret_name: str = typer.Option(),
     openai_api_key_secret_name: str = typer.Option(),
     tavity_api_key_secret_name: str = typer.Option(),
@@ -36,7 +39,6 @@ def deploy(
         memory=1024,
         labels={
             "owner": getpass.getuser().lower(),
-            "deployable_agent_name": deployable_agent_name.lower(),
         },
         env_vars={
             "BET_FROM_ADDRESS": bet_from_address,
@@ -48,6 +50,11 @@ def deploy(
             "BET_FROM_PRIVATE_KEY": f"{bet_from_private_key_secret_name}:latest",
         },
         cron_schedule="0 */2 * * *",
+        monitor_config=MonitorConfig(
+            start_time=datetime.utcnow(),
+            manifold_user_id=manifold_user_id,
+            omen_public_key=bet_from_address,
+        ),
     )
 
 
