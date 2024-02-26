@@ -22,6 +22,7 @@ def deploy(
     tavity_api_key_secret_name: str = typer.Option(),
     bet_from_address: str = typer.Option(),
     bet_from_private_key_secret_name: str = typer.Option(),
+    start_time: datetime | None = None,
 ) -> None:
     """
     Script to execute locally to deploy the agent to GCP.
@@ -51,7 +52,7 @@ def deploy(
         },
         cron_schedule="0 */2 * * *",
         monitor_config=MonitorConfig(
-            start_time=datetime.utcnow(),
+            start_time=start_time or datetime.utcnow(),
             manifold_user_id=manifold_user_id,
             omen_public_key=bet_from_address,
         ),
