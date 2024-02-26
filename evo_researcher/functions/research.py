@@ -7,7 +7,7 @@ from evo_researcher.models.WebScrapeResult import WebScrapeResult
 from evo_researcher.functions.rerank_subqueries import rerank_subqueries
 from evo_researcher.functions.scrape_results import scrape_results
 from evo_researcher.functions.search import search
-from evo_researcher.functions.utils import time_restrict_urls
+from evo_researcher.functions.utils import 
 
 def research(
     goal: str,
@@ -18,7 +18,6 @@ def research(
     scrape_content_split_chunk_size: int = 800,
     scrape_content_split_chunk_overlap: int = 225,
     top_k_per_query: int = 8,
-    time_restriction_up_to: datetime | None = None,
     use_tavily_raw_content: bool = False,
 ) -> tuple[str, str]:    
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model)
