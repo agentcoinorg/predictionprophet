@@ -432,18 +432,18 @@ def truncate_additional_information(
         return enc.decode(add_trunc_enc)
     
 
-def safe_get_urls_from_query(query: str, num: int = 3, time_restriction_up_to: datetime | None = None) -> List[str]:
+def safe_get_urls_from_query(query: str, num: int = 3) -> List[str]:
     try:
-        return get_urls_from_query(query, num, time_restriction_up_to)
+        return get_urls_from_query(query, num)
     except ValueError as e:
         print(f"Error in get_urls_from_query: {e}")
         return []
 
 
 def get_urls_from_query(
-    query: str, num: int = 3, time_restriction_up_to: datetime | None = None
+    query: str, num: int = 3
 ) -> List[str]:
-    return get_urls_from_queries(queries=[query], num=num, time_restriction_up_to=time_restriction_up_to)
+    return get_urls_from_queries(queries=[query], num=num)
 
 
 def get_urls_from_queries(queries: List[str], num: int = 3) -> List[str]:
@@ -472,7 +472,6 @@ def get_urls_from_queries(queries: List[str], num: int = 3) -> List[str]:
             query=query,
             num=max_num_fetch,  # Limit the number of returned URLs per query
         )
-        fetched_urls = time_restrict_urls(fetched_urls, time_restriction_up_to) if time_restriction_up_to else fetched_urls
 
         # Add only unique URLs up to 'num' per query, omitting PDF and 'download' URLs
         count = 0
@@ -1094,7 +1093,7 @@ def fetch_additional_information(
 
     # Get URLs from queries
     urls = get_urls_from_queries(
-        json_data["queries"], time_restriction_up_to=time_restriction_up_to
+        json_data["queries"]
     )
 
     # Extract relevant sentences from URLs
