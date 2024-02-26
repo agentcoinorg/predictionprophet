@@ -1,7 +1,10 @@
+from decimal import Decimal
 from evo_researcher.benchmark.agents import EvoAgent, OlasAgent, EmbeddingModel
 from prediction_market_agent_tooling.benchmark.agents import AbstractBenchmarkedAgent
 from prediction_market_agent_tooling.markets.agent_market import AgentMarket
-from prediction_market_agent_tooling.deploy.agent import DeployableAgent
+from prediction_market_agent_tooling.markets.manifold.manifold import ManifoldAgentMarket
+from prediction_market_agent_tooling.deploy.agent import DeployableAgent, BetAmount
+from prediction_market_agent_tooling.markets.betting_strategies import minimum_bet_to_win
 
 
 class DeployableAgentER(DeployableAgent):
@@ -17,6 +20,18 @@ class DeployableAgentER(DeployableAgent):
                 print(f"Market '{market.question}' is predictable.")
                 return [market]
         return []
+    
+    def calculate_bet_amount(self, answer: bool, market: AgentMarket) -> BetAmount:
+        if isinstance(market, ManifoldAgentMarket) :
+            # Manifold won't give us fractional Mana, so bet the minimum amount to win at least 1 Mana.
+            amount = market.get_minimum_bet_to_win(answer, amount_to_win=1) 
+        else:
+            # Otherwise, bet to win at least 0.001 (of something), unless the bet would be less than the tiny bet.
+            amount = max(
+                Decimal(minimum_bet_to_win(answer, amount_to_win=0.001, market=market)), 
+                market.get_tiny_bet_amount().amount,
+            )
+        return BetAmount(amount=amount, currency=market.currency)
 
     def answer_binary_market(self, market: AgentMarket) -> bool:
         prediciton = self.agent.predict(market.question)  # Already checked in the `pick_markets`.
