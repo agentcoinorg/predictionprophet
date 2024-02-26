@@ -7,7 +7,6 @@ from evo_researcher.models.WebScrapeResult import WebScrapeResult
 from evo_researcher.functions.rerank_subqueries import rerank_subqueries
 from evo_researcher.functions.scrape_results import scrape_results
 from evo_researcher.functions.search import search
-from evo_researcher.functions.utils import time_restrict_urls
 
 def research(
     goal: str,
@@ -23,7 +22,10 @@ def research(
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model)
     queries = rerank_subqueries(queries=queries, goal=goal, model=model)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
 
-    search_results_with_queries = search(queries, lambda result: not result.url.startswith("https://www.youtube"))
+    search_results_with_queries = search(
+        queries, 
+        lambda result: not result.url.startswith("https://www.youtube")
+    )
 
     if not search_results_with_queries:
         raise ValueError(f"No search results found for the goal {goal}.")

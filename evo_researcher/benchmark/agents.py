@@ -213,7 +213,7 @@ class RephrasingOlasAgent(OlasAgent):
             max_workers=max_workers,
         )
 
-    def research_restricted(self, market_question: str) -> str:
+    def research(self, market_question: str) -> str:
         questions = rephrase_question(question=market_question)
 
         report_original = super().research(market_question=questions.original_question)
