@@ -35,7 +35,7 @@ class DeployableAgentER(DeployableAgent):
                 Decimal(minimum_bet_to_win(answer, amount_to_win=0.001, market=market)), 
                 market.get_tiny_bet_amount().amount,
             )
-            max_bet_amount = 0.1
+            max_bet_amount = 0.01
         if amount > max_bet_amount:
             print(f"Would need at least {amount} {market.currency} to be profitable, betting only {market.get_tiny_bet_amount()} for benchmark purposes.")
             amount = market.get_tiny_bet_amount().amount
