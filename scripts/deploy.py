@@ -23,6 +23,8 @@ def deploy(
     manifold_api_key_secret_name: str = typer.Option(),
     openai_api_key_secret_name: str = typer.Option(),
     tavity_api_key_secret_name: str = typer.Option(),
+    google_search_api_key_name: str = typer.Option(),
+    google_search_engine_id_name: str = typer.Option(),
     bet_from_address: str = typer.Option(),
     bet_from_private_key_secret_name: str = typer.Option(),
     start_time: datetime | None = None,
@@ -52,6 +54,8 @@ def deploy(
         secrets={
             "OPENAI_API_KEY": f"{openai_api_key_secret_name}:latest",
             "TAVILY_API_KEY": f"{tavity_api_key_secret_name}:latest",
+            "GOOGLE_SEARCH_API_KEY": f"{google_search_api_key_name}:latest",
+            "GOOGLE_SEARCH_ENGINE_ID": f"{google_search_engine_id_name}:latest",
         },
         cron_schedule="0 */2 * * *",
         start_time=start_time,
