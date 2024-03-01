@@ -45,7 +45,7 @@ def deploy(
             MANIFOLD_API_KEY=SecretStr(f"{manifold_api_key_secret_name}:latest"),
             BET_FROM_PRIVATE_KEY=PrivateKey(f"{bet_from_private_key_secret_name}:latest"),
         ),
-        memory=1024,
+        memory=2048,
         labels={
             "owner": getpass.getuser().lower(),
         },
