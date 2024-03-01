@@ -3420,7 +3420,7 @@ web3 = "^6.15.1"
 type = "git"
 url = "https://github.com/gnosis/prediction-market-agent-tooling.git"
 reference = "peter/monitor-from-gcp"
-resolved_reference = "c84126ef75c6138e66fee25d77468a7a0ee61d04"
+resolved_reference = "0ae3508d4355f8961c6005df4ff08cb06c30c26d"
 
 [[package]]
 name = "preshed"

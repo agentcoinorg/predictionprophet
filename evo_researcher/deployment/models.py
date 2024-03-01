@@ -24,17 +24,23 @@ class DeployableAgentER(DeployableAgent):
     
     def calculate_bet_amount(self, answer: bool, market: AgentMarket) -> BetAmount:
         amount: Decimal
+        max_bet_amount: float
         if isinstance(market, ManifoldAgentMarket) :
             # Manifold won't give us fractional Mana, so bet the minimum amount to win at least 1 Mana.
             amount = market.get_minimum_bet_to_win(answer, amount_to_win=1) 
+            max_bet_amount = 10.0
         elif isinstance(market, OmenAgentMarket):
             # Otherwise, bet to win at least 0.001 (of something), unless the bet would be less than the tiny bet.
             amount = max(
                 Decimal(minimum_bet_to_win(answer, amount_to_win=0.001, market=market)), 
                 market.get_tiny_bet_amount().amount,
             )
+            max_bet_amount = 0.1
         else:
             raise ValueError(f"Unknow market: {market}")
+        if amount > max_bet_amount:
+            print(f"Would need at least {amount} {market.currency} to be profitable, betting only {market.get_tiny_bet_amount()} for benchmark purposes.")
+            amount = market.get_tiny_bet_amount().amount
         return BetAmount(amount=amount, currency=market.currency)
 
     def answer_binary_market(self, market: AgentMarket) -> bool:
