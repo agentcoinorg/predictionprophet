@@ -1,3 +1,4 @@
+import pytz
 from decimal import Decimal
 from datetime import datetime, timedelta
 from evo_researcher.benchmark.agents import EvoAgent, OlasAgent, EmbeddingModel
@@ -17,7 +18,8 @@ class DeployableAgentER(DeployableAgent):
     agent: AbstractBenchmarkedAgent
 
     def recently_betted(self, market: AgentMarket) -> bool:
-        start_time = datetime.now() - timedelta(hours=48)
+        # TODO: Replace with utcnow from PMAT once it's merged and released.
+        start_time = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=48)
         keys = APIKeys()
         recently_betted_questions = [manifold_to_generic_resolved_bet(b).market_question for b in get_manifold_bets(
             user_id=get_authenticated_user(keys.manifold_api_key.get_secret_value()).id,
