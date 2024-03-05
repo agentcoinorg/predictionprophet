@@ -1,4 +1,3 @@
-from datetime import datetime
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from evo_researcher.functions.create_embeddings_from_results import create_embeddings_from_results
 from evo_researcher.functions.generate_subqueries import generate_subqueries
@@ -61,11 +60,7 @@ def research(
         prepare_summary(goal, content, "gpt-3.5-turbo-0125", trim_content_to_tokens=14_000)  # Hard code gpt-3.5-turbo-0125, because it would be very costly with gpt-4.
         for content in url_to_content_deemed_most_useful.values()
     ] if use_summaries else vector_result_texts
-    
-    chunks = ""
-    for chunk in vector_result_texts:
-        chunks += "- " + chunk + "\n\n"
 
     report = prepare_report(goal, vector_result_texts, model=model)
 
-    return (report, chunks)
+    return report
