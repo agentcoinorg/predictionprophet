@@ -165,7 +165,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
     
     def predict(self, market_question: str) -> Prediction:
         try:
-            report, _ = research_evo(
+            report = research_evo(
                 goal=market_question,
                 model=self.model,
                 use_summaries=self.use_summaries,
