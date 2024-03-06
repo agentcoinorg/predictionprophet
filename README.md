@@ -4,9 +4,10 @@
 
 This project is aimed to be an AI agent that makes informed predictions, based on web research.
 
-It contains two primary features:
+It contains three primary features:
 
 - An information research function
+- A prediction function
 - An information grading function
 
 Below, there's a high level explanation of their implementations, respectively.
@@ -24,6 +25,11 @@ The research function takes a question, like `"Will Twitter implement a new misi
 7. Iterate over the queries selected on step `2`. And for each one of them, vector search for the most relevant embeddings for each.
 8. Aggregate the chunks from the previous steps and prepare a report.
 
+### Prediction Function
+
+Ported implementation from: https://github.com/valory-xyz/mech/blob/main/tools/prediction_request_embedding/prediction_sentence_embedding.py
+
+
 ### Grading Function
 
 For the implmentation of this function, the information quality criteria were selected from https://guides.lib.unc.edu/evaluating-info/evaluate, ignoring `usability` and `intended audience`.
@@ -33,10 +39,6 @@ Upon receiving a question like `"Will Twitter implement a new misinformation pol
 1. Create en evaluation plan
 2. Perform the evaluation of the information according to the plan from the previous step
 3. Extract the scores from the evaluation
-
-### Predict
-
-Ported implementation from: https://github.com/valory-xyz/mech/blob/main/tools/prediction_request_embedding/prediction_sentence_embedding.py
 
 
 ## Installation
@@ -50,51 +52,16 @@ poetry shell
 
 ### Research
 
-With Evo:
 
 ```bash
-poetry run python ./evo_researcher/main.py research "Will Twitter implement a new misinformation policy before the 2024 elections?" evo
-```
-
-With Autonolas:
-
-```bash
-poetry run python ./evo_researcher/main.py research "Will Twitter implement a new misinformation policy before the 2024 elections?" autonolas
+poetry run research "Will Twitter implement a new misinformation policy before the 2024 elections?"
 ```
 
 ### Predict
 
 ```bash
-poetry run python ./evo_researcher/main.py predict "Will Twitter implement a new misinformation policy before the 2024 elections?" ./outputs/myinfopath
+poetry run predict "Will Twitter implement a new misinformation policy before the 2024 elections?"
 ```
-
-### Evaluate
-
-```bash
-poetry run python ./evo_researcher/main.py evaluate "Will Twitter implement a new misinformation policy before the 2024 elections?" ./outputs/myinfopath
-```
-
-## Test
-
-### Run all questions
-
-```bash
-pytest
-```
-
-### Run specific questions
-
-Use `pytest`'s `-k` flag and a string matcher. Example:
-
-```bash
-pytest -k "Twitter"
-```
-
-## Example results
-
-* Evo Reports: https://hackmd.io/mrCRBJyiTi-aO1gSFPjoDg
-* Evo Information excerpts: https://hackmd.io/VQGJgHD1SImZrDR7puauJA?both
-* Autonolas Information excerpts: https://hackmd.io/5qt_0HkvQyuGZ2r0RqJtoQ
 
 ## Ideas for future improvement
 
