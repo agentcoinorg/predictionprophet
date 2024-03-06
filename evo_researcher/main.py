@@ -1,11 +1,13 @@
 import click
 import time
+import logging
 from dotenv import load_dotenv
 from langchain_community.callbacks import get_openai_callback
 from evo_researcher.autonolas.research import make_prediction
 from evo_researcher.functions.research import research as evo_research
 
 load_dotenv()
+logging.basicConfig(level=logging.INFO)
 
 def create_output_file(info: str, path: str) -> str:
     with open(path, 'w') as file:
@@ -38,7 +40,7 @@ def research(
     
     end = time.time()
     
-    print(f"\n\nTime elapsed: {end - start}\n\n{cb}\n\n")
+    logging.debug(f"\n\nTime elapsed: {end - start}\n\n{cb}\n\n")
     
     if file:
         create_output_file(report, file)
@@ -64,7 +66,7 @@ def predict(prompt: str, path: str | None = None) -> None:
 
     end = time.time()
     
-    print(f"\n\nTime elapsed: {end - start}\n\n{cb}\n\n")
+    logging.debug(f"\n\nTime elapsed: {end - start}\n\n{cb}\n\n")
     print(prediction)
     
 
