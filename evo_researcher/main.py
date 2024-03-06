@@ -9,7 +9,7 @@ from evo_researcher.functions.research import research as evo_research
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-def create_output_file(info: str, path: str) -> str:
+def create_output_file(info: str, path: str) -> None:
     with open(path, 'w') as file:
         file.write(info)
 
