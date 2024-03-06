@@ -17,7 +17,7 @@ def research(
     scrape_content_split_chunk_overlap: int = 225,
     top_k_per_query: int = 8,
     use_tavily_raw_content: bool = False,
-) -> tuple[str, str]:    
+) -> str:    
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model)
     queries = rerank_subqueries(queries=queries, goal=goal, model=model)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
 

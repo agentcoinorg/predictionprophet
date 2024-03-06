@@ -2,15 +2,12 @@
 
 ## Overview
 
-This project is aimed to be an iteration on top of [Autonolas AI Mechs's](https://github.com/valory-xyz/mech) research process
-aimed towards making informed predictions.
+This project is aimed to be an AI agent that makes informed predictions, based on web research.
 
 It contains two primary features:
 
 - An information research function
 - An information grading function
-
-Additionally, Mech's predict capability has been ported into a function that can also be independently run from this repo.
 
 Below, there's a high level explanation of their implementations, respectively.
 

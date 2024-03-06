@@ -40,6 +40,10 @@ pysqlite3-binary = ["pysqlite3-binary"]
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.8.0"
 
+[tool.poetry.scripts]
+research= "evo_researcher.main:research"
+predict= "evo_researcher.main:predict"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
