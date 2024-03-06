@@ -41,7 +41,7 @@ def research(
     print(f"\n\nTime elapsed: {end - start}\n\n{cb}\n\n")
     
     if file:
-        create_output_file(report)
+        create_output_file(report, file)
         print(f"Output saved to '{file}'")
         return
     
