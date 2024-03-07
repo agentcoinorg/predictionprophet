@@ -1167,13 +1167,17 @@ def make_prediction(
     additional_information: str,
     temperature: float = 0.7,
     engine: str = "gpt-3.5-turbo-1106",
+    api_key: str | None = None
 ) -> Prediction:
+    if api_key == None:
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+    
     current_time_utc = datetime.now(timezone.utc)
     formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
 
     prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
 
-    llm = ChatOpenAI(model=engine, temperature=temperature)
+    llm = ChatOpenAI(model=engine, temperature=temperature, api_key=api_key)
     formatted_messages = prediction_prompt.format_messages(user_prompt=prompt, additional_information=additional_information, timestamp=formatted_time_utc)
     generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5)
 

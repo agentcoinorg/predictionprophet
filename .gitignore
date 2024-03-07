@@ -297,3 +297,4 @@ outputs
 # File cache
 .cachedir
 predictions_cache.json
+.streamlit

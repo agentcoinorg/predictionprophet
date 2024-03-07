@@ -1,4 +1,4 @@
-# Evo Researcher
+# Evo Predict
 
 ## Overview
 
@@ -61,6 +61,12 @@ poetry run research "Will Twitter implement a new misinformation policy before t
 
 ```bash
 poetry run predict "Will Twitter implement a new misinformation policy before the 2024 elections?"
+```
+
+## Run front-end app
+
+```bash
+poetry run streamlit run ./scripts/public_agent_app.py
 ```
 
 ## Ideas for future improvement

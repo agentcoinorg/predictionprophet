@@ -1,3 +1,4 @@
+import os
 import tiktoken
 import typing as t
 from langchain_openai import ChatOpenAI
@@ -8,7 +9,10 @@ from evo_researcher.functions.utils import trim_to_n_tokens
 
 
 @persistent_inmemory_cache
-def prepare_summary(goal: str, content: str, model: str, trim_content_to_tokens: t.Optional[int] = None) -> str:
+def prepare_summary(goal: str, content: str, model: str, api_key: str | None = None, trim_content_to_tokens: t.Optional[int] = None) -> str:
+    if api_key == None:
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+    
     prompt_template = """Write comprehensive summary of the following web content, that provides relevant information to answer the question: '{goal}'.
 But cut the fluff and keep it up to the point.
 Write in bullet points.
@@ -22,7 +26,7 @@ Content:
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model=model) |
+        ChatOpenAI(model=model, api_key=api_key) |
         StrOutputParser()
     )
 
@@ -34,7 +38,10 @@ Content:
     return response
 
 
-def prepare_report(goal: str, scraped: list[str], model: str) -> str:
+def prepare_report(goal: str, scraped: list[str], model: str, api_key: str | None = None) -> str:
+    if api_key == None:
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+        
     evaluation_prompt_template = """
     You are a professional researcher. Your goal is to provide a relevant information report
     in order to make an informed prediction for the question: '{goal}'.
@@ -60,7 +67,7 @@ def prepare_report(goal: str, scraped: list[str], model: str) -> str:
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model=model) |
+        ChatOpenAI(model=model, api_key=api_key) |
         StrOutputParser()
     )
 
