@@ -8,8 +8,6 @@ import streamlit as st
 from evo_researcher.benchmark.agents import EvoAgent
 
 class StreamlitLogger(BaseLogger):
-    logs: list[str] = []
-    
     def __init__(self) -> None:
         super().__init__()
     
@@ -17,16 +15,7 @@ class StreamlitLogger(BaseLogger):
         st.write(msg)
     
     debug = info = warning = error = critical = log
-
-st.set_page_config(layout="wide")
-
-st.title("Evo Predict")
-
-with st.form("question_form", clear_on_submit=True):
-    question = st.text_input('Question', placeholder="Will Twitter implement a new misinformation policy before the end of 2024")
-    openai_api_key = st.text_input('OpenAI API Key', placeholder="sk-...", type="password")
-    submit_button = st.form_submit_button('Predict')
-
+    
 logger = StreamlitLogger()
 agent = EvoAgent(model="gpt-4-0125-preview", logger=logger)
 tavily_api_key = os.environ.get('TAVILY_API_KEY')
@@ -37,6 +26,14 @@ if tavily_api_key == None:
     except:
         st.container().error("No Tavily API Key provided")
         st.stop()
+
+st.set_page_config(layout="wide")
+st.title("Evo Predict")
+
+with st.form("question_form", clear_on_submit=True):
+    question = st.text_input('Question', placeholder="Will Twitter implement a new misinformation policy before the end of 2024")
+    openai_api_key = st.text_input('OpenAI API Key', placeholder="sk-...", type="password")
+    submit_button = st.form_submit_button('Predict')
 
 if submit_button and question and openai_api_key:
     with st.container():
