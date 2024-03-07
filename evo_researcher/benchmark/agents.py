@@ -235,16 +235,17 @@ class EvoAgent(AbstractBenchmarkedAgent):
         scrape_content_split_chunk_overlap: int = 225,
         top_k_per_query: int = 8,
         use_tavily_raw_content: bool = False,
-        api_key: str | None = None,
+        openai_api_key: str | None = None,
+        tavily_api_key: str | None = None,
     ) -> str:
         self.logger.info("Started subqueries generation")
-        queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=api_key)
+        queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)
         
         stringified_queries = '\n- ' + '\n- '.join(queries)
         self.logger.info(f"Generated subqueries: {stringified_queries}")
         
         self.logger.info("Started subqueries reranking")
-        queries = rerank_subqueries(queries=queries, goal=goal, model=model, api_key=api_key)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
+        queries = rerank_subqueries(queries=queries, goal=goal, model=model, api_key=openai_api_key)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
 
         stringified_queries = '\n- ' + '\n- '.join(queries)
         self.logger.info(f"Reranked subqueries. Will use top {subqueries_limit}: {stringified_queries}")
@@ -252,7 +253,8 @@ class EvoAgent(AbstractBenchmarkedAgent):
         self.logger.info(f"Started web searching")
         search_results_with_queries = search(
             queries, 
-            lambda result: not result.url.startswith("https://www.youtube")
+            lambda result: not result.url.startswith("https://www.youtube"),
+            tavily_api_key=tavily_api_key
         )
 
         if not search_results_with_queries:
@@ -282,7 +284,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
         )
         
         self.logger.info("Started embeddings creation")
-        collection = create_embeddings_from_results(scraped, text_splitter, api_key=api_key)
+        collection = create_embeddings_from_results(scraped, text_splitter, api_key=openai_api_key)
         self.logger.info("Embeddings created")
 
         vector_result_texts: list[str] = []
@@ -308,7 +310,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
                     goal,
                     content,
                     "gpt-3.5-turbo-0125",
-                    api_key=api_key,
+                    api_key=openai_api_key,
                     trim_content_to_tokens=14_000
                 )
                 for content in url_to_content_deemed_most_useful.values()
@@ -316,7 +318,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
             self.logger.info(f"Information summarized")
 
         self.logger.info(f"Started preparing report")
-        report = prepare_report(goal, vector_result_texts, model=model, api_key=api_key)
+        report = prepare_report(goal, vector_result_texts, model=model, api_key=openai_api_key)
         self.logger.info(f"Report prepared")
 
         return report
