@@ -18,81 +18,60 @@ def calculate_cumulative_similarity(numbers):
 
 
 PREDICTION_PROMPT = """
-INTRODUCTION:
-Your primary task is to accurately estimate the probabilities for the outcome of a 'market question', \
-found in 'USER_PROMPT'. The market question is part of a prediction market, where users can place bets on the outcomes of market questions and earn rewards if the selected outcome occurrs. The 'market question' \
-in this scenario has only two possible outcomes: `Yes` or `No`. Each market has a closing date at which the outcome is evaluated. This date is typically stated within the market question.  \
-The closing date is considered to be 23:59:59 of the date provided in the market question. If the event specified in the market question has not occurred before the closing date, the market question's outcome is `No`. \
-If the event has happened before the closing date, the market question's outcome is `Yes`. You are provided an itemized list of information under the label "ADDITIONAL_INFORMATION", which is \
-sourced from a Google search engine query performed a few seconds ago and is meant to assist you in your probability estimation. You must adhere to the following 'INSTRUCTIONS'.  
+Your task is to determine the probability of a prediction market question being answered 'Yes' or 'No'.
+Use the question provided in 'USER_PROMPT' and follow these guidelines:
 
+* Focus on the question inside double quotes in 'USER_PROMPT'.
+* The question must have only 'Yes' or 'No' outcomes. If not, respond with "Error".
+* Use 'ADDITIONAL_INFORMATION' from a recent Google search for your estimation.
+* Consider the market's closing date for your prediction. If the event hasn't happened by this date, the outcome is 'No'; otherwise, it's 'Yes'.
+* Your estimation must be as accurate as possible to avoid financial losses.
+* Evaluate recent information more heavily than older information.
+* The closer the current time ({timestamp}) is to the closing date without clear evidence of the event happening, the more likely the outcome is 'No'.
+* Your response should include:
+    - "decision": 'y' for 'Yes' or 'n' for 'No'.
+    - "p_yes": Probability of 'Yes', from 0 to 1.
+    - "p_no": Probability of 'No', from 0 to 1.
+    - "confidence": Your confidence in these estimates, from 0 to 1.
+    
+    Ensure p_yes + p_no equals 1.
 
-INSTRUCTIONS:
-* Examine the user's input labeled 'USER_PROMPT'. Focus on the part enclosed in double quotes, which contains the 'market question'.
-* If the 'market question' implies more than two outcomes, output the response "Error" and halt further processing.
-* When the current time {timestamp} has passed the closing date of the market and the event specified in the market question has not happened, the market question's outcome is `No` and the user who placed a bet on `No` will receive a reward.
-* When the current time {timestamp} has passed the closing date of the market and the event has happened before, the market question's final outcome is `Yes` and the user who placed a bet on `yes` will receive a reward.
-* Consider the prediction market with the market question, the closing date and the outcomes in an isolated context that has no influence on the protagonists that are involved in the event in the real world, specified in the market question. The closing date is always arbitrarily set by the market creator and has no influence on the real world. So it is likely that the protagonists of the event in the real world are not even aware of the prediction market and do not care about the market's closing date.
-* The probability estimations of the market question outcomes must be as accurate as possible, as an inaccurate estimation will lead to financial loss for the user. 
-* If there exist contradicting information, evaluate the release and modification dates of those information and prioritize the information that is more recent and adjust your confidence in the probability estimation accordingly.
-* Even if not all information might not be released today, you can assume that there haven't been publicly available updates in the meantime except for those inside ADDITIONAL_INFORMATION.
-* The closer the current time `{timestamp}` is to the closing time the higher the likelyhood that the outcome of the market question will be `No`, if recent information do not clearly indicate that the event will occur before the closing date.
-* If there exist recent information indicating that the event will happen after the closing date, it is very likely that the outcome of the market question will be `No`.
-
-
-USER_PROMPT:
-```
-{user_prompt}
-```
+USER_PROMPT: {user_prompt}
 
 ADDITIONAL_INFORMATION:
 ```
 {additional_information}
 ```
 
-Your output response must include:
-
-- "decision": The decision you made. Either `y` (for `Yes`) or `n` (for `No`).
-- "p_yes": Probability that the market question's outcome will be `Yes`. Ranging from 0 (lowest probability) to 1 (maximum probability).
-- "p_no": Probability that the market questions outcome will be `No`. Ranging from 0 (lowest probability) to 1 (maximum probability).
-- "confidence": Indicating the confidence in the estimated probabilities you provided ranging from 0 (lowest confidence) to 1 (maximum confidence). Confidence can be calculated based on the quality and quantity of data used for the estimation.
-* The sum of "p_yes" and "p_no" must equal 1.
-
 Let's think through this step by step
 """
 
 CONSENSUS_PROMPT = """
-These are the solutions to the problem from other agents: {past_results}
+These are the predictions to '{user_prompt}' from other agents: {past_results}
 Using the opinion of other agents as additional advice, give an updated response. Think through this step by step
 """
 
 FINALIZATION_PROMPT = """
-INTRODUCTION:
-Your primary task is to accurately estimate the probabilities for the outcome of a 'market question', \
-found in 'USER_PROMPT'. The market question is part of a prediction market, where users can place bets on the outcomes of market questions and earn rewards if the selected outcome occurrs. The 'market question' \
-in this scenario has only two possible outcomes: `Yes` or `No`. Each market has a closing date at which the outcome is evaluated. This date is typically stated within the market question.  \
-The closing date is considered to be 23:59:59 of the date provided in the market question. If the event specified in the market question has not occurred before the closing date, the market question's outcome is `No`. \
-If the event has happened before the closing date, the market question's outcome is `Yes`. You are provided an itemized list of information under the label "ADDITIONAL_INFORMATION", which is \
-sourced from a Google search engine query performed a few seconds ago and is meant to assist you in your probability estimation. You must adhere to the following 'INSTRUCTIONS'.  
+Your task is to determine the probability of a prediction market question being answered 'Yes' or 'No'.
+Use the question provided in 'USER_PROMPT' and follow these guidelines:
 
+* Focus on the question inside double quotes in 'USER_PROMPT'.
+* The question must have only 'Yes' or 'No' outcomes. If not, respond with "Error".
+* Use 'ADDITIONAL_INFORMATION' from a recent Google search for your estimation.
+* Consider the market's closing date for your prediction. If the event hasn't happened by this date, the outcome is 'No'; otherwise, it's 'Yes'.
+* Your estimation must be as accurate as possible to avoid financial losses.
+* Evaluate recent information more heavily than older information.
+* The closer the current time ({timestamp}) is to the closing date without clear evidence of the event happening, the more likely the outcome is 'No'.
+* Consider past agent responses
+* Your response should include:
+    - "decision": 'y' for 'Yes' or 'n' for 'No'.
+    - "p_yes": Probability of 'Yes', from 0 to 1.
+    - "p_no": Probability of 'No', from 0 to 1.
+    - "confidence": Your confidence in these estimates, from 0 to 1.
+    
+    Ensure p_yes + p_no equals 1.
 
-INSTRUCTIONS:
-* Examine the user's input labeled 'USER_PROMPT'. Focus on the part enclosed in double quotes, which contains the 'market question'.
-* If the 'market question' implies more than two outcomes, output the response "Error" and halt further processing.
-* When the current time {timestamp} has passed the closing date of the market and the event specified in the market question has not happened, the market question's outcome is `No` and the user who placed a bet on `No` will receive a reward.
-* When the current time {timestamp} has passed the closing date of the market and the event has happened before, the market question's final outcome is `Yes` and the user who placed a bet on `yes` will receive a reward.
-* Consider the prediction market with the market question, the closing date and the outcomes in an isolated context that has no influence on the protagonists that are involved in the event in the real world, specified in the market question. The closing date is always arbitrarily set by the market creator and has no influence on the real world. So it is likely that the protagonists of the event in the real world are not even aware of the prediction market and do not care about the market's closing date.
-* The probability estimations of the market question outcomes must be as accurate as possible, as an inaccurate estimation will lead to financial loss for the user. 
-* If there exist contradicting information, evaluate the release and modification dates of those information and prioritize the information that is more recent and adjust your confidence in the probability estimation accordingly.
-* Even if not all information might not be released today, you can assume that there haven't been publicly available updates in the meantime except for those inside ADDITIONAL_INFORMATION.
-* The closer the current time `{timestamp}` is to the closing time the higher the likelyhood that the outcome of the market question will be `No`, if recent information do not clearly indicate that the event will occur before the closing date.
-* If there exist recent information indicating that the event will happen after the closing date, it is very likely that the outcome of the market question will be `No`.
-
-
-USER_PROMPT:
-```
-{user_prompt}
-```
+USER_PROMPT: {user_prompt}
 
 ADDITIONAL_INFORMATION:
 ```
@@ -100,15 +79,9 @@ ADDITIONAL_INFORMATION:
 ```
 
 PAST AGENTS RESPONSES:
+```
 {past_results}
-
-Your output response must include:
-
-- "decision": The decision you made. Either `y` (for `Yes`) or `n` (for `No`).
-- "p_yes": Probability that the market question's outcome will be `Yes`. Ranging from 0 (lowest probability) to 1 (maximum probability).
-- "p_no": Probability that the market questions outcome will be `No`. Ranging from 0 (lowest probability) to 1 (maximum probability).
-- "confidence": Indicating the confidence in the estimated probabilities you provided ranging from 0 (lowest confidence) to 1 (maximum confidence). Confidence can be calculated based on the quality and quantity of data used for the estimation.
-* The sum of "p_yes" and "p_no" must equal 1.
+```
 
 Let's think through this step by step
 """
