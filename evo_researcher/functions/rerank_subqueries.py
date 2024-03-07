@@ -1,3 +1,4 @@
+import os
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
@@ -12,12 +13,15 @@ Return them, in order of relevance, as a comma separated list of strings.
 
 Queries: {queries}
 """
-def rerank_subqueries(queries: list[str], goal: str, model: str) -> list[str]:
+def rerank_subqueries(queries: list[str], goal: str, model: str, api_key: str | None = None) -> list[str]:
+    if api_key == None:
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+            
     rerank_results_prompt = ChatPromptTemplate.from_template(template=rerank_queries_template)
 
     rerank_results_chain = (
         rerank_results_prompt |
-        ChatOpenAI(model=model) |
+        ChatOpenAI(model=model, api_key=api_key) |
         StrOutputParser()
     )
 

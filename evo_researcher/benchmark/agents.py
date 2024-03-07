@@ -1,3 +1,4 @@
+import os
 import typing as t
 from evo_researcher.benchmark.logger import BaseLogger
 
@@ -35,6 +36,7 @@ def _make_prediction(
     additional_information: str,
     engine: str,
     temperature: float,
+    api_key: str | None = None
 ) -> Prediction:
     """
     We prompt model to output a simple flat JSON and convert it to a more structured pydantic model here.
@@ -44,6 +46,7 @@ def _make_prediction(
         additional_information=additional_information,
         engine=engine,
         temperature=temperature,
+        api_key=api_key
     )
     return completion_prediction_json_to_pydantic_model(
         prediction
@@ -158,6 +161,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
         use_summaries: bool = False,
         use_tavily_raw_content: bool = False,
         max_workers: t.Optional[int] = None,
+        openai_api_key: str | None = None,
         logger: BaseLogger = BaseLogger()
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
@@ -165,6 +169,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
         self.temperature = temperature
         self.use_summaries = use_summaries
         self.use_tavily_raw_content = use_tavily_raw_content
+        self.openai_api_key = openai_api_key
         self.logger = logger
 
     def is_predictable(self, market_question: str) -> bool:
@@ -230,15 +235,16 @@ class EvoAgent(AbstractBenchmarkedAgent):
         scrape_content_split_chunk_overlap: int = 225,
         top_k_per_query: int = 8,
         use_tavily_raw_content: bool = False,
+        api_key: str | None = None,
     ) -> str:
         self.logger.info("Started subqueries generation")
-        queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model)
+        queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=api_key)
         
         stringified_queries = '\n- ' + '\n- '.join(queries)
         self.logger.info(f"Generated subqueries: {stringified_queries}")
         
         self.logger.info("Started subqueries reranking")
-        queries = rerank_subqueries(queries=queries, goal=goal, model=model)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
+        queries = rerank_subqueries(queries=queries, goal=goal, model=model, api_key=api_key)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
 
         stringified_queries = '\n- ' + '\n- '.join(queries)
         self.logger.info(f"Reranked subqueries. Will use top {subqueries_limit}: {stringified_queries}")
@@ -276,7 +282,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
         )
         
         self.logger.info("Started embeddings creation")
-        collection = create_embeddings_from_results(scraped, text_splitter)
+        collection = create_embeddings_from_results(scraped, text_splitter, api_key=api_key)
         self.logger.info("Embeddings created")
 
         vector_result_texts: list[str] = []
@@ -302,6 +308,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
                     goal,
                     content,
                     "gpt-3.5-turbo-0125",
+                    api_key=api_key,
                     trim_content_to_tokens=14_000
                 )
                 for content in url_to_content_deemed_most_useful.values()
@@ -309,7 +316,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
             self.logger.info(f"Information summarized")
 
         self.logger.info(f"Started preparing report")
-        report = prepare_report(goal, vector_result_texts, model=model)
+        report = prepare_report(goal, vector_result_texts, model=model, api_key=api_key)
         self.logger.info(f"Report prepared")
 
         return report
