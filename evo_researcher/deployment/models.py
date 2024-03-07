@@ -1,3 +1,4 @@
+import pytz
 from decimal import Decimal
 from datetime import datetime, timedelta
 from evo_researcher.benchmark.agents import EvoAgent, OlasAgent, EmbeddingModel
@@ -7,7 +8,7 @@ from prediction_market_agent_tooling.markets.manifold.manifold import ManifoldAg
 from prediction_market_agent_tooling.markets.omen.omen import OmenAgentMarket
 from prediction_market_agent_tooling.deploy.agent import DeployableAgent, BetAmount
 from prediction_market_agent_tooling.markets.betting_strategies import minimum_bet_to_win
-from prediction_market_agent_tooling.markets.manifold.api import get_manifold_bets, get_authenticated_user, manifold_to_generic_resolved_bet
+from prediction_market_agent_tooling.markets.manifold.api import get_manifold_bets, get_authenticated_user, get_manifold_market
 from prediction_market_agent_tooling.markets.omen.omen import get_omen_bets
 from prediction_market_agent_tooling.tools.utils import should_not_happen
 from prediction_market_agent_tooling.config import APIKeys
@@ -17,13 +18,14 @@ class DeployableAgentER(DeployableAgent):
     agent: AbstractBenchmarkedAgent
 
     def recently_betted(self, market: AgentMarket) -> bool:
-        start_time = datetime.now() - timedelta(hours=48)
+        # TODO: Replace with utcnow from PMAT once it's merged and released.
+        start_time = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=48)
         keys = APIKeys()
-        recently_betted_questions = [manifold_to_generic_resolved_bet(b).market_question for b in get_manifold_bets(
+        recently_betted_questions = [get_manifold_market(b.contractId).question for b in get_manifold_bets(
             user_id=get_authenticated_user(keys.manifold_api_key.get_secret_value()).id,
             start_time=start_time,
             end_time=None,
-        )] if isinstance(market, ManifoldAgentMarket) else [b.to_generic_resolved_bet().market_question for b in get_omen_bets(
+        )] if isinstance(market, ManifoldAgentMarket) else [b.title for b in get_omen_bets(
             better_address=keys.bet_from_address,
             start_time=start_time,
             end_time=None,
