@@ -1,4 +1,5 @@
 import typing as t
+from evo_researcher.benchmark.logger import BaseLogger
 
 from prediction_market_agent_tooling.benchmark.agents import (
     AbstractBenchmarkedAgent,
@@ -16,7 +17,14 @@ from evo_researcher.autonolas.research import make_prediction, get_urls_from_que
 from evo_researcher.autonolas.research import research as research_autonolas
 from evo_researcher.functions.evaluate_question import is_predictable
 from evo_researcher.functions.rephrase_question import rephrase_question
-from evo_researcher.functions.research import research as research_evo
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from evo_researcher.functions.create_embeddings_from_results import create_embeddings_from_results
+from evo_researcher.functions.generate_subqueries import generate_subqueries
+from evo_researcher.functions.prepare_report import prepare_report, prepare_summary
+from evo_researcher.models.WebScrapeResult import WebScrapeResult
+from evo_researcher.functions.rerank_subqueries import rerank_subqueries
+from evo_researcher.functions.scrape_results import scrape_results
+from evo_researcher.functions.search import search
 from evo_researcher.functions.utils import url_is_older_than
 from evo_researcher.models.WebSearchResult import WebSearchResult
 from unittest.mock import patch
@@ -150,12 +158,14 @@ class EvoAgent(AbstractBenchmarkedAgent):
         use_summaries: bool = False,
         use_tavily_raw_content: bool = False,
         max_workers: t.Optional[int] = None,
+        logger: BaseLogger = BaseLogger()
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model = model
         self.temperature = temperature
         self.use_summaries = use_summaries
         self.use_tavily_raw_content = use_tavily_raw_content
+        self.logger = logger
 
     def is_predictable(self, market_question: str) -> bool:
         return is_predictable(question=market_question)
@@ -165,7 +175,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
     
     def predict(self, market_question: str) -> Prediction:
         try:
-            report = research_evo(
+            report = self.research(
                 goal=market_question,
                 model=self.model,
                 use_summaries=self.use_summaries,
@@ -174,6 +184,20 @@ class EvoAgent(AbstractBenchmarkedAgent):
             return _make_prediction(
                 market_question=market_question,
                 additional_information=report,
+                engine=self.model,
+                temperature=self.temperature,
+            )
+        except ValueError as e:
+            print(f"Error in EvoAgent's predict: {e}")
+            return Prediction()
+        
+    def predict_from_research(
+        self, market_question: str, research_report: str
+    ) -> Prediction:
+        try:
+            return _make_prediction(
+                market_question=market_question,
+                additional_information=research_report,
                 engine=self.model,
                 temperature=self.temperature,
             )
@@ -195,6 +219,100 @@ class EvoAgent(AbstractBenchmarkedAgent):
         with patch('evo_researcher.functions.research.search', side_effect=side_effect, autospec=True):
             return self.predict(market_question)
 
+    def research(
+        self,
+        goal: str,
+        use_summaries: bool,
+        model: str = "gpt-4-1106-preview",
+        initial_subqueries_limit: int = 20,
+        subqueries_limit: int = 4,
+        scrape_content_split_chunk_size: int = 800,
+        scrape_content_split_chunk_overlap: int = 225,
+        top_k_per_query: int = 8,
+        use_tavily_raw_content: bool = False,
+    ) -> str:
+        self.logger.info("Started subqueries generation")
+        queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model)
+        
+        stringified_queries = '\n- ' + '\n- '.join(queries)
+        self.logger.info(f"Generated subqueries: {stringified_queries}")
+        
+        self.logger.info("Started subqueries reranking")
+        queries = rerank_subqueries(queries=queries, goal=goal, model=model)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
+
+        stringified_queries = '\n- ' + '\n- '.join(queries)
+        self.logger.info(f"Reranked subqueries. Will use top {subqueries_limit}: {stringified_queries}")
+        
+        self.logger.info(f"Started web searching")
+        search_results_with_queries = search(
+            queries, 
+            lambda result: not result.url.startswith("https://www.youtube")
+        )
+
+        if not search_results_with_queries:
+            raise ValueError(f"No search results found for the goal {goal}.")
+
+        scrape_args = [result for (_, result) in search_results_with_queries]
+        websites_to_scrape = set([result.url for result in scrape_args])
+        
+        stringified_websites = '\n- ' + '\n- '.join(websites_to_scrape)
+        self.logger.info(f"Found the following relevant results: {stringified_websites}")
+        
+        self.logger.info(f"Started scraping of web results")
+        scraped = scrape_results(scrape_args) if not use_tavily_raw_content else [WebScrapeResult(
+            query=result.query,
+            url=result.url,
+            title=result.title,
+            content=result.raw_content,
+        ) for result in scrape_args if result.raw_content]
+        scraped = [result for result in scraped if result.content != ""]
+        
+        self.logger.info(f"Scraped content from {len(scraped)} websites")
+
+        text_splitter = RecursiveCharacterTextSplitter(
+            separators=["\n\n", "\n", ". ", "  "],
+            chunk_size=scrape_content_split_chunk_size,
+            chunk_overlap=scrape_content_split_chunk_overlap
+        )
+        
+        self.logger.info("Started embeddings creation")
+        collection = create_embeddings_from_results(scraped, text_splitter)
+        self.logger.info("Embeddings created")
+
+        vector_result_texts: list[str] = []
+        url_to_content_deemed_most_useful: dict[str, str] = {}
+
+        stringified_queries = '\n- ' + '\n- '.join(queries)
+        self.logger.info(f"Started similarity searches for: {stringified_queries}")
+        for query in queries:
+            top_k_per_query_results = collection.similarity_search(query, k=top_k_per_query)
+            vector_result_texts += [result.page_content for result in top_k_per_query_results if result.page_content not in vector_result_texts]
+
+            for x in top_k_per_query_results:
+                # `x.metadata["content"]` holds the whole url's web page, so it's ok to overwrite the value of the same url.
+                url_to_content_deemed_most_useful[x.metadata["url"]] = x.metadata["content"]
+        
+        stringified_urls = '\n- ' + '\n- '.join(url_to_content_deemed_most_useful.keys())
+        self.logger.info(f"Found {len(vector_result_texts)} information chunks across the following sites: {stringified_urls}")
+
+        if use_summaries:
+            self.logger.info(f"Started summarizing information")
+            vector_result_texts = [
+                prepare_summary(
+                    goal,
+                    content,
+                    "gpt-3.5-turbo-0125",
+                    trim_content_to_tokens=14_000
+                )
+                for content in url_to_content_deemed_most_useful.values()
+            ]
+            self.logger.info(f"Information summarized")
+
+        self.logger.info(f"Started preparing report")
+        report = prepare_report(goal, vector_result_texts, model=model)
+        self.logger.info(f"Report prepared")
+
+        return report
 
 class RephrasingOlasAgent(OlasAgent):
     def __init__(
