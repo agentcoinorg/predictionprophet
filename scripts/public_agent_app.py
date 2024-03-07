@@ -1,8 +1,4 @@
-"""
-PYTHONPATH=. streamlit run scripts/agent_app.py
-
-Tip: if you specify PYTHONPATH=., streamlit will watch for the changes in all files, isntead of just this one.
-"""
+import os
 from typing import cast
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
@@ -17,20 +13,10 @@ class StreamlitLogger(BaseLogger):
     def __init__(self) -> None:
         super().__init__()
     
-    def debug(self, msg: str) -> None:
+    def log(self, msg: str) -> None:
         st.write(msg)
     
-    def info(self, msg: str) -> None:
-        st.write(msg)
-    
-    def warning(self, msg: str) -> None:
-        st.write(msg)
-    
-    def error(self, msg: str) -> None:
-        st.write(msg)
-    
-    def critical(self, msg: str) -> None:
-        st.write(msg)
+    debug = info = warning = error = critical = log
 
 st.set_page_config(layout="wide")
 
@@ -38,13 +24,21 @@ st.title("Evo Predict")
 
 with st.form("question_form", clear_on_submit=True):
     question = st.text_input('Question', placeholder="Will Twitter implement a new misinformation policy before the end of 2024")
-    api_key = st.text_input('OpenAI API Key', placeholder="sk-...", type="password")
+    openai_api_key = st.text_input('OpenAI API Key', placeholder="sk-...", type="password")
     submit_button = st.form_submit_button('Predict')
 
 logger = StreamlitLogger()
 agent = EvoAgent(model="gpt-4-0125-preview", logger=logger)
+tavily_api_key = os.environ.get('TAVILY_API_KEY')
 
-if submit_button and question and api_key:
+if tavily_api_key == None:
+    try:
+        tavily_api_key = st.secrets['TAVILY_API_KEY']
+    except:
+        st.container().error("No Tavily API Key provided")
+        st.stop()
+
+if submit_button and question and openai_api_key:
     with st.container():
         with st.spinner("Evaluating question..."):
             is_predictable = agent.is_predictable(market_question=question) 
@@ -56,7 +50,7 @@ if submit_button and question and api_key:
             
         with st.spinner("Researching..."):
             with st.container(border=True):
-                report = agent.research(goal=question, use_summaries=False, api_key=api_key)
+                report = agent.research(goal=question, use_summaries=False, openai_api_key=openai_api_key, tavily_api_key=tavily_api_key)
         with st.container().expander("Show agent's research report", expanded=False):
             st.container().markdown(f"""{report}""")
             if not report:

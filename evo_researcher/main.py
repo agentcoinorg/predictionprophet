@@ -1,4 +1,3 @@
-import os
 import click
 import time
 from dotenv import load_dotenv
