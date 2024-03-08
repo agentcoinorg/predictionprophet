@@ -121,7 +121,7 @@ class OlasAgent(AbstractBenchmarkedAgent):
 
     def predict(self, market_question: str) -> Prediction:
         try:
-            researched = research(market_question=market_question)
+            researched = self.research(market_question=market_question)
             return _make_prediction(
                 market_question=market_question,
                 additional_information=researched,
