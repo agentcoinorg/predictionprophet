@@ -1,5 +1,4 @@
 import typing as t
-from evo_researcher.functions.research import research
 
 from prediction_market_agent_tooling.benchmark.agents import (
     AbstractBenchmarkedAgent,
@@ -15,6 +14,7 @@ from evo_researcher.autonolas.research import make_prediction, get_urls_from_que
 from evo_researcher.autonolas.research import research as research_autonolas
 from evo_researcher.functions.evaluate_question import is_predictable
 from evo_researcher.functions.rephrase_question import rephrase_question
+from evo_researcher.functions.research import research as research_evo
 from evo_researcher.functions.search import search
 from evo_researcher.functions.utils import url_is_older_than
 from evo_researcher.models.WebSearchResult import WebSearchResult
@@ -171,7 +171,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
     
     def predict(self, market_question: str) -> Prediction:
         try:
-            report = research(
+            report = research_evo(
                 goal=market_question,
                 model=self.model,
                 use_summaries=self.use_summaries,
