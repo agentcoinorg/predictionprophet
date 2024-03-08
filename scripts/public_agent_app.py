@@ -1,11 +1,13 @@
 import os
 from typing import cast
+from evo_researcher.benchmark.agents import _make_prediction
+from evo_researcher.functions.evaluate_question import is_predictable as evaluate_if_predictable
+from evo_researcher.functions.research import research
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
 )
-from evo_researcher.benchmark.logger import BaseLogger
+from evo_researcher.utils.logger import BaseLogger
 import streamlit as st
-from evo_researcher.benchmark.agents import EvoAgent
 
 class StreamlitLogger(BaseLogger):
     def __init__(self) -> None:
@@ -17,7 +19,6 @@ class StreamlitLogger(BaseLogger):
     debug = info = warning = error = critical = log
     
 logger = StreamlitLogger()
-agent = EvoAgent(model="gpt-4-0125-preview", logger=logger)
 tavily_api_key = os.environ.get('TAVILY_API_KEY')
 
 if tavily_api_key == None:
@@ -38,7 +39,7 @@ with st.form("question_form", clear_on_submit=True):
 if submit_button and question and openai_api_key:
     with st.container():
         with st.spinner("Evaluating question..."):
-            is_predictable = agent.is_predictable(market_question=question) 
+            is_predictable = evaluate_if_predictable(question=question) 
 
         st.container(border=True).markdown(f"""### Question evaluation\n\nQuestion: **{question}**\n\nIs predictable: `{is_predictable}`""")
         if not is_predictable:
@@ -47,7 +48,7 @@ if submit_button and question and openai_api_key:
             
         with st.spinner("Researching..."):
             with st.container(border=True):
-                report = agent.research(goal=question, use_summaries=False, openai_api_key=openai_api_key, tavily_api_key=tavily_api_key)
+                report = research(goal=question, use_summaries=False, openai_api_key=openai_api_key, tavily_api_key=tavily_api_key)
         with st.container().expander("Show agent's research report", expanded=False):
             st.container().markdown(f"""{report}""")
             if not report:
@@ -56,7 +57,7 @@ if submit_button and question and openai_api_key:
                 
         with st.spinner("Predicting..."):
             with st.container(border=True):
-                prediction = agent.predict_from_research(market_question=question, research_report=report)
+                prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-1106-preview", temperature=0.0)
         with st.container().expander("Show agent's prediction", expanded=False):
             if prediction.outcome_prediction == None:
                 st.container().error("The agent failed to generate a prediction")
