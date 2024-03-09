@@ -57,7 +57,7 @@ if submit_button and question and openai_api_key:
                 
         with st.spinner("Predicting..."):
             with st.container(border=True):
-                prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-1106-preview", temperature=0.0)
+                prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-1106-preview", temperature=0.0, api_key=openai_api_key)
         with st.container().expander("Show agent's prediction", expanded=False):
             if prediction.outcome_prediction == None:
                 st.container().error("The agent failed to generate a prediction")
