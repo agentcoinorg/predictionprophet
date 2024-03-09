@@ -39,7 +39,7 @@ with st.form("question_form", clear_on_submit=True):
 if submit_button and question and openai_api_key:
     with st.container():
         with st.spinner("Evaluating question..."):
-            is_predictable = evaluate_if_predictable(question=question) 
+            is_predictable = evaluate_if_predictable(question=question, api_key=openai_api_key) 
 
         st.container(border=True).markdown(f"""### Question evaluation\n\nQuestion: **{question}**\n\nIs predictable: `{is_predictable}`""")
         if not is_predictable:
