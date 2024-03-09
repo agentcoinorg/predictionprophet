@@ -48,7 +48,15 @@ if submit_button and question and openai_api_key:
             
         with st.spinner("Researching..."):
             with st.container(border=True):
-                report = research(goal=question, use_summaries=False, openai_api_key=openai_api_key, tavily_api_key=tavily_api_key, logger=logger)
+                report = research(
+                    goal=question,
+                    use_summaries=False,
+                    subqueries_limit=6,
+                    top_k_per_query=15,
+                    openai_api_key=openai_api_key,
+                    tavily_api_key=tavily_api_key,
+                    logger=logger
+                )
         with st.container().expander("Show agent's research report", expanded=False):
             st.container().markdown(f"""{report}""")
             if not report:
