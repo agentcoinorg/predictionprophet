@@ -6,27 +6,32 @@ from prediction_market_agent_tooling.benchmark.agents import (
     RandomAgent,
 )
 from prediction_market_agent_tooling.benchmark.utils import (
-    OutcomePrediction,
     Prediction,
 )
 from datetime import datetime
 from evo_researcher.autonolas.research import EmbeddingModel
-from evo_researcher.autonolas.research import Prediction as LLMCompletionPredictionDict
 from evo_researcher.autonolas.research import make_prediction, get_urls_from_queries
 from evo_researcher.autonolas.research import research as research_autonolas
 from evo_researcher.functions.evaluate_question import is_predictable
 from evo_researcher.functions.rephrase_question import rephrase_question
 from evo_researcher.functions.research import research as research_evo
+from evo_researcher.functions.search import search
 from evo_researcher.functions.utils import url_is_older_than
 from evo_researcher.models.WebSearchResult import WebSearchResult
 from unittest.mock import patch
 from evo_researcher.functions.search import search
+from prediction_market_agent_tooling.benchmark.utils import (
+    OutcomePrediction,
+    Prediction,
+)
+from evo_researcher.autonolas.research import Prediction as LLMCompletionPredictionDict
 
 def _make_prediction(
     market_question: str,
     additional_information: str,
     engine: str,
     temperature: float,
+    api_key: str | None = None
 ) -> Prediction:
     """
     We prompt model to output a simple flat JSON and convert it to a more structured pydantic model here.
@@ -36,6 +41,7 @@ def _make_prediction(
         additional_information=additional_information,
         engine=engine,
         temperature=temperature,
+        api_key=api_key
     )
     return completion_prediction_json_to_pydantic_model(
         prediction
@@ -165,7 +171,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
     
     def predict(self, market_question: str) -> Prediction:
         try:
-            report, _ = research_evo(
+            report = research_evo(
                 goal=market_question,
                 model=self.model,
                 use_summaries=self.use_summaries,
@@ -194,7 +200,6 @@ class EvoAgent(AbstractBenchmarkedAgent):
     
         with patch('evo_researcher.functions.research.search', side_effect=side_effect, autospec=True):
             return self.predict(market_question)
-
 
 class RephrasingOlasAgent(OlasAgent):
     def __init__(
