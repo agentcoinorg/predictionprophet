@@ -1,3 +1,4 @@
+import os
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from evo_researcher.functions.cache import persistent_inmemory_cache
@@ -29,11 +30,15 @@ def is_predictable(
     question: str,
     engine: str = "gpt-4-1106-preview",
     prompt_template: str = QUESTION_EVALUATE_PROMPT,
+    api_key: str | None = None
 ) -> bool:
     """
     Evaluate if the question is actually answerable.
     """
-    llm = ChatOpenAI(model=engine, temperature=0.0)
+    if api_key == None:
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+        
+    llm = ChatOpenAI(model=engine, temperature=0.0, api_key=api_key)
 
     prompt = ChatPromptTemplate.from_template(template=prompt_template)
     messages = prompt.format_messages(question=question)

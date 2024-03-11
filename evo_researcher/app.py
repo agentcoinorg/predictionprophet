@@ -39,7 +39,7 @@ with st.form("question_form", clear_on_submit=True):
 if submit_button and question and openai_api_key:
     with st.container():
         with st.spinner("Evaluating question..."):
-            is_predictable = evaluate_if_predictable(question=question) 
+            is_predictable = evaluate_if_predictable(question=question, api_key=openai_api_key) 
 
         st.container(border=True).markdown(f"""### Question evaluation\n\nQuestion: **{question}**\n\nIs predictable: `{is_predictable}`""")
         if not is_predictable:
@@ -48,7 +48,15 @@ if submit_button and question and openai_api_key:
             
         with st.spinner("Researching..."):
             with st.container(border=True):
-                report = research(goal=question, use_summaries=False, openai_api_key=openai_api_key, tavily_api_key=tavily_api_key, logger=logger)
+                report = research(
+                    goal=question,
+                    use_summaries=False,
+                    subqueries_limit=6,
+                    top_k_per_query=15,
+                    openai_api_key=openai_api_key,
+                    tavily_api_key=tavily_api_key,
+                    logger=logger
+                )
         with st.container().expander("Show agent's research report", expanded=False):
             st.container().markdown(f"""{report}""")
             if not report:
@@ -57,7 +65,7 @@ if submit_button and question and openai_api_key:
                 
         with st.spinner("Predicting..."):
             with st.container(border=True):
-                prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-1106-preview", temperature=0.0)
+                prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-1106-preview", temperature=0.0, api_key=openai_api_key)
         with st.container().expander("Show agent's prediction", expanded=False):
             if prediction.outcome_prediction == None:
                 st.container().error("The agent failed to generate a prediction")
