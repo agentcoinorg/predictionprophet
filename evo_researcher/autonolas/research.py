@@ -28,8 +28,11 @@ from langchain_openai import OpenAIEmbeddings
 
 from dateutil import parser
 from evo_researcher.functions.utils import check_not_none
+from evo_researcher.utils.secrets import secret_str_from_env
 from evo_researcher.functions.cache import persistent_inmemory_cache
 from evo_researcher.functions.parallelism import par_map
+from pydantic.types import SecretStr
+from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 
 load_dotenv()
 
@@ -1167,17 +1170,17 @@ def make_prediction(
     additional_information: str,
     temperature: float = 0.7,
     engine: str = "gpt-3.5-turbo-1106",
-    api_key: str | None = None
+    api_key: SecretStr | None = None
 ) -> Prediction:
     if api_key == None:
-        api_key = os.environ.get("OPENAI_API_KEY", "")
+        api_key = secret_str_from_env("OPENAI_API_KEY")
     
     current_time_utc = datetime.now(timezone.utc)
     formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
 
     prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
 
-    llm = ChatOpenAI(model=engine, temperature=temperature, api_key=api_key)
+    llm = ChatOpenAI(model=engine, temperature=temperature, api_key=secretstr_to_v1_secretstr(api_key) if api_key else None)
     formatted_messages = prediction_prompt.format_messages(user_prompt=prompt, additional_information=additional_information, timestamp=formatted_time_utc)
     generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5)
 

@@ -12,7 +12,7 @@ from datetime import datetime
 from evo_researcher.autonolas.research import EmbeddingModel
 from evo_researcher.autonolas.research import make_prediction, get_urls_from_queries
 from evo_researcher.autonolas.research import research as research_autonolas
-from evo_researcher.functions.evaluate_question import is_predictable
+from prediction_market_agent_tooling.tools.is_predictable import is_predictable
 from evo_researcher.functions.rephrase_question import rephrase_question
 from evo_researcher.functions.research import research as research_evo
 from evo_researcher.functions.search import search
@@ -24,6 +24,7 @@ from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction,
     Prediction,
 )
+from pydantic.types import SecretStr
 from evo_researcher.autonolas.research import Prediction as LLMCompletionPredictionDict
 
 def _make_prediction(
@@ -31,7 +32,7 @@ def _make_prediction(
     additional_information: str,
     engine: str,
     temperature: float,
-    api_key: str | None = None
+    api_key: SecretStr | None = None
 ) -> Prediction:
     """
     We prompt model to output a simple flat JSON and convert it to a more structured pydantic model here.

@@ -6,12 +6,15 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from evo_researcher.functions.cache import persistent_inmemory_cache
 from evo_researcher.functions.utils import trim_to_n_tokens
+from evo_researcher.utils.secrets import secret_str_from_env
+from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
+from pydantic.types import SecretStr
 
 
 @persistent_inmemory_cache
-def prepare_summary(goal: str, content: str, model: str, api_key: str | None = None, trim_content_to_tokens: t.Optional[int] = None) -> str:
+def prepare_summary(goal: str, content: str, model: str, api_key: SecretStr | None = None, trim_content_to_tokens: t.Optional[int] = None) -> str:
     if api_key == None:
-        api_key = os.environ.get("OPENAI_API_KEY", "")
+        api_key = secret_str_from_env("OPENAI_API_KEY")
     
     prompt_template = """Write comprehensive summary of the following web content, that provides relevant information to answer the question: '{goal}'.
 But cut the fluff and keep it up to the point.
@@ -26,7 +29,7 @@ Content:
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model=model, api_key=api_key) |
+        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key) if api_key else None) |
         StrOutputParser()
     )
 
@@ -38,9 +41,9 @@ Content:
     return response
 
 
-def prepare_report(goal: str, scraped: list[str], model: str, api_key: str | None = None) -> str:
+def prepare_report(goal: str, scraped: list[str], model: str, api_key: SecretStr | None = None) -> str:
     if api_key == None:
-        api_key = os.environ.get("OPENAI_API_KEY", "")
+        api_key = secret_str_from_env("OPENAI_API_KEY")
         
     evaluation_prompt_template = """
     You are a professional researcher. Your goal is to provide a relevant information report
@@ -67,7 +70,7 @@ def prepare_report(goal: str, scraped: list[str], model: str, api_key: str | Non
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model=model, api_key=api_key) |
+        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key) if api_key else None) |
         StrOutputParser()
     )
 

@@ -6,7 +6,7 @@ from datetime import datetime
 from prediction_market_agent_tooling.markets.markets import MarketType
 from evo_researcher.deployment.models import DeployableAgentER, DeployableAgentER_EvoGPT3, DeployableAgentER_OlasEmbeddingOA
 from prediction_market_agent_tooling.config import APIKeys
-from prediction_market_agent_tooling.gtypes import PrivateKey
+from prediction_market_agent_tooling.gtypes import private_key_type, DatetimeWithTimezone
 from prediction_market_agent_tooling.tools.web3_utils import verify_address
 from pydantic.types import SecretStr
 
@@ -45,7 +45,7 @@ def deploy(
         api_keys=APIKeys(
             BET_FROM_ADDRESS=verify_address(bet_from_address),
             MANIFOLD_API_KEY=SecretStr(f"{manifold_api_key_secret_name}:latest"),
-            BET_FROM_PRIVATE_KEY=PrivateKey(f"{bet_from_private_key_secret_name}:latest"),
+            BET_FROM_PRIVATE_KEY=private_key_type(f"{bet_from_private_key_secret_name}:latest"),
         ),
         memory=2048,
         labels={
@@ -58,7 +58,7 @@ def deploy(
             "GOOGLE_SEARCH_ENGINE_ID": f"{google_search_engine_id_name}:latest",
         },
         cron_schedule="0 */2 * * *",
-        start_time=start_time,
+        start_time=DatetimeWithTimezone(start_time) if start_time else None,
     )
 
 

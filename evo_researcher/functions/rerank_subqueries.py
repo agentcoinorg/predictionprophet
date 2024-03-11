@@ -2,6 +2,9 @@ import os
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
+from pydantic.types import SecretStr
+from evo_researcher.utils.secrets import secret_str_from_env
+from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 
 rerank_queries_template = """
 I will present you with a list of queries to search the web for, for answers to the question: {goal}.
@@ -13,15 +16,15 @@ Return them, in order of relevance, as a comma separated list of strings.
 
 Queries: {queries}
 """
-def rerank_subqueries(queries: list[str], goal: str, model: str, api_key: str | None = None) -> list[str]:
+def rerank_subqueries(queries: list[str], goal: str, model: str, api_key: SecretStr | None = None) -> list[str]:
     if api_key == None:
-        api_key = os.environ.get("OPENAI_API_KEY", "")
+        api_key = secret_str_from_env("OPENAI_API_KEY")
             
     rerank_results_prompt = ChatPromptTemplate.from_template(template=rerank_queries_template)
 
     rerank_results_chain = (
         rerank_results_prompt |
-        ChatOpenAI(model=model, api_key=api_key) |
+        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key) if api_key else None) |
         StrOutputParser()
     )
 

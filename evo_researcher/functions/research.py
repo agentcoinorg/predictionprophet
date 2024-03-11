@@ -8,6 +8,7 @@ from evo_researcher.models.WebScrapeResult import WebScrapeResult
 from evo_researcher.functions.rerank_subqueries import rerank_subqueries
 from evo_researcher.functions.scrape_results import scrape_results
 from evo_researcher.functions.search import search
+from pydantic.types import SecretStr
 
 def research(
     goal: str,
@@ -19,8 +20,8 @@ def research(
     scrape_content_split_chunk_overlap: int = 225,
     top_k_per_query: int = 8,
     use_tavily_raw_content: bool = False,
-    openai_api_key: str | None = None,
-    tavily_api_key: str | None = None,
+    openai_api_key: SecretStr | None = None,
+    tavily_api_key: SecretStr | None = None,
     logger: BaseLogger = BaseLogger()
 ) -> str:
     logger.info("Started subqueries generation")

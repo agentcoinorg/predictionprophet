@@ -11,13 +11,16 @@ from langchain_openai import OpenAIEmbeddings
 from langchain.vectorstores.chroma import Chroma
 from evo_researcher.models.WebScrapeResult import WebScrapeResult
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from pydantic.types import SecretStr
+from evo_researcher.utils.secrets import secret_str_from_env
+from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 
 
-def create_embeddings_from_results(results: list[WebScrapeResult], text_splitter: RecursiveCharacterTextSplitter, api_key: str | None = None) -> Chroma:
+def create_embeddings_from_results(results: list[WebScrapeResult], text_splitter: RecursiveCharacterTextSplitter, api_key: SecretStr | None = None) -> Chroma:
     if api_key == None:
-        api_key = os.environ.get("OPENAI_API_KEY", "")
+        api_key = secret_str_from_env("OPENAI_API_KEY")
     
-    collection = Chroma(embedding_function=OpenAIEmbeddings(api_key=api_key))
+    collection = Chroma(embedding_function=OpenAIEmbeddings(api_key=secretstr_to_v1_secretstr(api_key) if api_key else None))
     texts = []
     metadatas = []
 

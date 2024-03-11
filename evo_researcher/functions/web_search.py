@@ -1,19 +1,20 @@
 import os
 import tenacity
-from dotenv import load_dotenv
 from tavily import TavilyClient
+from pydantic.types import SecretStr
 
+from evo_researcher.utils.secrets import secret_str_from_env
 from evo_researcher.models.WebSearchResult import WebSearchResult
 from evo_researcher.functions.cache import persistent_inmemory_cache
 
 
 @tenacity.retry(stop=tenacity.stop_after_attempt(3), wait=tenacity.wait_fixed(1), reraise=True)
 @persistent_inmemory_cache
-def web_search(query: str, max_results: int = 5, tavily_api_key: str | None = None) -> list[WebSearchResult]:
+def web_search(query: str, max_results: int = 5, tavily_api_key: SecretStr | None = None) -> list[WebSearchResult]:
     if tavily_api_key == None:
-        tavily_api_key = os.getenv("TAVILY_API_KEY")
+        tavily_api_key = secret_str_from_env("TAVILY_API_KEY")
     
-    tavily = TavilyClient(api_key=tavily_api_key)
+    tavily = TavilyClient(api_key=tavily_api_key.get_secret_value() if tavily_api_key else None)
     response = tavily.search(
         query=query,
         search_depth="advanced",
