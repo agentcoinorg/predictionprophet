@@ -34,7 +34,7 @@ def research(
     start = time.time()
     
     with get_openai_callback() as cb:
-      report = evo_research(goal=prompt, use_summaries=False, model="gpt-4-1106-preview")
+      report = evo_research(goal=prompt, use_summaries=False, model="gpt-4-0125-preview")
     
     end = time.time()
     
@@ -58,9 +58,9 @@ def predict(prompt: str, path: str | None = None) -> None:
         if path:
             report = read_text_file(path)
         else:
-            report = evo_research(goal=prompt, model="gpt-4-1106-preview", use_summaries=False)
+            report = evo_research(goal=prompt, model="gpt-4-0125-preview", use_summaries=False)
         
-        prediction = _make_prediction(market_question=prompt, additional_information=report, engine="gpt-4-1106-preview", temperature=0.0)
+        prediction = _make_prediction(market_question=prompt, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0)
 
     end = time.time()
     

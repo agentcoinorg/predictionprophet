@@ -32,18 +32,30 @@ st.set_page_config(layout="wide")
 st.title("Evo Predict")
 
 with st.form("question_form", clear_on_submit=True):
-    question = st.text_input('Question', placeholder="Will Twitter implement a new misinformation policy before the end of 2024")
-    openai_api_key = st.text_input('OpenAI API Key', placeholder="sk-...", type="password")
+    question = st.text_input(
+        'Question',
+        placeholder="Will Twitter implement a new misinformation policy before the end of 2024",
+        value=st.session_state.get('question', '')
+    )
+    openai_api_key = st.text_input(
+        'OpenAI API Key',
+        placeholder="sk-...",
+        type="password",
+        value=st.session_state.get('openai_api_key', '')
+    )
     submit_button = st.form_submit_button('Predict')
 
 if submit_button and question and openai_api_key:
+    st.session_state['openai_api_key'] = openai_api_key
+    st.session_state['question'] = question
+    
     with st.container():
         with st.spinner("Evaluating question..."):
-            is_predictable = evaluate_if_predictable(question=question) 
+            (is_predictable, reasoning) = evaluate_if_predictable(question=question, api_key=openai_api_key) 
 
         st.container(border=True).markdown(f"""### Question evaluation\n\nQuestion: **{question}**\n\nIs predictable: `{is_predictable}`""")
         if not is_predictable:
-            st.container().error("The agent thinks this question is not predictable.")
+            st.container().error(f"The agent thinks this question is not predictable: \n\n{reasoning}")
             st.stop()
             
         with st.spinner("Researching..."):
@@ -57,7 +69,7 @@ if submit_button and question and openai_api_key:
                 
         with st.spinner("Predicting..."):
             with st.container(border=True):
-                prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-1106-preview", temperature=0.0)
+                prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0, api_key=openai_api_key)
         with st.container().expander("Show agent's prediction", expanded=False):
             if prediction.outcome_prediction == None:
                 st.container().error("The agent failed to generate a prediction")

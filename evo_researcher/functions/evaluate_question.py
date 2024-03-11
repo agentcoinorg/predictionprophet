@@ -1,3 +1,6 @@
+import json
+import os
+from evo_researcher.autonolas.research import clean_completion_json
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from evo_researcher.functions.cache import persistent_inmemory_cache
@@ -19,7 +22,16 @@ First, write the parts of the following question:
 
 Then, write down what is the future event of the question, what it reffers to and when that event will happen if the question contains it.
 
-Then, give your final decision, write either "yes" or "no" about whether the question is answerable.
+Then, give your final decision about whether the question is answerable.
+
+Return a JSON object with the following structure:
+
+{{
+    "is_predictable": bool,
+    "reasoning": string
+}}
+
+Output only the JSON object in your response. Do not include any other contents in your response.
 """
 
 
@@ -27,23 +39,21 @@ Then, give your final decision, write either "yes" or "no" about whether the que
 @persistent_inmemory_cache
 def is_predictable(
     question: str,
-    engine: str = "gpt-4-1106-preview",
+    engine: str = "gpt-4-0125-preview",
     prompt_template: str = QUESTION_EVALUATE_PROMPT,
-) -> bool:
+    api_key: str | None = None
+) -> tuple[bool, str]:
     """
     Evaluate if the question is actually answerable.
     """
-    llm = ChatOpenAI(model=engine, temperature=0.0)
+    
+    if api_key == None:
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+    llm = ChatOpenAI(model=engine, temperature=0.0, api_key=api_key)
 
     prompt = ChatPromptTemplate.from_template(template=prompt_template)
     messages = prompt.format_messages(question=question)
     completion = llm(messages, max_tokens=256).content
+    response = json.loads(clean_completion_json(completion))
 
-    if "yes" in completion.lower():
-        is_predictable = True
-    elif "no" in completion.lower():
-        is_predictable = False
-    else:
-        raise ValueError(f"Error in evaluate_question for `{question}`: {completion}")
-
-    return is_predictable
+    return (response["is_predictable"], response["reasoning"])
