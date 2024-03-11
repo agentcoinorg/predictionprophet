@@ -107,10 +107,12 @@ class OlasAgent(AbstractBenchmarkedAgent):
         self.embedding_model = embedding_model
 
     def is_predictable(self, market_question: str) -> bool:
-        return is_predictable(question=market_question)
+        (result, _) = is_predictable(question=market_question)
+        return result
 
     def is_predictable_restricted(self, market_question: str, time_restriction_up_to: datetime) -> bool:
-        return is_predictable(question=market_question)
+        (result, _) = is_predictable(question=market_question)
+        return result
     
     def research(self, market_question: str) -> str:
         return research_autonolas(
@@ -164,10 +166,12 @@ class EvoAgent(AbstractBenchmarkedAgent):
         self.use_tavily_raw_content = use_tavily_raw_content
 
     def is_predictable(self, market_question: str) -> bool:
-        return is_predictable(question=market_question)
+        (result, _) = is_predictable(question=market_question)
+        return result
 
     def is_predictable_restricted(self, market_question: str, time_restriction_up_to: datetime) -> bool:
-        return is_predictable(question=market_question)
+        (result, _) = is_predictable(question=market_question)
+        return result
     
     def predict(self, market_question: str) -> Prediction:
         try:

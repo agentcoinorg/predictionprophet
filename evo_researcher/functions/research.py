@@ -12,7 +12,7 @@ from evo_researcher.functions.search import search
 def research(
     goal: str,
     use_summaries: bool,
-    model: str = "gpt-4-1106-preview",
+    model: str = "gpt-4-0125-preview",
     initial_subqueries_limit: int = 20,
     subqueries_limit: int = 4,
     scrape_content_split_chunk_size: int = 800,

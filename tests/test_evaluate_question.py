@@ -11,4 +11,5 @@ from evo_researcher.functions.evaluate_question import is_predictable
     ("Did COVID-19 come from a laboratory?", False),
 ])
 def test_evaluate_question(question: str, answerable: bool) -> None:
-    assert is_predictable(question=question) == answerable,  f"Question is not evaluated correctly, see the completion: {is_predictable}"
+    (result, _) = is_predictable(question=question)
+    assert  result == answerable,  f"Question is not evaluated correctly, see the completion: {is_predictable}"
