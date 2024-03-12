@@ -12,7 +12,7 @@ from datetime import datetime
 from evo_researcher.autonolas.research import EmbeddingModel
 from evo_researcher.autonolas.research import make_prediction, get_urls_from_queries
 from evo_researcher.autonolas.research import research as research_autonolas
-from prediction_market_agent_tooling.tools.is_predictable import is_predictable
+from evo_researcher.functions.evaluate_question import is_predictable
 from evo_researcher.functions.rephrase_question import rephrase_question
 from evo_researcher.functions.research import research as research_evo
 from evo_researcher.functions.search import search

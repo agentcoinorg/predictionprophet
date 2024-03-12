@@ -1,13 +1,13 @@
 import os
 from typing import cast
 from evo_researcher.benchmark.agents import _make_prediction
-from prediction_market_agent_tooling.tools.is_predictable import is_predictable as evaluate_if_predictable
+from evo_researcher.functions.evaluate_question import is_predictable as evaluate_if_predictable
 from evo_researcher.functions.research import research
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
 )
 from evo_researcher.utils.logger import BaseLogger
-from evo_researcher.utils.secrets import secret_str_from_env
+from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from pydantic.types import SecretStr
 import streamlit as st
 

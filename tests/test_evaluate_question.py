@@ -1,5 +1,5 @@
 import pytest
-from prediction_market_agent_tooling.tools.is_predictable import is_predictable
+from evo_researcher.functions.evaluate_question import is_predictable
 
 
 @pytest.mark.parametrize("question, answerable", [
