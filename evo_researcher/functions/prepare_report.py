@@ -29,7 +29,7 @@ Content:
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key) if api_key else None) |
+        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key)) |
         StrOutputParser()
     )
 
@@ -70,7 +70,7 @@ def prepare_report(goal: str, scraped: list[str], model: str, api_key: SecretStr
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key) if api_key else None) |
+        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key)) |
         StrOutputParser()
     )
 

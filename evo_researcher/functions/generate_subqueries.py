@@ -22,7 +22,7 @@ def generate_subqueries(query: str, limit: int, model: str, api_key: SecretStr |
 
     subquery_generation_chain = (
         subquery_generation_prompt |
-        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key) if api_key else None) |
+        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key)) |
         CommaSeparatedListOutputParser()
     )
 

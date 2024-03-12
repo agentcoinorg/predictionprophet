@@ -24,7 +24,7 @@ def rerank_subqueries(queries: list[str], goal: str, model: str, api_key: Secret
 
     rerank_results_chain = (
         rerank_results_prompt |
-        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key) if api_key else None) |
+        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key)) |
         StrOutputParser()
     )
 

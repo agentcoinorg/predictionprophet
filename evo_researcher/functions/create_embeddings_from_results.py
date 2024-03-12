@@ -20,7 +20,7 @@ def create_embeddings_from_results(results: list[WebScrapeResult], text_splitter
     if api_key == None:
         api_key = secret_str_from_env("OPENAI_API_KEY")
     
-    collection = Chroma(embedding_function=OpenAIEmbeddings(api_key=secretstr_to_v1_secretstr(api_key) if api_key else None))
+    collection = Chroma(embedding_function=OpenAIEmbeddings(api_key=secretstr_to_v1_secretstr(api_key)))
     texts = []
     metadatas = []
 
