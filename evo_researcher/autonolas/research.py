@@ -1169,7 +1169,7 @@ def make_prediction(
     prompt: str,
     additional_information: str,
     temperature: float = 0.7,
-    engine: str = "gpt-3.5-turbo-1106",
+    engine: str = "gpt-3.5-turbo-0125",
     api_key: SecretStr | None = None
 ) -> Prediction:
     if api_key == None:
