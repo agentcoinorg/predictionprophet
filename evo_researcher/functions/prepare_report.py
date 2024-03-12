@@ -6,7 +6,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from evo_researcher.functions.cache import persistent_inmemory_cache
 from evo_researcher.functions.utils import trim_to_n_tokens
-from evo_researcher.utils.secrets import secret_str_from_env
+from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 from pydantic.types import SecretStr
 

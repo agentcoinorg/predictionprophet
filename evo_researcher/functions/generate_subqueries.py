@@ -3,7 +3,7 @@ from langchain_openai import ChatOpenAI
 from langchain.output_parsers import CommaSeparatedListOutputParser
 from langchain.prompts import ChatPromptTemplate
 from pydantic.types import SecretStr
-from evo_researcher.utils.secrets import secret_str_from_env
+from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 
 subquery_generation_template = """

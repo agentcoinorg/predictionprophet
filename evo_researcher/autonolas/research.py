@@ -28,7 +28,7 @@ from langchain_openai import OpenAIEmbeddings
 
 from dateutil import parser
 from evo_researcher.functions.utils import check_not_none
-from evo_researcher.utils.secrets import secret_str_from_env
+from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from evo_researcher.functions.cache import persistent_inmemory_cache
 from evo_researcher.functions.parallelism import par_map
 from pydantic.types import SecretStr

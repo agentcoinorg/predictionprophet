@@ -12,7 +12,7 @@ from langchain.vectorstores.chroma import Chroma
 from evo_researcher.models.WebScrapeResult import WebScrapeResult
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pydantic.types import SecretStr
-from evo_researcher.utils.secrets import secret_str_from_env
+from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 
 

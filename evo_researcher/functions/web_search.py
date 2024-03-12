@@ -3,7 +3,7 @@ import tenacity
 from tavily import TavilyClient
 from pydantic.types import SecretStr
 
-from evo_researcher.utils.secrets import secret_str_from_env
+from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from evo_researcher.models.WebSearchResult import WebSearchResult
 from evo_researcher.functions.cache import persistent_inmemory_cache
 
