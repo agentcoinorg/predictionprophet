@@ -2,23 +2,95 @@ import os
 from typing import cast
 from evo_researcher.benchmark.agents import _make_prediction
 from evo_researcher.functions.evaluate_question import is_predictable as evaluate_if_predictable
-from evo_researcher.functions.research import research
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
 )
-from evo_researcher.utils.logger import BaseLogger
 import streamlit as st
 
-class StreamlitLogger(BaseLogger):
-    def __init__(self) -> None:
-        super().__init__()
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from evo_researcher.functions.create_embeddings_from_results import create_embeddings_from_results
+from evo_researcher.functions.generate_subqueries import generate_subqueries
+from evo_researcher.functions.prepare_report import prepare_report
+from evo_researcher.functions.rerank_subqueries import rerank_subqueries
+from evo_researcher.functions.scrape_results import scrape_results
+from evo_researcher.functions.search import search
+
+def research(
+    goal: str,
+    openai_api_key: str,
+    tavily_api_key: str,
+    model: str = "gpt-4-0125-preview",
+    initial_subqueries_limit: int = 20,
+    subqueries_limit: int = 4,
+    scrape_content_split_chunk_size: int = 800,
+    scrape_content_split_chunk_overlap: int = 225,
+    top_k_per_query: int = 8
+) -> str:
+    with st.status("Generating subqueries"):
+        queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)
     
-    def log(self, msg: str) -> None:
-        st.write(msg)
+        stringified_queries = '\n- ' + '\n- '.join(queries)
+        st.write(f"Generated subqueries: {stringified_queries}")
+        
+    with st.status("Reranking subqueries"):
+        queries = rerank_subqueries(queries=queries, goal=goal, model=model, api_key=openai_api_key)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
+
+        stringified_queries = '\n- ' + '\n- '.join(queries)
+        st.write(f"Reranked subqueries. Will use top {subqueries_limit}: {stringified_queries}")
     
-    debug = info = warning = error = critical = log
+    with st.status("Searching the web"):
+        search_results_with_queries = search(
+            queries, 
+            lambda result: not result.url.startswith("https://www.youtube"),
+            tavily_api_key=tavily_api_key
+        )
+
+        if not search_results_with_queries:
+            raise ValueError(f"No search results found for the goal {goal}.")
+
+        scrape_args = [result for (_, result) in search_results_with_queries]
+        websites_to_scrape = set([result.url for result in scrape_args])
+        
+        stringified_websites = '\n- ' + '\n- '.join(websites_to_scrape)
+        st.write(f"Found the following relevant results: {stringified_websites}")
     
-logger = StreamlitLogger()
+    with st.status(f"Scraping web results"):
+        scraped = scrape_results(scrape_args)
+        scraped = [result for result in scraped if result.content != ""]
+        
+        st.write(f"Scraped content from {len(scraped)} websites")
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        separators=["\n\n", "\n", ". ", "  "],
+        chunk_size=scrape_content_split_chunk_size,
+        chunk_overlap=scrape_content_split_chunk_overlap
+    )
+    
+    with st.status(f"Performing similarity searches"):
+        collection = create_embeddings_from_results(scraped, text_splitter, api_key=openai_api_key)
+        st.write("Created embeddings")
+
+        vector_result_texts: list[str] = []
+        url_to_content_deemed_most_useful: dict[str, str] = {}
+        
+        for query in queries:
+            top_k_per_query_results = collection.similarity_search(query, k=top_k_per_query)
+            vector_result_texts += [result.page_content for result in top_k_per_query_results if result.page_content not in vector_result_texts]
+
+            for x in top_k_per_query_results:
+                # `x.metadata["content"]` holds the whole url's web page, so it's ok to overwrite the value of the same url.
+                url_to_content_deemed_most_useful[x.metadata["url"]] = x.metadata["content"]
+        
+            st.write(f"Similarity searched for: {query}")
+
+        st.write(f"Found {len(vector_result_texts)} relevant information chunks")
+
+    with st.status(f"Preparing report"):
+        report = prepare_report(goal, vector_result_texts, model=model, api_key=openai_api_key)
+        st.markdown(report)
+
+    return report
+
 tavily_api_key = os.environ.get('TAVILY_API_KEY')
 
 if tavily_api_key == None:
@@ -50,50 +122,41 @@ if submit_button and question and openai_api_key:
     st.session_state['question'] = question
     
     with st.container():
-        with st.spinner("Evaluating question..."):
+        with st.status("Evaluating question..."):
             (is_predictable, reasoning) = evaluate_if_predictable(question=question, api_key=openai_api_key) 
-
-        st.container(border=True).markdown(f"""### Question evaluation\n\nQuestion: **{question}**\n\nIs predictable: `{is_predictable}`""")
-        if not is_predictable:
-            st.container().error(f"The agent thinks this question is not predictable: \n\n{reasoning}")
-            st.stop()
-            
-        with st.spinner("Researching..."):
-            with st.container(border=True):
-                report = research(
-                    goal=question,
-                    use_summaries=False,
-                    subqueries_limit=6,
-                    top_k_per_query=15,
-                    openai_api_key=openai_api_key,
-                    tavily_api_key=tavily_api_key,
-                    logger=logger
-                )
-        with st.container().expander("Show agent's research report", expanded=False):
-            st.container().markdown(f"""{report}""")
-            if not report:
-                st.container().error("No research report was generated.")
+            st.container(border=True).markdown(f"""### Question evaluation\n\nQuestion: **{question}**\n\nIs predictable: `{is_predictable}`""")
+            if not is_predictable:
+                st.container().error(f"The agent thinks this question is not predictable: \n\n{reasoning}")
                 st.stop()
+        
+        with st.container(border=True):
+            report = research(
+                goal=question,
+                subqueries_limit=6,
+                top_k_per_query=15,
+                openai_api_key=openai_api_key,
+                tavily_api_key=tavily_api_key,
+            )
                 
-        with st.spinner("Predicting..."):
+        with st.status("Making prediction..."):
             with st.container(border=True):
                 prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0, api_key=openai_api_key)
-        with st.container().expander("Show agent's prediction", expanded=False):
-            if prediction.outcome_prediction == None:
-                st.container().error("The agent failed to generate a prediction")
-                st.stop()
+
+                if prediction.outcome_prediction == None:
+                    st.container().error("The agent failed to generate a prediction")
+                    st.stop()
                 
-            outcome_prediction = cast(OutcomePrediction, prediction.outcome_prediction)
+                outcome_prediction = cast(OutcomePrediction, prediction.outcome_prediction)
             
-            st.container().markdown(f"""
-        ## Prediction
-        
-        ### Probability
-        `{outcome_prediction.p_yes * 100}%`
-        
-        ### Confidence
-        `{outcome_prediction.confidence * 100}%`
-        """)
-            if not prediction:
-                st.container().error("No prediction was generated.")
-                st.stop()
+                st.container().markdown(f"""
+            ## Prediction
+            
+            ### Probability
+            `{outcome_prediction.p_yes * 100}%`
+            
+            ### Confidence
+            `{outcome_prediction.confidence * 100}%`
+            """)
+                if not prediction:
+                    st.container().error("No prediction was generated.")
+                    st.stop()
