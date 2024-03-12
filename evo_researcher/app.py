@@ -78,7 +78,6 @@ def research(
             vector_result_texts += [result.page_content for result in top_k_per_query_results if result.page_content not in vector_result_texts]
 
             for x in top_k_per_query_results:
-                # `x.metadata["content"]` holds the whole url's web page, so it's ok to overwrite the value of the same url.
                 url_to_content_deemed_most_useful[x.metadata["url"]] = x.metadata["content"]
         
             st.write(f"Similarity searched for: {query}")
@@ -101,27 +100,15 @@ if tavily_api_key == None:
         st.stop()
 
 st.set_page_config(layout="wide")
-st.title("Evo Predict")
+st.title("Evo Prophet")
 
-with st.form("question_form", clear_on_submit=True):
-    question = st.text_input(
-        'Question',
-        placeholder="Will Twitter implement a new misinformation policy before the end of 2024",
-        value=st.session_state.get('question', '')
-    )
-    openai_api_key = st.text_input(
-        'OpenAI API Key',
-        placeholder="sk-...",
-        type="password",
-        value=st.session_state.get('openai_api_key', '')
-    )
-    submit_button = st.form_submit_button('Predict')
+with st.sidebar:
+    openai_api_key = st.text_input("OpenAI API Key", type="password", key="open_ai_key")
 
-if submit_button and question and openai_api_key:
-    st.session_state['openai_api_key'] = openai_api_key
-    st.session_state['question'] = question
+if question := st.chat_input():
+    st.chat_message("user").write(question)
     
-    with st.container():
+    with st.chat_message("assistant"):
         with st.status("Evaluating question..."):
             (is_predictable, reasoning) = evaluate_if_predictable(question=question, api_key=openai_api_key) 
             st.container(border=True).markdown(f"""### Question evaluation\n\nQuestion: **{question}**\n\nIs predictable: `{is_predictable}`""")
@@ -129,34 +116,24 @@ if submit_button and question and openai_api_key:
                 st.container().error(f"The agent thinks this question is not predictable: \n\n{reasoning}")
                 st.stop()
         
-        with st.container(border=True):
-            report = research(
-                goal=question,
-                subqueries_limit=6,
-                top_k_per_query=15,
-                openai_api_key=openai_api_key,
-                tavily_api_key=tavily_api_key,
-            )
+        report = research(
+            goal=question,
+            subqueries_limit=6,
+            top_k_per_query=15,
+            openai_api_key=openai_api_key,
+            tavily_api_key=tavily_api_key,
+        )
                 
         with st.status("Making prediction..."):
-            with st.container(border=True):
-                prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0, api_key=openai_api_key)
+            prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0, api_key=openai_api_key)
 
-                if prediction.outcome_prediction == None:
-                    st.container().error("The agent failed to generate a prediction")
-                    st.stop()
-                
-                outcome_prediction = cast(OutcomePrediction, prediction.outcome_prediction)
+            if prediction.outcome_prediction == None:
+                st.container().error("The agent failed to generate a prediction")
+                st.stop()
             
-                st.container().markdown(f"""
-            ## Prediction
-            
-            ### Probability
-            `{outcome_prediction.p_yes * 100}%`
-            
-            ### Confidence
-            `{outcome_prediction.confidence * 100}%`
-            """)
-                if not prediction:
-                    st.container().error("No prediction was generated.")
-                    st.stop()
+            outcome_prediction = cast(OutcomePrediction, prediction.outcome_prediction)
+        
+            st.write(f"Probability: {outcome_prediction.p_yes * 100}%. Confidence: {outcome_prediction.confidence * 100}%")
+            if not prediction:
+                st.container().error("No prediction was generated.")
+                st.stop()
