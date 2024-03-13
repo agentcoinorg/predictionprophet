@@ -2,7 +2,7 @@ import json
 import tiktoken
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
-from evo_researcher.autonolas.research import clean_completion_json
+from evo_prophet.autonolas.research import clean_completion_json
 from langchain.prompts import ChatPromptTemplate
 
 

@@ -1,5 +1,5 @@
 import pytest
-from evo_researcher.functions.evaluate_question import is_predictable
+from evo_prophet.functions.evaluate_question import is_predictable
 
 
 @pytest.mark.parametrize("question, answerable", [
