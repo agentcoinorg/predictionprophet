@@ -101,6 +101,7 @@ if tavily_api_key == None:
 
 st.set_page_config(layout="wide")
 st.title("Evo Prophet")
+st.write('Ask any question about a future outcome')
 
 with st.sidebar:
     openai_api_key = st.text_input("OpenAI API Key", type="password", key="open_ai_key")
@@ -109,6 +110,8 @@ if question := st.chat_input():
     st.chat_message("user").write(question)
     
     with st.chat_message("assistant"):
+        st.write(f"I will evaluate the proability of '{question}' happening")
+        
         with st.status("Evaluating question") as status:
             (is_predictable, reasoning) = evaluate_if_predictable(question=question, api_key=openai_api_key) 
             if not is_predictable:
@@ -137,3 +140,5 @@ if question := st.chat_input():
             if not prediction:
                 st.container().error("No prediction was generated.")
                 st.stop()
+                
+        st.write(f"With {outcome_prediction.confidence * 100}% confidence, I'd say '{question}' has a {outcome_prediction.p_yes * 100}% probability of happening")
