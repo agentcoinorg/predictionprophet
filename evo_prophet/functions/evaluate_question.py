@@ -16,6 +16,7 @@ QUESTION_EVALUATE_PROMPT = """Main signs about an answerable question (sometimes
 - The question needs to have a clear time frame.
 - The answer is probably Google-able, after the event happened.
 - The question can not be about itself.
+- The question needs to be a yes or no question.
 
 Follow a chain of thought to evaluate if the question is answerable:
 

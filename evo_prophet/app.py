@@ -101,7 +101,7 @@ if tavily_api_key == None:
 
 st.set_page_config(layout="wide")
 st.title("Evo Prophet")
-st.write('Ask any question about a future outcome')
+st.write('Ask any yes-or-no question about a future outcome')
 
 if "clear_history" not in st.session_state:
     st.session_state['clear_history'] = False
@@ -155,4 +155,4 @@ if question := st.chat_input(placeholder='Will Twitter implement a new misinform
                 st.container().error("No prediction was generated.")
                 st.stop()
                 
-        st.markdown(f"With **{outcome_prediction.confidence * 100}% confidence**, I'd say **'{question}'** has a **{outcome_prediction.p_yes * 100}% probability** of happening")
+        st.markdown(f"With **{outcome_prediction.confidence * 100}% confidence**, I'd say this outcome has a **{outcome_prediction.p_yes * 100}% probability** of happening")
