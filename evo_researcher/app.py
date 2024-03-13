@@ -17,8 +17,8 @@ from evo_researcher.functions.search import search
 
 def research(
     goal: str,
-    openai_api_key: str,
-    tavily_api_key: str,
+    openai_api_key: SecretStr,
+    tavily_api_key: SecretStr,
     model: str = "gpt-4-0125-preview",
     initial_subqueries_limit: int = 20,
     subqueries_limit: int = 4,
@@ -104,7 +104,7 @@ st.title("Evo Prophet")
 st.write('Ask any question about a future outcome')
 
 with st.sidebar:
-    openai_api_key = st.text_input("OpenAI API Key", type="password", key="open_ai_key")
+    openai_api_key = SecretStr(st.text_input("OpenAI API Key", type="password", key="open_ai_key"))
 
 if question := st.chat_input(placeholder='Will Twitter implement a new misinformation policy before the end of 2024?'):
     st.chat_message("user").write(question)
