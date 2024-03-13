@@ -109,11 +109,11 @@ if question := st.chat_input():
     st.chat_message("user").write(question)
     
     with st.chat_message("assistant"):
-        with st.status("Evaluating question..."):
+        with st.status("Evaluating question") as status:
             (is_predictable, reasoning) = evaluate_if_predictable(question=question, api_key=openai_api_key) 
-            st.container(border=True).markdown(f"""### Question evaluation\n\nQuestion: **{question}**\n\nIs predictable: `{is_predictable}`""")
             if not is_predictable:
                 st.container().error(f"The agent thinks this question is not predictable: \n\n{reasoning}")
+                status.update(label="Error evaluating question", state="error", expanded=True)
                 st.stop()
         
         report = research(
@@ -124,7 +124,7 @@ if question := st.chat_input():
             tavily_api_key=tavily_api_key,
         )
                 
-        with st.status("Making prediction..."):
+        with st.status("Making prediction"):
             prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0, api_key=openai_api_key)
 
             if prediction.outcome_prediction == None:
