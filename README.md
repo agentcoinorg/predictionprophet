@@ -9,7 +9,7 @@
 
 ## Welcome!
 
-evo.prophet is an agent that specializes in making informed predictions, based on web research. To try it yourself head to our [website](https://predictionprophet.ai) or build and run from source following these [setup instructions](#setup).
+evo.prophet is an agent that specializes in making informed predictions, based on web research. To try it yourself head to [predictionprophet.ai](https://predictionprophet.ai) or build and run from source following these [setup instructions](#setup).
 
 ## Need Help?
 
