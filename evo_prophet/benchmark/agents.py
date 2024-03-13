@@ -7,23 +7,23 @@ from prediction_market_agent_tooling.benchmark.utils import (
     Prediction,
 )
 from datetime import datetime
-from evo_researcher.autonolas.research import EmbeddingModel
-from evo_researcher.autonolas.research import make_prediction, get_urls_from_queries
-from evo_researcher.autonolas.research import research as research_autonolas
-from evo_researcher.functions.evaluate_question import is_predictable
-from evo_researcher.functions.rephrase_question import rephrase_question
-from evo_researcher.functions.research import research as research_evo
-from evo_researcher.functions.search import search
-from evo_researcher.functions.utils import url_is_older_than
-from evo_researcher.models.WebSearchResult import WebSearchResult
+from evo_prophet.autonolas.research import EmbeddingModel
+from evo_prophet.autonolas.research import make_prediction, get_urls_from_queries
+from evo_prophet.autonolas.research import research as research_autonolas
+from evo_prophet.functions.evaluate_question import is_predictable
+from evo_prophet.functions.rephrase_question import rephrase_question
+from evo_prophet.functions.research import research as research_evo
+from evo_prophet.functions.search import search
+from evo_prophet.functions.utils import url_is_older_than
+from evo_prophet.models.WebSearchResult import WebSearchResult
 from unittest.mock import patch
-from evo_researcher.functions.search import search
+from evo_prophet.functions.search import search
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction,
     Prediction,
 )
 from pydantic.types import SecretStr
-from evo_researcher.autonolas.research import Prediction as LLMCompletionPredictionDict
+from evo_prophet.autonolas.research import Prediction as LLMCompletionPredictionDict
 
 def _make_prediction(
     market_question: str,
@@ -144,7 +144,7 @@ class OlasAgent(AbstractBenchmarkedAgent):
             ]
             return results_filtered
     
-        with patch('evo_researcher.autonolas.research.get_urls_from_queries', side_effect=side_effect, autospec=True):
+        with patch('evo_prophet.autonolas.research.get_urls_from_queries', side_effect=side_effect, autospec=True):
             return self.predict(market_question)
 
 
@@ -204,7 +204,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
             ]
             return results_filtered
     
-        with patch('evo_researcher.functions.research.search', side_effect=side_effect, autospec=True):
+        with patch('evo_prophet.functions.research.search', side_effect=side_effect, autospec=True):
             return self.predict(market_question)
 
 class RephrasingOlasAgent(OlasAgent):

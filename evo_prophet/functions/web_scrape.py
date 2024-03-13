@@ -4,7 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from requests import Response
 import tenacity
-from evo_researcher.functions.cache import persistent_inmemory_cache
+from evo_prophet.functions.cache import persistent_inmemory_cache
 
 
 @tenacity.retry(stop=tenacity.stop_after_attempt(3), wait=tenacity.wait_fixed(1), reraise=True)

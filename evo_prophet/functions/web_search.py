@@ -4,8 +4,8 @@ from tavily import TavilyClient
 from pydantic.types import SecretStr
 
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
-from evo_researcher.models.WebSearchResult import WebSearchResult
-from evo_researcher.functions.cache import persistent_inmemory_cache
+from evo_prophet.models.WebSearchResult import WebSearchResult
+from evo_prophet.functions.cache import persistent_inmemory_cache
 
 
 @tenacity.retry(stop=tenacity.stop_after_attempt(3), wait=tenacity.wait_fixed(1), reraise=True)

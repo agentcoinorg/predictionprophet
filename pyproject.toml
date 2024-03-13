@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "evo_researcher"
+name = "evo_prophet"
 version = "0.1.10"
 description = ""
 authors = ["Nestor Amesty <nestor@polywrap.io>"]
@@ -39,8 +39,8 @@ langchain-community = "^0.0.21"
 mypy = "^1.8.0"
 
 [tool.poetry.scripts]
-research= "evo_researcher.main:research"
-predict= "evo_researcher.main:predict"
+research= "evo_prophet.main:research"
+predict= "evo_prophet.main:predict"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,13 +1,13 @@
-from evo_researcher.utils.logger import BaseLogger
+from evo_prophet.utils.logger import BaseLogger
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from evo_researcher.functions.create_embeddings_from_results import create_embeddings_from_results
-from evo_researcher.functions.generate_subqueries import generate_subqueries
-from evo_researcher.functions.prepare_report import prepare_report, prepare_summary
-from evo_researcher.models.WebScrapeResult import WebScrapeResult
-from evo_researcher.functions.rerank_subqueries import rerank_subqueries
-from evo_researcher.functions.scrape_results import scrape_results
-from evo_researcher.functions.search import search
+from evo_prophet.functions.create_embeddings_from_results import create_embeddings_from_results
+from evo_prophet.functions.generate_subqueries import generate_subqueries
+from evo_prophet.functions.prepare_report import prepare_report, prepare_summary
+from evo_prophet.models.WebScrapeResult import WebScrapeResult
+from evo_prophet.functions.rerank_subqueries import rerank_subqueries
+from evo_prophet.functions.scrape_results import scrape_results
+from evo_prophet.functions.search import search
 from pydantic.types import SecretStr
 
 def research(
