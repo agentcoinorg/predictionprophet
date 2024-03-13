@@ -1125,7 +1125,6 @@ def research(
     temperature = temperature or DEFAULT_OPENAI_SETTINGS["temperature"]
 
     # Load the spacy model
-    download_spacy_model("en_core_web_md")
     nlp = spacy.load("en_core_web_md")
 
     # Extract the event question from the prompt

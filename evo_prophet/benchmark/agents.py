@@ -2,8 +2,6 @@ import typing as t
 
 from prediction_market_agent_tooling.benchmark.agents import (
     AbstractBenchmarkedAgent,
-    FixedAgent,
-    RandomAgent,
 )
 from prediction_market_agent_tooling.benchmark.utils import (
     Prediction,
@@ -252,7 +250,5 @@ AGENTS = [
     OlasAgent,
     RephrasingOlasAgent,
     EvoAgent,
-    RandomAgent,
     QuestionOnlyAgent,
-    FixedAgent,
 ]
