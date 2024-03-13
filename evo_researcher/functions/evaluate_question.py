@@ -4,6 +4,9 @@ from evo_researcher.autonolas.research import clean_completion_json
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from evo_researcher.functions.cache import persistent_inmemory_cache
+from pydantic.types import SecretStr
+from prediction_market_agent_tooling.tools.utils import secret_str_from_env
+from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 
 
 # I tried to make it return a JSON, but it didn't work well in combo with asking it to do chain of thought.
@@ -41,15 +44,15 @@ def is_predictable(
     question: str,
     engine: str = "gpt-4-0125-preview",
     prompt_template: str = QUESTION_EVALUATE_PROMPT,
-    api_key: str | None = None
+    api_key: SecretStr | None = None
 ) -> tuple[bool, str]:
     """
     Evaluate if the question is actually answerable.
     """
     
     if api_key == None:
-        api_key = os.environ.get("OPENAI_API_KEY", "")
-    llm = ChatOpenAI(model=engine, temperature=0.0, api_key=api_key)
+        api_key = secret_str_from_env("OPENAI_API_KEY")
+    llm = ChatOpenAI(model=engine, temperature=0.0, api_key=secretstr_to_v1_secretstr(api_key))
 
     prompt = ChatPromptTemplate.from_template(template=prompt_template)
     messages = prompt.format_messages(question=question)

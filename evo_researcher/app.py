@@ -1,12 +1,12 @@
-import os
 from typing import cast
 from evo_researcher.benchmark.agents import _make_prediction
 from evo_researcher.functions.evaluate_question import is_predictable as evaluate_if_predictable
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
 )
+from pydantic import SecretStr
 import streamlit as st
-
+from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from evo_researcher.functions.create_embeddings_from_results import create_embeddings_from_results
 from evo_researcher.functions.generate_subqueries import generate_subqueries
@@ -90,11 +90,11 @@ def research(
 
     return report
 
-tavily_api_key = os.environ.get('TAVILY_API_KEY')
+tavily_api_key = secret_str_from_env('TAVILY_API_KEY')
 
 if tavily_api_key == None:
     try:
-        tavily_api_key = st.secrets['TAVILY_API_KEY']
+        tavily_api_key = SecretStr(st.secrets['TAVILY_API_KEY'])
     except:
         st.container().error("No Tavily API Key provided")
         st.stop()

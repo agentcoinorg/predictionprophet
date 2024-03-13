@@ -2,9 +2,10 @@ import requests
 import typing as t
 from evo_researcher.functions.web_search import WebSearchResult, web_search
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pydantic.types import SecretStr
 
 
-def safe_web_search(query: str, max_results: int = 5, tavily_api_key: str | None = None) -> t.Optional[list[WebSearchResult]]:
+def safe_web_search(query: str, max_results: int = 5, tavily_api_key: SecretStr | None = None) -> t.Optional[list[WebSearchResult]]:
     try:
         return web_search(query, max_results, tavily_api_key)
     except requests.exceptions.HTTPError as e:
@@ -12,7 +13,7 @@ def safe_web_search(query: str, max_results: int = 5, tavily_api_key: str | None
         return None
 
 
-def search(queries: list[str], filter: t.Callable[[WebSearchResult], bool] = lambda x: True, tavily_api_key: str | None = None) -> list[tuple[str, WebSearchResult]]:
+def search(queries: list[str], filter: t.Callable[[WebSearchResult], bool] = lambda x: True, tavily_api_key: SecretStr | None = None) -> list[tuple[str, WebSearchResult]]:
     maybe_results: list[t.Optional[list[WebSearchResult]]] = []
 
     # Each result will have a query associated with it
