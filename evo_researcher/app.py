@@ -7,6 +7,8 @@ from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
 )
 from evo_researcher.utils.logger import BaseLogger
+from prediction_market_agent_tooling.tools.utils import secret_str_from_env
+from pydantic.types import SecretStr
 import streamlit as st
 
 class StreamlitLogger(BaseLogger):
@@ -19,11 +21,11 @@ class StreamlitLogger(BaseLogger):
     debug = info = warning = error = critical = log
     
 logger = StreamlitLogger()
-tavily_api_key = os.environ.get('TAVILY_API_KEY')
+tavily_api_key = secret_str_from_env('TAVILY_API_KEY')
 
 if tavily_api_key == None:
     try:
-        tavily_api_key = st.secrets['TAVILY_API_KEY']
+        tavily_api_key = SecretStr(st.secrets['TAVILY_API_KEY'])
     except:
         st.container().error("No Tavily API Key provided")
         st.stop()
@@ -37,12 +39,12 @@ with st.form("question_form", clear_on_submit=True):
         placeholder="Will Twitter implement a new misinformation policy before the end of 2024",
         value=st.session_state.get('question', '')
     )
-    openai_api_key = st.text_input(
+    openai_api_key = SecretStr(st.text_input(
         'OpenAI API Key',
         placeholder="sk-...",
         type="password",
         value=st.session_state.get('openai_api_key', '')
-    )
+    ))
     submit_button = st.form_submit_button('Predict')
 
 if submit_button and question and openai_api_key:

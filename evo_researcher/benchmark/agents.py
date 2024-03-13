@@ -24,6 +24,7 @@ from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction,
     Prediction,
 )
+from pydantic.types import SecretStr
 from evo_researcher.autonolas.research import Prediction as LLMCompletionPredictionDict
 
 def _make_prediction(
@@ -31,7 +32,7 @@ def _make_prediction(
     additional_information: str,
     engine: str,
     temperature: float,
-    api_key: str | None = None
+    api_key: SecretStr | None = None
 ) -> Prediction:
     """
     We prompt model to output a simple flat JSON and convert it to a more structured pydantic model here.
