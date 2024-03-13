@@ -8,12 +8,12 @@ from pydantic import SecretStr
 import streamlit as st
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from evo_researcher.functions.create_embeddings_from_results import create_embeddings_from_results
-from evo_researcher.functions.generate_subqueries import generate_subqueries
-from evo_researcher.functions.prepare_report import prepare_report
-from evo_researcher.functions.rerank_subqueries import rerank_subqueries
-from evo_researcher.functions.scrape_results import scrape_results
-from evo_researcher.functions.search import search
+from evo_prophet.functions.create_embeddings_from_results import create_embeddings_from_results
+from evo_prophet.functions.generate_subqueries import generate_subqueries
+from evo_prophet.functions.prepare_report import prepare_report
+from evo_prophet.functions.rerank_subqueries import rerank_subqueries
+from evo_prophet.functions.scrape_results import scrape_results
+from evo_prophet.functions.search import search
 
 def research(
     goal: str,
