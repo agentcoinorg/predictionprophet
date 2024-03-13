@@ -5,9 +5,9 @@ from prediction_market_agent_tooling.benchmark.agents import FixedAgent, RandomA
 from prediction_market_agent_tooling.benchmark.benchmark import Benchmarker
 from prediction_market_agent_tooling.benchmark.utils import MarketSource, get_markets, MarketFilter, MarketSort
 
-from evo_researcher.autonolas.research import EmbeddingModel
-from evo_researcher.benchmark.agents import EvoAgent, OlasAgent, QuestionOnlyAgent
-from evo_researcher.functions.cache import ENABLE_CACHE
+from evo_prophet.autonolas.research import EmbeddingModel
+from evo_prophet.benchmark.agents import EvoAgent, OlasAgent, QuestionOnlyAgent
+from evo_prophet.functions.cache import ENABLE_CACHE
 
 
 def main(

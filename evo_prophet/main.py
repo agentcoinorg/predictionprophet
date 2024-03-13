@@ -1,9 +1,9 @@
 import click
 import time
 from dotenv import load_dotenv
-from evo_researcher.benchmark.agents import _make_prediction
+from evo_prophet.benchmark.agents import _make_prediction
 from langchain_community.callbacks import get_openai_callback
-from evo_researcher.functions.research import research as evo_research
+from evo_prophet.functions.research import research as evo_research
 
 load_dotenv()
 

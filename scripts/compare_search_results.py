@@ -7,8 +7,8 @@ from tqdm import tqdm
 from urllib.parse import urlparse
 from collections import defaultdict
 from prediction_market_agent_tooling.benchmark.utils import get_markets, MarketSource
-from evo_researcher.functions.web_search import web_search
-from evo_researcher.autonolas.research import safe_get_urls_from_query
+from evo_prophet.functions.web_search import web_search
+from evo_prophet.autonolas.research import safe_get_urls_from_query
 
 ENGINES: dict[str, t.Callable[[str, int], list[str]]] = {
     "tavily": lambda q, limit: [x.url for x in web_search(q, max_results=limit)],

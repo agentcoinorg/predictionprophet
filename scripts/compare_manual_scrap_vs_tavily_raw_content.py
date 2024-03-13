@@ -1,7 +1,7 @@
 import streamlit as st
 from dotenv import load_dotenv
-from evo_researcher.functions.web_search import web_search
-from evo_researcher.functions.scrape_results import scrape_results
+from evo_prophet.functions.web_search import web_search
+from evo_prophet.functions.scrape_results import scrape_results
 
 load_dotenv()
 st.set_page_config(layout="wide")

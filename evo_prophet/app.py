@@ -1,12 +1,12 @@
 import os
 from typing import cast
-from evo_researcher.benchmark.agents import _make_prediction
-from evo_researcher.functions.evaluate_question import is_predictable as evaluate_if_predictable
-from evo_researcher.functions.research import research
+from evo_prophet.benchmark.agents import _make_prediction
+from evo_prophet.functions.evaluate_question import is_predictable as evaluate_if_predictable
+from evo_prophet.functions.research import research
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
 )
-from evo_researcher.utils.logger import BaseLogger
+from evo_prophet.utils.logger import BaseLogger
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from pydantic.types import SecretStr
 import streamlit as st
@@ -31,7 +31,7 @@ if tavily_api_key == None:
         st.stop()
 
 st.set_page_config(layout="wide")
-st.title("Evo Predict")
+st.title("Evo Prophet")
 
 with st.form("question_form", clear_on_submit=True):
     question = st.text_input(

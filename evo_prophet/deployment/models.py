@@ -1,7 +1,7 @@
 import pytz
 from decimal import Decimal
 from datetime import datetime, timedelta
-from evo_researcher.benchmark.agents import EvoAgent, OlasAgent, EmbeddingModel
+from evo_prophet.benchmark.agents import EvoAgent, OlasAgent, EmbeddingModel
 from prediction_market_agent_tooling.benchmark.agents import AbstractBenchmarkedAgent
 from prediction_market_agent_tooling.markets.agent_market import AgentMarket
 from prediction_market_agent_tooling.markets.manifold.manifold import ManifoldAgentMarket
