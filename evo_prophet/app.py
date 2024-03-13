@@ -1,6 +1,6 @@
 from typing import cast
-from evo_researcher.benchmark.agents import _make_prediction
-from evo_researcher.functions.evaluate_question import is_predictable as evaluate_if_predictable
+from evo_prophet.benchmark.agents import _make_prediction
+from evo_prophet.functions.evaluate_question import is_predictable as evaluate_if_predictable
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
 )

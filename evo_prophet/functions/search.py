@@ -1,6 +1,6 @@
 import requests
 import typing as t
-from evo_researcher.functions.web_search import WebSearchResult, web_search
+from evo_prophet.functions.web_search import WebSearchResult, web_search
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pydantic.types import SecretStr
 
