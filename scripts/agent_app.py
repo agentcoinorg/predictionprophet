@@ -120,10 +120,18 @@ Is predictable: `{is_predictable}`
     else:
         is_predictable = True
 
+    # Show research step only for agents that implement this method.
+    if hasattr(agent, "research"):
+        with column.expander("Show agent's research", expanded=False):
+            st.markdown(f"""## Research
+
+{agent.research(market_question=question)}
+""")
+
     with st.spinner("Predicting..."):
         prediction = agent.predict(market_question=question)
-    with column.expander("Show agent's prediction", expanded=False):
-        column.markdown(f"""## Prediction
+    with column.expander("Show agent's prediction", expanded=True):
+        st.markdown(f"""## Prediction
 
 ```       
 {prediction.outcome_prediction}

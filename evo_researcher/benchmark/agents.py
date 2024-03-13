@@ -174,14 +174,17 @@ class EvoAgent(AbstractBenchmarkedAgent):
         (result, _) = is_predictable(question=market_question)
         return result
     
+    def research(self, market_question: str) -> str:
+        return research_evo(
+            goal=market_question,
+            model=self.model,
+            use_summaries=self.use_summaries,
+            use_tavily_raw_content=self.use_tavily_raw_content,
+        )
+    
     def predict(self, market_question: str) -> Prediction:
         try:
-            report = research_evo(
-                goal=market_question,
-                model=self.model,
-                use_summaries=self.use_summaries,
-                use_tavily_raw_content=self.use_tavily_raw_content,
-            )
+            report = self.research(market_question)
             return _make_prediction(
                 market_question=market_question,
                 additional_information=report,
