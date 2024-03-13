@@ -106,7 +106,7 @@ st.write('Ask any question about a future outcome')
 with st.sidebar:
     openai_api_key = st.text_input("OpenAI API Key", type="password", key="open_ai_key")
 
-if question := st.chat_input():
+if question := st.chat_input(placeholder='Will Twitter implement a new misinformation policy before the end of 2024?'):
     st.chat_message("user").write(question)
     
     with st.chat_message("assistant"):
