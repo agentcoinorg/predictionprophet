@@ -1,69 +1,15 @@
 # evo.prophet
 ![](./content/banner.png)
 
-## Overview
+---
 
-evo.prophet is an agent that specializes in making informed predictions, based on web research.
+[Discord](https://discord.gg/k7UCsH3ps9) | [Website](https://predictionprophet.ai) | :star: the repo !  
 
-It contains three primary functions: [Research](#research-function), [Prediction](#prediction-function), [Grading](#grading-function)
+---
 
-Below, there's a high level explanation of their implementations, respectively.
+## Welcome!
 
-### Research Function
-
-The research function takes a question, like `"Will Twitter implement a new misinformation policy before the 2024 elections?"`, and will then:
-
-1. Generate `n` web search queries
-2. Re-rank the queries using an LLM call, and then select the most relevant ones
-3. Search the web for each query, using [Tavily](https://tavily.com/)
-4. Scrape and sanitize the content of each result's website
-5. Use Langchain's `RecursiveCharacterTextSplitter` to split the content of all pages into chunks.
-6. Create embeddings of all chunks, and store the source of each as metadata.
-7. Iterate over the queries selected on step `2` and vector search for the most relevant chunks created in step `5`.
-8. Aggregate all relevant chunks and prepare a report.
-
-### Prediction Function
-
-Ported implementation from [Valory mech's prediction_sentence_embeddings implementation](https://github.com/valory-xyz/mech/blob/main/packages/valory/customs/prediction_request_embedding/prediction_sentence_embedding.py).
-
-
-### Grading Function
-
-The grading function grades information using criteria from https://guides.lib.unc.edu/evaluating-info/evaluate, ignoring `usability` and `intended audience`.
-
-Upon receiving a question like `"Will Twitter implement a new misinformation policy before the 2024 elections?"` along with complimentary information, it will:
-
-1. Create an information evaluation plan
-2. Evaluate the information according to the plan
-3. Extract the scores from the evaluation
-
-## Installation
-
-```bash
-poetry install
-poetry shell
-```
-
-## Run
-
-### Research
-
-
-```bash
-poetry run research "Will Twitter implement a new misinformation policy before the 2024 elections?"
-```
-
-### Predict
-
-```bash
-poetry run predict "Will Twitter implement a new misinformation policy before the 2024 elections?"
-```
-
-## Run front-end app
-
-```bash
-poetry run streamlit run ./scripts/public_agent_app.py
-```
+evo.prophet is an agent that specializes in making informed predictions, based on web research. To try it yourself head to our [website](https://predictionprophet.ai) or build and run from source following these [setup instructions](#setup).
 
 ## Need Help?
 
@@ -74,7 +20,57 @@ Join our [Discord community](https://discord.gg/k7UCsH3ps9) for support and disc
 If you have questions or encounter issues, please don't hesitate to [create a new issue](https://github.com/polywrap/evo.prophet/issues/new) to get support.
 
 
-## Ideas for future improvement
+## How It Works
+![](./content/diagram.png)
+
+To elaborate further, given a question like `"Will Twitter implement a new misinformation policy before the 2024 elections?"`, evo.prophet will:  
+
+1. Generate `n` web search queries and re-ranks them using an LLM call, selecting only the most relevant ones
+2. Search the web for each query, using [Tavily](https://tavily.com/)
+3. Scrape and sanitize the content of each result's website
+4. Use Langchain's `RecursiveCharacterTextSplitter` to split the content of all pages into chunks and create embeddings. All chunks are stored with the content as metadata.
+5. Iterate over the queries selected on step `1` and vector search for the most relevant chunks created in step `4`.
+6. Aggregate all relevant chunks and prepare a report.
+7. Make a prediction using multi-agent debate.
+
+## Setup
+
+### Installation
+
+1. Clone the repository 
+    > `git clone https://github.com/polywrap/evo.prophet`
+2. Copy the `.env.template` file and rename it to `.env`.  
+    > `cp .env.template .env`
+3. Find the line that says OPENAI_API_KEY=, and add your unique [OpenAI](https://openai.com/) API Key  
+    > `OPENAI_API_KEY=sk-...`
+4. Find the line that says TAVILY_API_KEY=, and add your unique [Tavily](https://tavily.com/) API Key  
+    > `TAVILY_API_KEY=tvly-...`
+5. Install all dependencies
+    > `poetry install`
+6. Enter the python environment
+    > `poetry shell`
+
+Now you're ready to go!
+
+### Predict
+
+```bash
+poetry run predict "Will Twitter implement a new misinformation policy before the 2024 elections?"
+```
+
+### Research
+
+```bash
+poetry run research "Will Twitter implement a new misinformation policy before the 2024 elections?"
+```
+
+### Front-End
+
+```bash
+poetry run streamlit run ./scripts/public_agent_app.py
+```
+
+## Possible Future Improvements
 
 ### For the researcher:
 

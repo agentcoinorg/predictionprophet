@@ -66,6 +66,18 @@ Where xx is a number. Only respond with a single JSON. The keys should be lowerc
 """
 
 def grade_info(question: str, information: str) -> str:
+    """
+    The grading function grades information using criteria from https://guides.lib.unc.edu/evaluating-info/evaluate,
+    ignoring `usability` and `intended audience`.
+
+    Upon receiving a question like `"Will Twitter implement a new misinformation policy before the 2024 elections?"`
+    along with complimentary information, it will:
+
+    1. Create an information evaluation plan
+    2. Evaluate the information according to the plan
+    3. Extract the scores from the evaluation
+    """
+
     grading_prompt = ChatPromptTemplate.from_template(template=grading_prompt_template)
     planning_prompt = ChatPromptTemplate.from_template(template=grading_planning_prompt_template)
     formatting_prompt = ChatPromptTemplate.from_template(template=grading_format_prompt_template)
