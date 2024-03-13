@@ -1,11 +1,15 @@
+import logging
+from typing import cast
 import click
 import time
 from dotenv import load_dotenv
 from evo_prophet.benchmark.agents import _make_prediction
 from langchain_community.callbacks import get_openai_callback
 from evo_prophet.functions.research import research as evo_research
+from prediction_market_agent_tooling.benchmark.utils import OutcomePrediction
 
 load_dotenv()
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(message)s')
 
 def create_output_file(info: str, path: str) -> None:
     with open(path, 'w') as file:
@@ -58,14 +62,21 @@ def predict(prompt: str, path: str | None = None) -> None:
         if path:
             report = read_text_file(path)
         else:
-            report = evo_research(goal=prompt, model="gpt-4-0125-preview", use_summaries=False)
+            logger = logging.getLogger("research")
+            logger.setLevel(logging.INFO)
+            report = evo_research(goal=prompt, model="gpt-4-0125-preview", use_summaries=False, logger=logger)
         
         prediction = _make_prediction(market_question=prompt, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0)
 
     end = time.time()
     
-    print(prediction)
-    print(f"\n\nTime elapsed: {end - start}\n\n{cb}\n\n")
+    outcome_prediction = prediction.outcome_prediction
+    if outcome_prediction == None:
+        raise ValueError("The agent failed to generate a prediction")
+    
+    outcome_prediction = cast(OutcomePrediction, prediction.outcome_prediction)
+    
+    print(f"\n\nQuestion: '{prompt}'\nProbability of ocurring: {outcome_prediction.p_yes * 100}%\nConfidence in prediction: {outcome_prediction.confidence * 100}%\nTime elapsed: {end - start}")
 
 
 if __name__ == '__main__':
