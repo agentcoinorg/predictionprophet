@@ -103,10 +103,24 @@ st.set_page_config(layout="wide")
 st.title("Evo Prophet")
 st.write('Ask any question about a future outcome')
 
+if "clear_history" not in st.session_state:
+    st.session_state['clear_history'] = False
+    
+if "question" not in st.session_state:
+    st.session_state['question'] = None
+
 with st.sidebar:
     openai_api_key = SecretStr(st.text_input("OpenAI API Key", type="password", key="open_ai_key"))
 
-if question := st.chat_input(placeholder='Will Twitter implement a new misinformation policy before the end of 2024?'):
+if question := st.chat_input(placeholder='Will Twitter implement a new misinformation policy before the end of 2024?') or st.session_state['question']:
+    st.session_state['question'] = question
+    
+    if st.session_state['clear_history']:
+        st.session_state['clear_history'] = False
+        st.rerun()
+    else:
+        st.session_state['clear_history'] = True
+    
     st.chat_message("user").write(question)
     
     with st.chat_message("assistant"):
