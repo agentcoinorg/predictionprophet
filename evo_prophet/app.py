@@ -111,6 +111,10 @@ with st.sidebar:
 progress_placeholder = st.empty()
 
 if question := st.chat_input(placeholder='Will Twitter implement a new misinformation policy before the end of 2024?'):
+    if not openai_api_key.get_secret_value():
+        st.container().error(f"No OpenAI API key provided")
+        st.stop()
+    
     progress_placeholder.empty()
     time.sleep(0.1) # https://github.com/streamlit/streamlit/issues/5044
     
