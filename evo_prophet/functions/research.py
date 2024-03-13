@@ -22,7 +22,7 @@ def research(
     use_tavily_raw_content: bool = False,
     openai_api_key: SecretStr | None = None,
     tavily_api_key: SecretStr | None = None,
-    logger: logging.Logger | None = logging.getLogger()
+    logger: logging.Logger = logging.getLogger()
 ) -> str:
     logger.info("Started subqueries generation")
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)
