@@ -1,5 +1,5 @@
 # evo.prophet
-![](./content/banner.png)
+![](./content/banner_hires.png)
 
 ---
 
