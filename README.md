@@ -1,45 +1,41 @@
-# Evo Predict
+# evo.prophet
+![](./content/banner.png)
 
 ## Overview
 
-This project is aimed to be an AI agent that makes informed predictions, based on web research.
+evo.prophet is an agent that specializes in making informed predictions, based on web research.
 
-It contains three primary features:
-
-- An information research function
-- A prediction function
-- An information grading function
+It contains three primary functions: [Research](#research-function), [Prediction](#prediction-function), [Grading](#grading-function)
 
 Below, there's a high level explanation of their implementations, respectively.
 
 ### Research Function
 
-The research function takes a question, like `"Will Twitter implement a new misinformation policy before the 2024 elections?"` and will then:
+The research function takes a question, like `"Will Twitter implement a new misinformation policy before the 2024 elections?"`, and will then:
 
-1. Generate n web search queries
+1. Generate `n` web search queries
 2. Re-rank the queries using an LLM call, and then select the most relevant ones
 3. Search the web for each query, using [Tavily](https://tavily.com/)
 4. Scrape and sanitize the content of each result's website
 5. Use Langchain's `RecursiveCharacterTextSplitter` to split the content of all pages into chunks.
-6. Create embeddings of all chunks, and store the source of each as metadata
-7. Iterate over the queries selected on step `2`. And for each one of them, vector search for the most relevant embeddings for each.
-8. Aggregate the chunks from the previous steps and prepare a report.
+6. Create embeddings of all chunks, and store the source of each as metadata.
+7. Iterate over the queries selected on step `2` and vector search for the most relevant chunks created in step `5`.
+8. Aggregate all relevant chunks and prepare a report.
 
 ### Prediction Function
 
-Ported implementation from: https://github.com/valory-xyz/mech/blob/main/tools/prediction_request_embedding/prediction_sentence_embedding.py
+Ported implementation from [Valory mech's prediction_sentence_embeddings implementation](https://github.com/valory-xyz/mech/blob/main/packages/valory/customs/prediction_request_embedding/prediction_sentence_embedding.py).
 
 
 ### Grading Function
 
-For the implmentation of this function, the information quality criteria were selected from https://guides.lib.unc.edu/evaluating-info/evaluate, ignoring `usability` and `intended audience`.
+The grading function grades information using criteria from https://guides.lib.unc.edu/evaluating-info/evaluate, ignoring `usability` and `intended audience`.
 
-Upon receiving a question like `"Will Twitter implement a new misinformation policy before the 2024 elections?"` and information, it will:
+Upon receiving a question like `"Will Twitter implement a new misinformation policy before the 2024 elections?"` along with complimentary information, it will:
 
-1. Create en evaluation plan
-2. Perform the evaluation of the information according to the plan from the previous step
+1. Create an information evaluation plan
+2. Evaluate the information according to the plan
 3. Extract the scores from the evaluation
-
 
 ## Installation
 
@@ -68,6 +64,15 @@ poetry run predict "Will Twitter implement a new misinformation policy before th
 ```bash
 poetry run streamlit run ./scripts/public_agent_app.py
 ```
+
+## Need Help?
+
+Join our [Discord community](https://discord.gg/k7UCsH3ps9) for support and discussions.
+
+[![Join us on Discord](https://invidget.switchblade.xyz/k7UCsH3ps9)](https://discord.com/invite/k7UCsH3ps9)
+
+If you have questions or encounter issues, please don't hesitate to [create a new issue](https://github.com/polywrap/evo.prophet/issues/new) to get support.
+
 
 ## Ideas for future improvement
 
