@@ -23,7 +23,7 @@ def read_text_file(file_path: str) -> str:
 @click.group()
 def cli() -> None:
     pass
-    
+
 @cli.command()
 @click.argument('prompt')
 @click.option('--file', '-f', default=None)
@@ -66,7 +66,7 @@ def predict(prompt: str, path: str | None = None) -> None:
     
     print(prediction)
     print(f"\n\nTime elapsed: {end - start}\n\n{cb}\n\n")
-    
+
 
 if __name__ == '__main__':
     cli()
