@@ -67,7 +67,7 @@ poetry run research "Will Twitter implement a new misinformation policy before t
 ### Front-End
 
 ```bash
-poetry run streamlit run ./scripts/public_agent_app.py
+poetry run streamlit run ./evo_prophet/app.py
 ```
 
 ## Possible Future Improvements
