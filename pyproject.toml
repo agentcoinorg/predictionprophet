@@ -16,6 +16,7 @@ pytest = "7.2.1"
 openai = "1.10.0"
 chromadb = "0.4.22"
 spacy = "3.7.2"
+en_core_web_md = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.1/en_core_web_md-3.7.1-py3-none-any.whl" }
 google-api-python-client = "2.95.0"
 tiktoken = "0.5.2"
 tavily-python = "^0.3.0"
