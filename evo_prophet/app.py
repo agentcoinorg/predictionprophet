@@ -133,8 +133,8 @@ if question := st.chat_input(placeholder='Will Twitter implement a new misinform
             
             report = research(
                 goal=question,
-                subqueries_limit=6,
-                top_k_per_query=15,
+                subqueries_limit=5,
+                top_k_per_query=10,
                 openai_api_key=openai_api_key,
                 tavily_api_key=cast(SecretStr, tavily_api_key),
             )
