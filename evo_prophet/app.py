@@ -105,7 +105,22 @@ st.title("Evo Prophet")
 st.write('Ask any question about a future outcome')
 
 with st.sidebar:
+    st.title('Evo Prophet')
+    st.markdown("A web3 agent by [Polywrap](https://www.polywrap.io/)")
+    st.image('https://raw.githubusercontent.com/polywrap/evo.prophet/main/content/banner_hires.png')
+    
+    st.markdown('#')
     openai_api_key = SecretStr(st.text_input("OpenAI API Key", type="password", key="open_ai_key"))
+    
+    st.markdown('#')
+    st.markdown('#')
+    st.markdown('#')
+    st.markdown('#')
+    st.markdown('#')
+    st.markdown('-------')
+    st.caption('View the source code on our [github](https://github.com/polywrap/evo.prophet)')
+    st.caption('Join our [discord](https://discord.gg/3ebYCjXbg7)')
+    
 
 # TODO: find a better way to clear the history
 progress_placeholder = st.empty()
