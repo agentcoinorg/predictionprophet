@@ -1,6 +1,14 @@
 import datetime
-import openai
-
+import os
+from autogen import ConversableAgent
+from autogen import GroupChatManager
+from pydantic import SecretStr
+from autogen import GroupChat
+from langchain.schema.output_parser import StrOutputParser
+from langchain_openai import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+from prediction_market_agent_tooling.tools.utils import secret_str_from_env
+from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 
 PREDICTION_PROMPT = """
 Your task is to determine the probability of a prediction market question being answered 'Yes' or 'No'.
@@ -24,72 +32,84 @@ ADDITIONAL_INFORMATION:
 ```
 {additional_information}
 ```
-Let's think through this step by step. Give arguments for your prediction
-"""
-
-CONSENSUS_PROMPT = """
-These are the predictions to '{user_prompt}' from other agents: {past_results}
-Using the opinion of other agents as additional advice, give an updated response. Think through this step by step
-"""
-
-FINALIZATION_PROMPT = PREDICTION_PROMPT + """
-PAST AGENTS RESPONSES:
-```
-{past_results}
-```
-Let's think through this step by step.
+Let's think through this step by step. Give arguments for your prediction.
 """
 
 
-def debate_prediction(prompt: str, additional_information: str, agents: int = 2, debate_rounds: int = 2, model: str = "gpt-4-1106-preview"):
+EXTRACTION_PROMPT = """
+You will be given information. From it, extract the JSON with the following content:
+
+    - "decision": 'y' for 'Yes' or 'n' for 'No'.
+    - "p_yes": Probability of 'Yes', from 0 to 1.
+    - "p_no": Probability of 'No', from 0 to 1.
+    - "confidence": Your confidence in these estimates, from 0 to 1.
+    
+Return only the JSON and include nothing more in your response.
+
+Information: {prediction_summary}
+"""
+    
+def make_debated_prediction(prompt: str, additional_information: str, max_debate_rounds: int = 1, api_key: SecretStr | None = None):
+    if api_key == None:
+        api_key = secret_str_from_env("OPENAI_API_KEY")
+        
     formatted_time_utc = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds') + "Z"
-    client = openai.OpenAI()
+    
+    agent_a = ConversableAgent(
+        name=f"Predictor_Agent_A",
+        system_message=PREDICTION_PROMPT.format(
+            user_prompt=prompt,
+            additional_information=additional_information,
+            timestamp=formatted_time_utc
+        ),
+        llm_config={"config_list": [{"model": "gpt-4-0125-preview", "api_key": api_key.get_secret_value()}]},
+        human_input_mode="NEVER"
+    )
+    
+    agent_b = ConversableAgent(
+        name=f"Predictor_Agent_B",
+        system_message=PREDICTION_PROMPT.format(
+            user_prompt=prompt,
+            additional_information=additional_information,
+            timestamp=formatted_time_utc
+        ),
+        llm_config={"config_list": [{"model": "gpt-4-0125-preview", "api_key": api_key.get_secret_value()}]},
+        human_input_mode="NEVER"
+    )
+    
+    
+    group_chat = GroupChat(
+        agents=[agent_a, agent_b],
+        messages=[],
+        max_round=8,
+        speaker_selection_method="round_robin"
+    )
+    
+    group_chat_manager = GroupChatManager(
+        groupchat=group_chat,
+        llm_config={"config_list": [{"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"]}]},
+    )
+    
+    chat_result = agent_a.initiate_chat(
+        group_chat_manager,
+        message="Make each agent make a prediction, and make each agent defend its prediction in a debate with each other",
+        summary_method="reflection_with_llm",
+    )
+    
+    print(chat_result)
+            
+    subquery_generation_prompt = ChatPromptTemplate.from_template(template=EXTRACTION_PROMPT)
 
-    prediction_prompt = PREDICTION_PROMPT.format(
-        user_prompt=prompt,
-        additional_information=additional_information,
-        timestamp=formatted_time_utc
+    subquery_generation_chain = (
+        subquery_generation_prompt |
+        ChatOpenAI(model="gpt-3.5-turbo-0125", api_key=secretstr_to_v1_secretstr(api_key)) |
+        StrOutputParser()
     )
 
-    def create_prediction(messages):
-        return client.chat.completions.create(
-            messages=messages,
-            model=model,
-        )
-
-    # Initial responses from two agents
-    agent_responses = [
-        create_prediction([{"role": "system", "content": prediction_prompt}]) for _ in range(agents)
-    ]
-
-    print([a.choices[0].message.content for a in agent_responses])
-    print("\n\n-------------------\n\n")
-
-    # Consensus responses
-    consensus_responses = []
-    for i in range(debate_rounds):
-        past_response = agent_responses[1 - i].choices[0].message.content
-        consensus_prompt = CONSENSUS_PROMPT.format(past_results=past_response, user_prompt=prompt)
-        consensus_responses.append(
-            create_prediction([
-                {"role": "system", "content": prediction_prompt},
-                agent_responses[i].choices[0].message,
-                {"role": "user", "content": consensus_prompt}
-            ])
-        )
-
-    print([a.choices[0].message.content for a in consensus_responses])
-    print("\n\n-------------------\n\n")
-
-    # Finalization
-    finalization_prompt = FINALIZATION_PROMPT.format(
-        user_prompt=prompt,
-        additional_information=additional_information,
-        timestamp=formatted_time_utc,
-        past_results="\n\n------------\n\n".join([
-            response.choices[0].message.content for response in consensus_responses
-        ])
-    )
-    final_response = create_prediction([{"role": "system", "content": finalization_prompt}])
-
-    print(final_response.choices[0].message.content)
+    result = subquery_generation_chain.invoke({
+        "prediction_summary": chat_result.summary
+    })
+    
+    print(result)
+    
+    return result
