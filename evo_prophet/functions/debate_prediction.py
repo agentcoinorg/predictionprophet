@@ -41,7 +41,7 @@ Let's think through this step by step.
 DEBATE_PREDICTION = """
 For the following question: {user_prompt}; and considering the current time: {timestamp}
 
-Given the following information:2
+Given the following information:
 
 {additional_information}
 
@@ -134,7 +134,5 @@ def make_debated_prediction(prompt: str, additional_information: str, api_key: S
     result = extraction_chain.invoke({
         "prediction_summary": chat_result.summary
     })
-    
-    print(result)
     
     return completion_prediction_json_to_pydantic_model(json.loads(result))
