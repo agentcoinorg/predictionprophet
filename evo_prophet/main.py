@@ -1,12 +1,14 @@
 import logging
-from typing import cast
+from altair import cast
 import click
 import time
 from dotenv import load_dotenv
-from evo_prophet.benchmark.agents import _make_prediction
+from evo_prophet.functions.debate_prediction import make_debated_prediction
 from langchain_community.callbacks import get_openai_callback
 from evo_prophet.functions.research import research as evo_research
-from prediction_market_agent_tooling.benchmark.utils import OutcomePrediction
+from prediction_market_agent_tooling.benchmark.utils import (
+    OutcomePrediction
+)
 
 load_dotenv()
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(message)s')
@@ -66,7 +68,7 @@ def predict(prompt: str, path: str | None = None) -> None:
             logger.setLevel(logging.INFO)
             report = evo_research(goal=prompt, model="gpt-4-0125-preview", use_summaries=False, logger=logger)
         
-        prediction = _make_prediction(market_question=prompt, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0)
+        prediction = make_debated_prediction(prompt=prompt, additional_information=report)
 
     end = time.time()
     
