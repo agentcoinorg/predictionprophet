@@ -51,7 +51,7 @@ I made the following prediction:
 {prediction_0}
 ```
 
-And you made ther following prediction:
+And you made the following prediction:
 
 ```
 {prediction_1}
