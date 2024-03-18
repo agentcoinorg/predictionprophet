@@ -1,6 +1,6 @@
 from typing import cast
 from evo_prophet.benchmark.agents import _make_prediction
-from evo_prophet.functions.evaluate_question import is_predictable as evaluate_if_predictable
+from evo_prophet.functions.is_predictable_and_binary import is_predictable_and_binary
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
 )
@@ -127,7 +127,7 @@ if question := st.chat_input(placeholder='Will Twitter implement a new misinform
         st.write(f"I will evaluate the proability of '{question}' ocurring")
         
         with st.status("Evaluating question") as status:
-            (is_predictable, reasoning) = evaluate_if_predictable(question=question, api_key=openai_api_key) 
+            (is_predictable, reasoning) = is_predictable_and_binary(question=question, api_key=openai_api_key) 
             if not is_predictable:
                 st.container().error(f"The agent thinks this question is not predictable: \n\n{reasoning}")
                 status.update(label="Error evaluating question", state="error", expanded=True)
