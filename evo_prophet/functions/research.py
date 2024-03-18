@@ -1,4 +1,4 @@
-from evo_prophet.utils.logger import BaseLogger
+import logging
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from evo_prophet.functions.create_embeddings_from_results import create_embeddings_from_results
@@ -22,7 +22,7 @@ def research(
     use_tavily_raw_content: bool = False,
     openai_api_key: SecretStr | None = None,
     tavily_api_key: SecretStr | None = None,
-    logger: BaseLogger = BaseLogger()
+    logger: logging.Logger = logging.getLogger()
 ) -> str:
     logger.info("Started subqueries generation")
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)

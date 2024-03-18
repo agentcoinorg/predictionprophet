@@ -1,3 +1,4 @@
+import time
 from typing import cast
 from evo_prophet.benchmark.agents import _make_prediction
 from evo_prophet.functions.is_predictable_and_binary import is_predictable_and_binary
@@ -103,56 +104,54 @@ st.set_page_config(layout="wide")
 st.title("Evo Prophet")
 st.write('Ask any yes-or-no question about a future outcome')
 
-if "clear_history" not in st.session_state:
-    st.session_state['clear_history'] = False
-    
-if "question" not in st.session_state:
-    st.session_state['question'] = None
-
 with st.sidebar:
     openai_api_key = SecretStr(st.text_input("OpenAI API Key", type="password", key="open_ai_key"))
 
-if question := st.chat_input(placeholder='Will Twitter implement a new misinformation policy before the end of 2024?') or st.session_state['question']:
-    st.session_state['question'] = question
-    
-    if st.session_state['clear_history']:
-        st.session_state['clear_history'] = False
-        st.rerun()
-    else:
-        st.session_state['clear_history'] = True
-    
-    st.chat_message("user").write(question)
-    
-    with st.chat_message("assistant"):
-        st.write(f"I will evaluate the proability of '{question}' ocurring")
-        
-        with st.status("Evaluating question") as status:
-            (is_predictable, reasoning) = is_predictable_and_binary(question=question, api_key=openai_api_key) 
-            if not is_predictable:
-                st.container().error(f"The agent thinks this question is not predictable: \n\n{reasoning}")
-                status.update(label="Error evaluating question", state="error", expanded=True)
-                st.stop()
-        
-        report = research(
-            goal=question,
-            subqueries_limit=6,
-            top_k_per_query=15,
-            openai_api_key=openai_api_key,
-            tavily_api_key=cast(SecretStr, tavily_api_key),
-        )
-                
-        with st.status("Making prediction"):
-            prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0, api_key=openai_api_key)
+# TODO: find a better way to clear the history
+progress_placeholder = st.empty()
 
-            if prediction.outcome_prediction == None:
-                st.container().error("The agent failed to generate a prediction")
-                st.stop()
-            
-            outcome_prediction = cast(OutcomePrediction, prediction.outcome_prediction)
+if question := st.chat_input(placeholder='Will Twitter implement a new misinformation policy before the end of 2024?'):
+    if not openai_api_key.get_secret_value():
+        st.container().error(f"No OpenAI API key provided")
+        st.stop()
+    
+    progress_placeholder.empty()
+    time.sleep(0.1) # https://github.com/streamlit/streamlit/issues/5044
+    
+    with progress_placeholder.container():
+        st.chat_message("user").write(question)
         
-            st.write(f"Probability: {outcome_prediction.p_yes * 100}%. Confidence: {outcome_prediction.confidence * 100}%")
-            if not prediction:
-                st.container().error("No prediction was generated.")
-                st.stop()
+        with st.chat_message("assistant"):
+            st.write(f"I will evaluate the proability of '{question}' ocurring")
+            
+            with st.status("Evaluating question") as status:
+                (is_predictable, reasoning) = is_predictable_and_binary(question=question, api_key=openai_api_key) 
+                if not is_predictable:
+                    st.container().error(f"The agent thinks this question is not predictable: \n\n{reasoning}")
+                    status.update(label="Error evaluating question", state="error", expanded=True)
+                    st.stop()
+            
+            report = research(
+                goal=question,
+                subqueries_limit=6,
+                top_k_per_query=15,
+                openai_api_key=openai_api_key,
+                tavily_api_key=cast(SecretStr, tavily_api_key),
+            )
+                    
+            with st.status("Making prediction"):
+                prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0, api_key=openai_api_key)
+
+                if prediction.outcome_prediction == None:
+                    st.container().error("The agent failed to generate a prediction")
+                    st.stop()
                 
-        st.markdown(f"With **{outcome_prediction.confidence * 100}% confidence**, I'd say this outcome has a **{outcome_prediction.p_yes * 100}% probability** of happening")
+                outcome_prediction = cast(OutcomePrediction, prediction.outcome_prediction)
+            
+                st.write(f"Probability: {outcome_prediction.p_yes * 100}%. Confidence: {outcome_prediction.confidence * 100}%")
+                if not prediction:
+                    st.container().error("No prediction was generated.")
+                    st.stop()
+                    
+            st.markdown(f"With **{outcome_prediction.confidence * 100}% confidence**, I'd say this outcome has a **{outcome_prediction.p_yes * 100}% probability** of happening")
+
