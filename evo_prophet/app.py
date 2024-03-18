@@ -1,7 +1,7 @@
 import time
 from typing import cast
 from evo_prophet.benchmark.agents import _make_prediction
-from evo_prophet.functions.evaluate_question import is_predictable as evaluate_if_predictable
+from evo_prophet.functions.is_predictable_and_binary import is_predictable_and_binary
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
 )
@@ -102,10 +102,25 @@ if tavily_api_key == None:
 
 st.set_page_config(layout="wide")
 st.title("Evo Prophet")
-st.write('Ask any question about a future outcome')
+st.write('Ask any yes-or-no question about a future outcome')
 
 with st.sidebar:
+    st.title('Evo Prophet')
+    st.markdown("A web3 agent by [Polywrap](https://www.polywrap.io/)")
+    st.image('https://raw.githubusercontent.com/polywrap/evo.prophet/main/content/banner_hires.png')
+    
+    st.markdown('#')
     openai_api_key = SecretStr(st.text_input("OpenAI API Key", type="password", key="open_ai_key"))
+    
+    st.markdown('#')
+    st.markdown('#')
+    st.markdown('#')
+    st.markdown('#')
+    st.markdown('#')
+    st.markdown('-------')
+    st.caption('View the source code on our [github](https://github.com/polywrap/evo.prophet)')
+    st.caption('Join our [discord](https://discord.gg/3ebYCjXbg7)')
+    
 
 # TODO: find a better way to clear the history
 progress_placeholder = st.empty()
@@ -125,7 +140,7 @@ if question := st.chat_input(placeholder='Will Twitter implement a new misinform
             st.write(f"I will evaluate the proability of '{question}' ocurring")
             
             with st.status("Evaluating question") as status:
-                (is_predictable, reasoning) = evaluate_if_predictable(question=question, api_key=openai_api_key) 
+                (is_predictable, reasoning) = is_predictable_and_binary(question=question, api_key=openai_api_key) 
                 if not is_predictable:
                     st.container().error(f"The agent thinks this question is not predictable: \n\n{reasoning}")
                     status.update(label="Error evaluating question", state="error", expanded=True)

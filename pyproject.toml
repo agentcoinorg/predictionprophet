@@ -36,6 +36,7 @@ prediction-market-agent-tooling = { version = "0.5.0", extras = ["langchain"] }
 langchain-community = "^0.0.21"
 memory-profiler = "^0.61.0"
 matplotlib = "^3.8.3"
+pyautogen = "^0.2.19"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.8.0"
