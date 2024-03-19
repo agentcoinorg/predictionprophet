@@ -94,11 +94,8 @@ def research(
 tavily_api_key = secret_str_from_env('TAVILY_API_KEY')
 
 if tavily_api_key == None:
-    try:
-        tavily_api_key = SecretStr(st.secrets['TAVILY_API_KEY'])
-    except:
-        st.container().error("No Tavily API Key provided")
-        st.stop()
+    st.container().error("No Tavily API Key provided")
+    st.stop()
 
 st.set_page_config(layout="wide")
 st.title("Evo Prophet")
