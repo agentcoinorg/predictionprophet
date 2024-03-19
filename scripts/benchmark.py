@@ -5,9 +5,9 @@ from prediction_market_agent_tooling.benchmark.agents import FixedAgent, RandomA
 from prediction_market_agent_tooling.benchmark.benchmark import Benchmarker
 from prediction_market_agent_tooling.benchmark.utils import MarketSource, get_markets, MarketFilter, MarketSort
 
-from evo_prophet.autonolas.research import EmbeddingModel
-from evo_prophet.benchmark.agents import EvoAgent, OlasAgent, QuestionOnlyAgent
-from evo_prophet.functions.cache import ENABLE_CACHE
+from prediction_prophet.autonolas.research import EmbeddingModel
+from prediction_prophet.benchmark.agents import PredictionProphetAgent, OlasAgent, QuestionOnlyAgent
+from prediction_prophet.functions.cache import ENABLE_CACHE
 
 
 def main(
@@ -59,31 +59,31 @@ def main(
                 agent_name="olas_gpt-3.5-turbo-0125_openai-embeddings",
                 embedding_model=EmbeddingModel.openai,
             ),
-            EvoAgent(
+            PredictionProphetAgent(
                 model="gpt-3.5-turbo-0125",
                 max_workers=max_workers,
-                agent_name="evo_gpt-3.5-turbo-0125_summary",
+                agent_name="prediction_prophet_gpt-3.5-turbo-0125_summary",
                 use_summaries=True,
             ),
-            EvoAgent(
+            PredictionProphetAgent(
                 model="gpt-3.5-turbo-0125",
                 max_workers=max_workers,
-                agent_name="evo_gpt-3.5-turbo-0125",
+                agent_name="prediction_prophet_gpt-3.5-turbo-0125",
             ),
-            EvoAgent(
+            PredictionProphetAgent(
                 model="gpt-3.5-turbo-0125",
                 max_workers=max_workers,
-                agent_name="evo_gpt-3.5-turbo-0125_summary_tavilyrawcontent",
+                agent_name="prediction_prophet_gpt-3.5-turbo-0125_summary_tavilyrawcontent",
                 use_summaries=True,
                 use_tavily_raw_content=True,
             ),
-            EvoAgent(
+            PredictionProphetAgent(
                 model="gpt-3.5-turbo-0125",
                 max_workers=max_workers,
-                agent_name="evo_gpt-3.5-turbo-0125_tavilyrawcontent",
+                agent_name="prediction_prophet_gpt-3.5-turbo-0125_tavilyrawcontent",
                 use_tavily_raw_content=True,
             ),
-            # EvoAgent(model="gpt-4-0125-preview", max_workers=max_workers, agent_name="evo_gpt-4-0125-preview"),  # Too expensive to be enabled by default.
+            # PredictionProphetAgent(model="gpt-4-0125-preview", max_workers=max_workers, agent_name="prediction_prophet_gpt-4-0125-preview"),  # Too expensive to be enabled by default.
         ],
         cache_path=cache_path,
         only_cached=only_cached,

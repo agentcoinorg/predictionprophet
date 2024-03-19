@@ -1,8 +1,8 @@
 import json
 
 import prediction_market_agent_tooling.benchmark.benchmark as bm
-from evo_prophet.autonolas.research import clean_completion_json
-from evo_prophet.benchmark.agents import completion_prediction_json_to_pydantic_model
+from prediction_prophet.autonolas.research import clean_completion_json
+from prediction_prophet.benchmark.agents import completion_prediction_json_to_pydantic_model
 
 
 def test_parse_result_str_to_json() -> None:

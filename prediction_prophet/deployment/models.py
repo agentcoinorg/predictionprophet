@@ -1,7 +1,7 @@
 import pytz
 from decimal import Decimal
 from datetime import datetime, timedelta
-from evo_prophet.benchmark.agents import EvoAgent, OlasAgent, EmbeddingModel
+from prediction_prophet.benchmark.agents import PredictionProphetAgent, OlasAgent, EmbeddingModel
 from prediction_market_agent_tooling.benchmark.agents import AbstractBenchmarkedAgent
 from prediction_market_agent_tooling.markets.agent_market import AgentMarket
 from prediction_market_agent_tooling.markets.manifold.manifold import ManifoldAgentMarket
@@ -75,8 +75,8 @@ class DeployableAgentER(DeployableAgent):
         return binary_answer
     
 
-class DeployableAgentER_EvoGPT3(DeployableAgentER):
-    agent = EvoAgent(model="gpt-3.5-turbo-0125")
+class DeployableAgentER_PredictionProphetGPT3(DeployableAgentER):
+    agent = PredictionProphetAgent(model="gpt-3.5-turbo-0125")
 
 
 class DeployableAgentER_OlasEmbeddingOA(DeployableAgentER):

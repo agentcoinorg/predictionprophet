@@ -3,9 +3,9 @@ from altair import cast
 import click
 import time
 from dotenv import load_dotenv
-from evo_prophet.functions.debate_prediction import make_debated_prediction
+from prediction_prophet.functions.debate_prediction import make_debated_prediction
 from langchain_community.callbacks import get_openai_callback
-from evo_prophet.functions.research import research as evo_research
+from prediction_prophet.functions.research import research as prophet_research
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
 )
@@ -40,7 +40,7 @@ def research(
     start = time.time()
     
     with get_openai_callback() as cb:
-      report = evo_research(goal=prompt, use_summaries=False, model="gpt-4-0125-preview")
+      report = prophet_research(goal=prompt, use_summaries=False, model="gpt-4-0125-preview")
     
     end = time.time()
     
@@ -66,7 +66,7 @@ def predict(prompt: str, path: str | None = None) -> None:
         else:
             logger = logging.getLogger("research")
             logger.setLevel(logging.INFO)
-            report = evo_research(goal=prompt, model="gpt-4-0125-preview", use_summaries=False, logger=logger)
+            report = prophet_research(goal=prompt, model="gpt-4-0125-preview", use_summaries=False, logger=logger)
         
         prediction = make_debated_prediction(prompt=prompt, additional_information=report)
 
