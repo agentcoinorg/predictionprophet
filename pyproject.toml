@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "evo_prophet"
+name = "prediction_prophet"
 version = "0.1.10"
 description = ""
 authors = ["Nestor Amesty <nestor@polywrap.io>"]
@@ -42,8 +42,8 @@ pyautogen = "^0.2.19"
 mypy = "^1.8.0"
 
 [tool.poetry.scripts]
-research= "evo_prophet.main:research"
-predict= "evo_prophet.main:predict"
+research= "prediction_prophet.main:research"
+predict= "prediction_prophet.main:predict"
 
 [build-system]
 requires = ["poetry-core"]

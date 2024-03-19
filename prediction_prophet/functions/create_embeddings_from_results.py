@@ -9,7 +9,7 @@ except ImportError:
 import os
 from langchain_openai import OpenAIEmbeddings
 from langchain.vectorstores.chroma import Chroma
-from evo_prophet.models.WebScrapeResult import WebScrapeResult
+from prediction_prophet.models.WebScrapeResult import WebScrapeResult
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env

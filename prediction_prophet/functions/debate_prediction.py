@@ -4,7 +4,7 @@ from autogen import ConversableAgent
 from prediction_market_agent_tooling.benchmark.utils import (
     Prediction,
 )
-from evo_prophet.benchmark.agents import completion_prediction_json_to_pydantic_model
+from prediction_prophet.benchmark.agents import completion_prediction_json_to_pydantic_model
 from pydantic import SecretStr
 from langchain.schema.output_parser import StrOutputParser
 from langchain_openai import ChatOpenAI
