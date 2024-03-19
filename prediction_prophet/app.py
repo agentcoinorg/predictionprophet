@@ -126,7 +126,7 @@ if question := st.chat_input(placeholder='Will Twitter implement a new misinform
         st.chat_message("user").write(question)
         
         with st.chat_message("assistant"):
-            st.write(f"I will evaluate the probability of '{question}' ocurring")
+            st.write(f"I will evaluate the probability of '{question}' occurring")
             
             with st.status("Evaluating question") as status:
                 (is_predictable, reasoning) = is_predictable_and_binary(question=question) 
