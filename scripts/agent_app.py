@@ -9,7 +9,7 @@ import streamlit as st
 from enum import Enum 
 from prediction_market_agent_tooling.benchmark.utils import get_markets, MarketSource
 from prediction_market_agent_tooling.benchmark.agents import AbstractBenchmarkedAgent
-from evo_prophet.benchmark.agents import AGENTS
+from prediction_prophet.benchmark.agents import AGENTS
 
 SENTINTEL = object()
 

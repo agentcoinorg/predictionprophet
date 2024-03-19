@@ -1,6 +1,6 @@
 import time
 import typer
-from evo_prophet.benchmark.agents import AGENTS
+from prediction_prophet.benchmark.agents import AGENTS
 
 
 def main(sleep: int = 120) -> None:

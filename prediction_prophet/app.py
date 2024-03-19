@@ -1,7 +1,7 @@
 import time
 from typing import cast
-from evo_prophet.benchmark.agents import _make_prediction
-from evo_prophet.functions.is_predictable_and_binary import is_predictable_and_binary
+from prediction_prophet.benchmark.agents import _make_prediction
+from prediction_prophet.functions.is_predictable_and_binary import is_predictable_and_binary
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
 )
@@ -9,12 +9,12 @@ from pydantic import SecretStr
 import streamlit as st
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from evo_prophet.functions.create_embeddings_from_results import create_embeddings_from_results
-from evo_prophet.functions.generate_subqueries import generate_subqueries
-from evo_prophet.functions.prepare_report import prepare_report
-from evo_prophet.functions.rerank_subqueries import rerank_subqueries
-from evo_prophet.functions.scrape_results import scrape_results
-from evo_prophet.functions.search import search
+from prediction_prophet.functions.create_embeddings_from_results import create_embeddings_from_results
+from prediction_prophet.functions.generate_subqueries import generate_subqueries
+from prediction_prophet.functions.prepare_report import prepare_report
+from prediction_prophet.functions.rerank_subqueries import rerank_subqueries
+from prediction_prophet.functions.scrape_results import scrape_results
+from prediction_prophet.functions.search import search
 
 def research(
     goal: str,
@@ -93,20 +93,17 @@ def research(
 tavily_api_key = secret_str_from_env('TAVILY_API_KEY')
 
 if tavily_api_key == None:
-    try:
-        tavily_api_key = SecretStr(st.secrets['TAVILY_API_KEY'])
-    except:
-        st.container().error("No Tavily API Key provided")
-        st.stop()
+    st.container().error("No Tavily API Key provided")
+    st.stop()
 
 st.set_page_config(layout="wide")
-st.title("Evo Prophet")
+st.title("Prediction Prophet")
 st.write('Ask any yes-or-no question about a future outcome')
 
 with st.sidebar:
-    st.title('Evo Prophet')
+    st.title('Prediction Prophet')
     st.markdown("A web3 agent by [Polywrap](https://www.polywrap.io/)")
-    st.image('https://raw.githubusercontent.com/polywrap/evo.prophet/main/content/banner_hires.png')
+    st.image('https://raw.githubusercontent.com/polywrap/predictionprophet/main/content/banner_hires.png')
     
     st.markdown('#')
     st.markdown('#')
@@ -114,7 +111,7 @@ with st.sidebar:
     st.markdown('#')
     st.markdown('#')
     st.markdown('-------')
-    st.caption('View the source code on our [github](https://github.com/polywrap/evo.prophet)')
+    st.caption('View the source code on our [github](https://github.com/polywrap/predictionprophet)')
     st.caption('Join our [discord](https://discord.gg/3ebYCjXbg7)')
     
 
@@ -129,7 +126,7 @@ if question := st.chat_input(placeholder='Will Twitter implement a new misinform
         st.chat_message("user").write(question)
         
         with st.chat_message("assistant"):
-            st.write(f"I will evaluate the proability of '{question}' ocurring")
+            st.write(f"I will evaluate the probability of '{question}' ocurring")
             
             with st.status("Evaluating question") as status:
                 (is_predictable, reasoning) = is_predictable_and_binary(question=question) 

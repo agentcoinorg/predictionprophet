@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import NoReturn, Type, TypeVar, Optional
 from googleapiclient.discovery import build
-from evo_prophet.functions.cache import persistent_inmemory_cache
+from prediction_prophet.functions.cache import persistent_inmemory_cache
 
 T = TypeVar("T")
 

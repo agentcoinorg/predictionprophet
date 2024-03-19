@@ -1,8 +1,8 @@
 import json
-from evo_prophet.autonolas.research import clean_completion_json
+from prediction_prophet.autonolas.research import clean_completion_json
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
-from evo_prophet.functions.cache import persistent_inmemory_cache
+from prediction_prophet.functions.cache import persistent_inmemory_cache
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
