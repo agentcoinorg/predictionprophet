@@ -1,5 +1,5 @@
 # evo.prophet
-![](./content/banner_hires.png)
+![](./docs/imgs//banner_hires.png)
 
 ---
 
@@ -11,6 +11,8 @@
 
 evo.prophet is an agent that specializes in making informed predictions, based on web research. To try it yourself head to [predictionprophet.ai](https://predictionprophet.ai) or build and run from source following these [setup instructions](#setup).
 
+![](./docs/imgs/predictionprophet-app.png)
+
 ## Need Help?
 
 Join our [Discord community](https://discord.gg/k7UCsH3ps9) for support and discussions.
@@ -21,7 +23,7 @@ If you have questions or encounter issues, please don't hesitate to [create a ne
 
 
 ## How It Works
-![](./content/diagram.png)
+![](./docs/imgs/diagram.png)
 
 To elaborate further, given a question like `"Will Twitter implement a new misinformation policy before the 2024 elections?"`, evo.prophet will:  
 
