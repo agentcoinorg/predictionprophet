@@ -16,79 +16,11 @@ from prediction_prophet.functions.rerank_subqueries import rerank_subqueries
 from prediction_prophet.functions.scrape_results import scrape_results
 from prediction_prophet.functions.search import search
 
-def research(
-    goal: str,
-    tavily_api_key: SecretStr,
-    model: str = "gpt-4-0125-preview",
-    initial_subqueries_limit: int = 20,
-    subqueries_limit: int = 4,
-    scrape_content_split_chunk_size: int = 800,
-    scrape_content_split_chunk_overlap: int = 225,
-    top_k_per_query: int = 8
-) -> str:
-    with st.status("Generating subqueries"):
-        queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model)
-    
-        stringified_queries = '\n- ' + '\n- '.join(queries)
-        st.write(f"Generated subqueries: {stringified_queries}")
-        
-    with st.status("Reranking subqueries"):
-        queries = rerank_subqueries(queries=queries, goal=goal, model=model)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
-
-        stringified_queries = '\n- ' + '\n- '.join(queries)
-        st.write(f"Reranked subqueries. Will use top {subqueries_limit}: {stringified_queries}")
-    
-    with st.status("Searching the web"):
-        search_results_with_queries = search(
-            queries, 
-            lambda result: not result.url.startswith("https://www.youtube"),
-            tavily_api_key=tavily_api_key
-        )
-
-        if not search_results_with_queries:
-            raise ValueError(f"No search results found for the goal {goal}.")
-
-        scrape_args = [result for (_, result) in search_results_with_queries]
-        websites_to_scrape = set([result.url for result in scrape_args])
-        
-        stringified_websites = '\n- ' + '\n- '.join(websites_to_scrape)
-        st.write(f"Found the following relevant results: {stringified_websites}")
-    
-    with st.status(f"Scraping web results"):
-        scraped = scrape_results(scrape_args)
-        scraped = [result for result in scraped if result.content != ""]
-        
-        st.write(f"Scraped content from {len(scraped)} websites")
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        separators=["\n\n", "\n", ". ", "  "],
-        chunk_size=scrape_content_split_chunk_size,
-        chunk_overlap=scrape_content_split_chunk_overlap
-    )
-    
-    with st.status(f"Performing similarity searches"):
-        collection = create_embeddings_from_results(scraped, text_splitter)
-        st.write("Created embeddings")
-
-        vector_result_texts: list[str] = []
-        url_to_content_deemed_most_useful: dict[str, str] = {}
-        
-        for query in queries:
-            top_k_per_query_results = collection.similarity_search(query, k=top_k_per_query)
-            vector_result_texts += [result.page_content for result in top_k_per_query_results if result.page_content not in vector_result_texts]
-
-            for x in top_k_per_query_results:
-                url_to_content_deemed_most_useful[x.metadata["url"]] = x.metadata["content"]
-        
-            st.write(f"Similarity searched for: {query}")
-
-        st.write(f"Found {len(vector_result_texts)} relevant information chunks")
-
-    with st.status(f"Preparing report"):
-        report = prepare_report(goal, vector_result_texts, model=model)
-        st.markdown(report)
-
-    return report
+initial_subqueries_limit: int = 20,
+subqueries_limit: int = 6,
+scrape_content_split_chunk_size: int = 800,
+scrape_content_split_chunk_overlap: int = 225,
+top_k_per_query: int = 15
 
 tavily_api_key = secret_str_from_env('TAVILY_API_KEY')
 
@@ -113,12 +45,14 @@ with st.sidebar:
     st.markdown('-------')
     st.caption('View the source code on our [github](https://github.com/polywrap/predictionprophet)')
     st.caption('Join our [discord](https://discord.gg/3ebYCjXbg7)')
-    
+
 
 # TODO: find a better way to clear the history
 progress_placeholder = st.empty()
 
 if question := st.chat_input(placeholder='Will Twitter implement a new misinformation policy before the end of 2024?'):
+    st.session_state["cache"] = None
+
     progress_placeholder.empty()
     time.sleep(0.1) # https://github.com/streamlit/streamlit/issues/5044
     
@@ -135,12 +69,67 @@ if question := st.chat_input(placeholder='Will Twitter implement a new misinform
                     status.update(label="Error evaluating question", state="error", expanded=True)
                     st.stop()
             
-            report = research(
-                goal=question,
-                subqueries_limit=6,
-                top_k_per_query=15,
-                tavily_api_key=cast(SecretStr, tavily_api_key),
+            with st.status("Generating subqueries"):
+                queries = generate_subqueries(query=question, limit=initial_subqueries_limit, model="gpt-4-0125-preview")
+            
+                stringified_queries = '\n- ' + '\n- '.join(queries)
+                st.write(f"Generated subqueries: {stringified_queries}")
+                
+            with st.status("Reranking subqueries"):
+                queries = rerank_subqueries(queries=queries, goal=question, model="gpt-4-0125-preview")[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
+
+                stringified_queries = '\n- ' + '\n- '.join(queries)
+                st.write(f"Reranked subqueries. Will use top {subqueries_limit}: {stringified_queries}")
+            
+            with st.status("Searching the web"):
+                search_results_with_queries = search(
+                    queries, 
+                    lambda result: not result.url.startswith("https://www.youtube"),
+                    tavily_api_key=tavily_api_key
+                )
+
+                if not search_results_with_queries:
+                    raise ValueError(f"No search results found for the goal {question}.")
+
+                scrape_args = [result for (_, result) in search_results_with_queries]
+                websites_to_scrape = set([result.url for result in scrape_args])
+                
+                stringified_websites = '\n- ' + '\n- '.join(websites_to_scrape)
+                st.write(f"Found the following relevant results: {stringified_websites}")
+            
+            with st.status(f"Scraping web results"):
+                scraped = scrape_results(scrape_args)
+                scraped = [result for result in scraped if result.content != ""]
+                
+                st.write(f"Scraped content from {len(scraped)} websites")
+
+            text_splitter = RecursiveCharacterTextSplitter(
+                separators=["\n\n", "\n", ". ", "  "],
+                chunk_size=scrape_content_split_chunk_size,
+                chunk_overlap=scrape_content_split_chunk_overlap
             )
+            
+            with st.status(f"Performing similarity searches"):
+                collection = create_embeddings_from_results(scraped, text_splitter)
+                st.write("Created embeddings")
+
+                vector_result_texts: list[str] = []
+                url_to_content_deemed_most_useful: dict[str, str] = {}
+                
+                for query in queries:
+                    top_k_per_query_results = collection.similarity_search(query, k=top_k_per_query)
+                    vector_result_texts += [result.page_content for result in top_k_per_query_results if result.page_content not in vector_result_texts]
+
+                    for x in top_k_per_query_results:
+                        url_to_content_deemed_most_useful[x.metadata["url"]] = x.metadata["content"]
+                
+                    st.write(f"Similarity searched for: {query}")
+
+                st.write(f"Found {len(vector_result_texts)} relevant information chunks")
+
+            with st.status(f"Preparing report"):
+                report = prepare_report(question, vector_result_texts, model="gpt-4-0125-preview")
+                st.markdown(report)
                     
             with st.status("Making prediction"):
                 prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0)
