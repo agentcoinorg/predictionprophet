@@ -73,8 +73,7 @@ class DeployableAgentER(DeployableAgent):
     def answer_binary_market(self, market: AgentMarket) -> bool:
         prediciton = self.agent.predict(market.question)  # Already checked in the `pick_markets`.
         if prediciton.outcome_prediction is None:
-            print(f"Error: Prediction failed for {market.question}.")  # When switched to proper logging, use error log.
-            return None
+            raise ValueError(f"Missing prediction: {prediciton}")
         binary_answer: bool = prediciton.outcome_prediction.p_yes > 0.5
         print(f"Answering '{market.question}' with '{binary_answer}'.")
         return binary_answer
