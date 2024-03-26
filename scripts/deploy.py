@@ -19,6 +19,7 @@ DEPLOYABLE_AGENTS = [
 
 def deploy(
     market_type: MarketType,
+    timeout: int = typer.Option(),
     deployable_agent_name: str = typer.Option(),
     manifold_api_key_secret_name: str = typer.Option(),
     openai_api_key_secret_name: str = typer.Option(),
@@ -57,6 +58,7 @@ def deploy(
         },
         cron_schedule="0 */2 * * *",
         start_time=DatetimeWithTimezone(start_time) if start_time else None,
+        timeout=timeout,
     )
 
 
