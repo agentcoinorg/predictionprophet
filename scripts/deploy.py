@@ -4,7 +4,7 @@ import typing as t
 from git import Repo
 from datetime import datetime
 from prediction_market_agent_tooling.markets.markets import MarketType
-from prediction_prophet.deployment.models import DeployableAgentER, DeployableAgentER_PredictionProphetGPT3, DeployableAgentER_OlasEmbeddingOA
+from prediction_prophet.deployment.models import DeployableAgentER, DeployableAgentER_PredictionProphetGPT3, DeployableAgentER_PredictionProphetGPT4, DeployableAgentER_OlasEmbeddingOA
 from prediction_market_agent_tooling.config import APIKeys
 from prediction_market_agent_tooling.gtypes import private_key_type, DatetimeWithTimezone
 from prediction_market_agent_tooling.tools.web3_utils import verify_address
@@ -13,6 +13,7 @@ from pydantic.types import SecretStr
 
 DEPLOYABLE_AGENTS = [
     DeployableAgentER_PredictionProphetGPT3,
+    DeployableAgentER_PredictionProphetGPT4,
     DeployableAgentER_OlasEmbeddingOA
 ]
 

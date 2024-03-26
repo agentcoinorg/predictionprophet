@@ -95,5 +95,9 @@ class DeployableAgentER_PredictionProphetGPT3(DeployableAgentER):
     agent = PredictionProphetAgent(model="gpt-3.5-turbo-0125")
 
 
+class DeployableAgentER_PredictionProphetGPT4(DeployableAgentER):
+    agent = PredictionProphetAgent(model="gpt-4-0125-preview")
+
+
 class DeployableAgentER_OlasEmbeddingOA(DeployableAgentER):
     agent = OlasAgent(model="gpt-3.5-turbo-0125", embedding_model=EmbeddingModel.openai)
