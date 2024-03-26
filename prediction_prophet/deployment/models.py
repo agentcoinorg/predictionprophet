@@ -6,7 +6,8 @@ from prediction_market_agent_tooling.benchmark.agents import AbstractBenchmarked
 from prediction_market_agent_tooling.markets.agent_market import AgentMarket
 from prediction_market_agent_tooling.markets.manifold.manifold import ManifoldAgentMarket
 from prediction_market_agent_tooling.markets.omen.omen import OmenAgentMarket
-from prediction_market_agent_tooling.deploy.agent import DeployableAgent, BetAmount
+from prediction_market_agent_tooling.markets.omen.omen_contracts import WrappedxDaiContract
+from prediction_market_agent_tooling.deploy.agent import DeployableAgent, BetAmount, MarketType
 from prediction_market_agent_tooling.markets.betting_strategies import minimum_bet_to_win
 from prediction_market_agent_tooling.markets.manifold.api import get_manifold_bets, get_authenticated_user, get_manifold_market
 from prediction_market_agent_tooling.markets.omen.omen_graph_queries import get_omen_bets
@@ -74,7 +75,18 @@ class DeployableAgentER(DeployableAgent):
         binary_answer: bool = prediciton.outcome_prediction.p_yes > 0.5
         print(f"Answering '{market.question}' with '{binary_answer}'.")
         return binary_answer
-    
+
+    def before(self, market_type: MarketType) -> None:
+        keys = APIKeys()
+        wxdai = WrappedxDaiContract()
+
+        if market_type == MarketType.OMEN:
+            print(f"My current wxDai balance is {wxdai.balanceOf(keys.bet_from_address)}")
+
+        super().before(market_type)
+
+        if market_type == MarketType.OMEN:
+            print(f"My wxDai balance after redeeming is {wxdai.balanceOf(keys.bet_from_address)}")
 
 class DeployableAgentER_PredictionProphetGPT3(DeployableAgentER):
     agent = PredictionProphetAgent(model="gpt-3.5-turbo-0125")
