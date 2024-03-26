@@ -10,7 +10,7 @@ from prediction_market_agent_tooling.deploy.agent import DeployableAgent, BetAmo
 from prediction_market_agent_tooling.markets.betting_strategies import minimum_bet_to_win
 from prediction_market_agent_tooling.markets.manifold.api import get_manifold_bets, get_authenticated_user, get_manifold_market
 from prediction_market_agent_tooling.markets.omen.omen import get_omen_bets
-from prediction_market_agent_tooling.tools.utils import should_not_happen
+from prediction_market_agent_tooling.tools.utils import should_not_happen, utcnow
 from prediction_market_agent_tooling.config import APIKeys
 
 
@@ -18,8 +18,7 @@ class DeployableAgentER(DeployableAgent):
     agent: AbstractBenchmarkedAgent
 
     def recently_betted(self, market: AgentMarket) -> bool:
-        # TODO: Replace with utcnow from PMAT once it's merged and released.
-        start_time = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=48)
+        start_time = utcnow() - timedelta(hours=48)
         keys = APIKeys()
         recently_betted_questions = [get_manifold_market(b.contractId).question for b in get_manifold_bets(
             user_id=get_authenticated_user(keys.manifold_api_key.get_secret_value()).id,
@@ -33,9 +32,6 @@ class DeployableAgentER(DeployableAgent):
         return market.question in recently_betted_questions
 
     def pick_markets(self, markets: list[AgentMarket]) -> list[AgentMarket]:
-        """
-        Testing mode: Pick only one predictable market or nothing.
-        """
         picked_markets: list[AgentMarket] = []
         for market in markets:
             print(f"Looking if we recently bet on '{market.question}'.")
