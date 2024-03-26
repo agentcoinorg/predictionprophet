@@ -70,10 +70,11 @@ class DeployableAgentER(DeployableAgent):
             amount = market.get_tiny_bet_amount().amount
         return BetAmount(amount=amount, currency=market.currency)
 
-    def answer_binary_market(self, market: AgentMarket) -> bool:
+    def answer_binary_market(self, market: AgentMarket) -> bool | None:
         prediciton = self.agent.predict(market.question)  # Already checked in the `pick_markets`.
         if prediciton.outcome_prediction is None:
-            raise ValueError(f"Missing prediction: {prediciton}")
+            print(f"Error: Prediction failed for {market.question}.")  # When switched to proper logging, use error log.
+            return None
         binary_answer: bool = prediciton.outcome_prediction.p_yes > 0.5
         print(f"Answering '{market.question}' with '{binary_answer}'.")
         return binary_answer
