@@ -95,7 +95,7 @@ class DeployableAgentER_PredictionProphetGPT3(DeployableAgentER):
     agent = PredictionProphetAgent(model="gpt-3.5-turbo-0125")
 
 
-class DeployableAgentER_PredictionProphetGPT4(DeployableAgentER):
+class DAPredictionProphetGPT4(DeployableAgentER):
     agent = PredictionProphetAgent(model="gpt-4-0125-preview")
 
 
