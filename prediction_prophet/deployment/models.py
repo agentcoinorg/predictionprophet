@@ -79,14 +79,17 @@ class DeployableAgentER(DeployableAgent):
     def before(self, market_type: MarketType) -> None:
         keys = APIKeys()
         wxdai = WrappedxDaiContract()
+        current_wxdai_balance = 0
 
         if market_type == MarketType.OMEN:
-            print(f"My current wxDai balance is {wxdai.balanceOf(keys.bet_from_address)}")
+            current_wxdai_balance = wxdai.balanceOf(keys.bet_from_address)
+            print(f"My current wxDai balance is {current_wxdai_balance} Wei")
 
         super().before(market_type)
 
         if market_type == MarketType.OMEN:
-            print(f"My wxDai balance after redeeming is {wxdai.balanceOf(keys.bet_from_address)}")
+            new_wxdai_balance = wxdai.balanceOf(keys.bet_from_address)
+            print(f"My wxDai balance after redeeming is {new_wxdai_balance} Wei, so {new_wxdai_balance - current_wxdai_balance} Wei was redeemed.")
 
 class DeployableAgentER_PredictionProphetGPT3(DeployableAgentER):
     agent = PredictionProphetAgent(model="gpt-3.5-turbo-0125")
