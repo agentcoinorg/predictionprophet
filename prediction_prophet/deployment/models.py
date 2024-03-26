@@ -9,7 +9,7 @@ from prediction_market_agent_tooling.markets.omen.omen import OmenAgentMarket
 from prediction_market_agent_tooling.deploy.agent import DeployableAgent, BetAmount
 from prediction_market_agent_tooling.markets.betting_strategies import minimum_bet_to_win
 from prediction_market_agent_tooling.markets.manifold.api import get_manifold_bets, get_authenticated_user, get_manifold_market
-from prediction_market_agent_tooling.markets.omen.omen import get_omen_bets
+from prediction_market_agent_tooling.markets.omen.omen_graph_queries import get_omen_bets
 from prediction_market_agent_tooling.tools.utils import should_not_happen, utcnow
 from prediction_market_agent_tooling.config import APIKeys
 

@@ -7,7 +7,7 @@ import inspect
 import typing as t
 import streamlit as st
 from enum import Enum 
-from prediction_market_agent_tooling.benchmark.utils import get_markets, MarketSource
+from prediction_market_agent_tooling.markets.markets import get_binary_markets, MarketType
 from prediction_market_agent_tooling.benchmark.agents import AbstractBenchmarkedAgent
 from prediction_prophet.benchmark.agents import AGENTS
 
@@ -18,8 +18,8 @@ st.set_page_config(layout="wide")
 st.title("Agent's decision-making process")
 
 # Fetch markets from the selected market source.
-market_source = MarketSource(st.selectbox("Select a market source", [market_source.value for market_source in MarketSource]))
-markets = get_markets(42, market_source)
+market_source = MarketType(st.selectbox("Select a market source", [market_source.value for market_source in MarketType]))
+markets = get_binary_markets(42, market_source)
 
 # Select an agent from the list of available agents.
 agent_class_names = st.multiselect("Select agents", [agent_class.__name__ for agent_class in AGENTS]) 

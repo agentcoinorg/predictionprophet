@@ -25,7 +25,6 @@ def deploy(
     tavity_api_key_secret_name: str = typer.Option(),
     google_search_api_key_name: str = typer.Option(),
     google_search_engine_id_name: str = typer.Option(),
-    bet_from_address: str = typer.Option(),
     bet_from_private_key_secret_name: str = typer.Option(),
     start_time: datetime | None = None,
 ) -> None:
@@ -43,19 +42,18 @@ def deploy(
         repository=f"git+https://github.com/polywrap/predictionprophet.git@{Repo('.').active_branch.name}",
         market_type=market_type,
         api_keys=APIKeys(
-            BET_FROM_ADDRESS=verify_address(bet_from_address),
             MANIFOLD_API_KEY=SecretStr(f"{manifold_api_key_secret_name}:latest"),
             BET_FROM_PRIVATE_KEY=private_key_type(f"{bet_from_private_key_secret_name}:latest"),
+            OPENAI_API_KEY=SecretStr(f"{openai_api_key_secret_name}:latest"),
+            GOOGLE_SEARCH_API_KEY=SecretStr(f"{google_search_api_key_name}:latest"),
+            GOOGLE_SEARCH_ENGINE_ID=SecretStr(f"{google_search_engine_id_name}:latest"),
         ),
         memory=2048,
         labels={
             "owner": getpass.getuser().lower(),
         },
         secrets={
-            "OPENAI_API_KEY": f"{openai_api_key_secret_name}:latest",
             "TAVILY_API_KEY": f"{tavity_api_key_secret_name}:latest",
-            "GOOGLE_SEARCH_API_KEY": f"{google_search_api_key_name}:latest",
-            "GOOGLE_SEARCH_ENGINE_ID": f"{google_search_engine_id_name}:latest",
         },
         cron_schedule="0 */2 * * *",
         start_time=DatetimeWithTimezone(start_time) if start_time else None,
