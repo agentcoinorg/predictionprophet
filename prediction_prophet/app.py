@@ -112,6 +112,7 @@ with st.sidebar:
     st.markdown('#')
     st.markdown('-------')
     st.caption('View the source code on our [github](https://github.com/polywrap/predictionprophet)')
+    st.caption('Learn more on our [substack](https://blog.polywrap.io/p/prediction-prophet-an-ai-agent-that)')
     st.caption('Join our [discord](https://discord.gg/3ebYCjXbg7)')
     
 
