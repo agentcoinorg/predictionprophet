@@ -36,6 +36,7 @@ class DeployableAgentER(DeployableAgent):
         """
         Testing mode: Pick only one predictable market or nothing.
         """
+        picked_markets: list[AgentMarket] = []
         for market in markets:
             print(f"Looking if we recently bet on '{market.question}'.")
             if self.recently_betted(market):
@@ -44,8 +45,11 @@ class DeployableAgentER(DeployableAgent):
             print(f"Verifying market predictability for '{market.question}'.")
             if self.agent.is_predictable(market.question):
                 print(f"Market '{market.question}' is predictable.")
-                return [market]
-        return []
+                picked_markets.append(market)
+            # Hard-coded limit for testing purposes.
+            if len(picked_markets) >= 10:
+                break
+        return picked_markets
     
     def calculate_bet_amount(self, answer: bool, market: AgentMarket) -> BetAmount:
         amount: Decimal
