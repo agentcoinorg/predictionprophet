@@ -6,11 +6,12 @@ from prediction_market_agent_tooling.benchmark.agents import AbstractBenchmarked
 from prediction_market_agent_tooling.markets.agent_market import AgentMarket
 from prediction_market_agent_tooling.markets.manifold.manifold import ManifoldAgentMarket
 from prediction_market_agent_tooling.markets.omen.omen import OmenAgentMarket
-from prediction_market_agent_tooling.deploy.agent import DeployableAgent, BetAmount
+from prediction_market_agent_tooling.markets.omen.omen_contracts import WrappedxDaiContract
+from prediction_market_agent_tooling.deploy.agent import DeployableAgent, BetAmount, MarketType
 from prediction_market_agent_tooling.markets.betting_strategies import minimum_bet_to_win
 from prediction_market_agent_tooling.markets.manifold.api import get_manifold_bets, get_authenticated_user, get_manifold_market
-from prediction_market_agent_tooling.markets.omen.omen import get_omen_bets
-from prediction_market_agent_tooling.tools.utils import should_not_happen
+from prediction_market_agent_tooling.markets.omen.omen_graph_queries import get_omen_bets
+from prediction_market_agent_tooling.tools.utils import should_not_happen, utcnow
 from prediction_market_agent_tooling.config import APIKeys
 
 
@@ -18,8 +19,7 @@ class DeployableAgentER(DeployableAgent):
     agent: AbstractBenchmarkedAgent
 
     def recently_betted(self, market: AgentMarket) -> bool:
-        # TODO: Replace with utcnow from PMAT once it's merged and released.
-        start_time = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(hours=48)
+        start_time = utcnow() - timedelta(hours=48)
         keys = APIKeys()
         recently_betted_questions = [get_manifold_market(b.contractId).question for b in get_manifold_bets(
             user_id=get_authenticated_user(keys.manifold_api_key.get_secret_value()).id,
@@ -33,9 +33,6 @@ class DeployableAgentER(DeployableAgent):
         return market.question in recently_betted_questions
 
     def pick_markets(self, markets: list[AgentMarket]) -> list[AgentMarket]:
-        """
-        Testing mode: Pick only one predictable market or nothing.
-        """
         picked_markets: list[AgentMarket] = []
         for market in markets:
             print(f"Looking if we recently bet on '{market.question}'.")
@@ -70,17 +67,36 @@ class DeployableAgentER(DeployableAgent):
             amount = market.get_tiny_bet_amount().amount
         return BetAmount(amount=amount, currency=market.currency)
 
-    def answer_binary_market(self, market: AgentMarket) -> bool:
+    def answer_binary_market(self, market: AgentMarket) -> bool | None:
         prediciton = self.agent.predict(market.question)  # Already checked in the `pick_markets`.
         if prediciton.outcome_prediction is None:
-            raise ValueError(f"Missing prediction: {prediciton}")
+            print(f"Error: Prediction failed for {market.question}.")  # When switched to proper logging, use error log.
+            return None
         binary_answer: bool = prediciton.outcome_prediction.p_yes > 0.5
         print(f"Answering '{market.question}' with '{binary_answer}'.")
         return binary_answer
-    
+
+    def before(self, market_type: MarketType) -> None:
+        keys = APIKeys()
+        wxdai = WrappedxDaiContract()
+        current_wxdai_balance = 0
+
+        if market_type == MarketType.OMEN:
+            current_wxdai_balance = wxdai.balanceOf(keys.bet_from_address)
+            print(f"My current wxDai balance is {current_wxdai_balance} Wei")
+
+        super().before(market_type)
+
+        if market_type == MarketType.OMEN:
+            new_wxdai_balance = wxdai.balanceOf(keys.bet_from_address)
+            print(f"My wxDai balance after redeeming is {new_wxdai_balance} Wei, so {new_wxdai_balance - current_wxdai_balance} Wei was redeemed.")
 
 class DeployableAgentER_PredictionProphetGPT3(DeployableAgentER):
     agent = PredictionProphetAgent(model="gpt-3.5-turbo-0125")
+
+
+class DAPredictionProphetGPT4(DeployableAgentER):
+    agent = PredictionProphetAgent(model="gpt-4-0125-preview")
 
 
 class DeployableAgentER_OlasEmbeddingOA(DeployableAgentER):
