@@ -67,7 +67,7 @@ class DeployableAgentER(DeployableAgent):
         else:
             should_not_happen(f"Unknown market type: {market}")
         if amount > max_bet_amount:
-            logger.warning(f"Would need at least {amount} {market.currency} to be profitable, betting only {market.get_tiny_bet_amount()} for benchmark purposes.")
+            logger.warning(f"Calculated amount {amount} {market.currency} is exceeding our limit {max_bet_amount=}, betting only {market.get_tiny_bet_amount()} for benchmark purposes.")
             amount = market.get_tiny_bet_amount().amount
         return BetAmount(amount=amount, currency=market.currency)
 
