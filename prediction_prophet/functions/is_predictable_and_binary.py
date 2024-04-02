@@ -56,7 +56,7 @@ def is_predictable_and_binary(
 
     prompt = ChatPromptTemplate.from_template(template=prompt_template)
     messages = prompt.format_messages(question=question)
-    completion = llm(messages, max_tokens=256).content
+    completion = str(llm(messages, max_tokens=256).content)
     response = json.loads(clean_completion_json(completion))
 
     return (response["is_predictable"], response["reasoning"])
