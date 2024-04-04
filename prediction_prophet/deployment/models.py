@@ -64,11 +64,11 @@ class DeployableAgentER(DeployableAgent):
                 min_bet=0.5, 
                 max_bet=1.0,
             ))
-            if answer == market.p_yes > 0.5:
-                amount = amount * 0.75
+            if answer == (market.p_yes > 0.5):
+                amount = amount * Decimal(0.75)
             else:
-                amount = amount * 1.25
-            max_bet_amount = 1.0 if market_liquidity > 5 else 0.1 if market_liquidity > 1 else 0
+                amount = amount * Decimal(1.25)
+            max_bet_amount = 2.0 if market_liquidity > 5 else 0.1 if market_liquidity > 1 else 0
         else:
             should_not_happen(f"Unknown market type: {market}")
         if amount > max_bet_amount:
