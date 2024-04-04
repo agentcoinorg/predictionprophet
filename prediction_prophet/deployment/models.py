@@ -21,7 +21,7 @@ class DeployableAgentER(DeployableAgent):
     max_markets_per_run = 5
 
     def recently_betted(self, market: AgentMarket) -> bool:
-        start_time = utcnow() - timedelta(hours=48)
+        start_time = utcnow() - timedelta(hours=24)
         keys = APIKeys()
         recently_betted_questions = set(get_manifold_market(b.contractId).question for b in get_manifold_bets(
             user_id=get_authenticated_user(keys.manifold_api_key.get_secret_value()).id,
@@ -58,12 +58,13 @@ class DeployableAgentER(DeployableAgent):
         elif isinstance(market, OmenAgentMarket):
             # On Omen, we bet between 0.5 and 1 xDai based on the market's current probability
             # (we bet more if market is less saturated and we can win more).
+            market_liquidity = market.get_liquidity_in_xdai()
             amount = Decimal(stretch_bet_between(
                 Probability(prob_uncertainty(market.p_yes)),  # Not a probability, but it's a value between 0 and 1, so it's fine.
                 min_bet=0.5, 
                 max_bet=1.0,
             ))
-            max_bet_amount = 1.0
+            max_bet_amount = 1.0 if market_liquidity > 5 else 0.1 if market_liquidity > 1 else 0
         else:
             should_not_happen(f"Unknown market type: {market}")
         if amount > max_bet_amount:
