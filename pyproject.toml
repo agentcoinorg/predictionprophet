@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "~3.10"
-langchain = "0.1.9"
+langchain = "0.1.10"
 beautifulsoup4 = "4.12.2"
 click = "8.0.2"
 markdownify = "0.11.6"
