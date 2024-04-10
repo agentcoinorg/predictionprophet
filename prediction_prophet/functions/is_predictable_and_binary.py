@@ -42,7 +42,7 @@ Output only the JSON object in your response. Do not include any other contents 
 @persistent_inmemory_cache
 def is_predictable_and_binary(
     question: str,
-    engine: str = "gpt-4-0125-preview",
+    engine: str = "gpt-4-turbo",
     prompt_template: str = QUESTION_EVALUATE_PROMPT,
     api_key: SecretStr | None = None
 ) -> tuple[bool, str]:

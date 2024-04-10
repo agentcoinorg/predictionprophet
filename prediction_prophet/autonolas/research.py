@@ -52,7 +52,7 @@ ALLOWED_TOOLS = [
 ]
 TOOL_TO_ENGINE = {
     "prediction-sentence-embedding-conservative": "gpt-3.5-turbo",
-    "prediction-sentence-embedding-bold": "gpt-4",
+    "prediction-sentence-embedding-bold": "gpt-4-turbo",
 }
 
 

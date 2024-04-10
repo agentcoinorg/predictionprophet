@@ -83,7 +83,7 @@ def main(
                 agent_name="prediction_prophet_gpt-3.5-turbo-0125_tavilyrawcontent",
                 use_tavily_raw_content=True,
             ),
-            # PredictionProphetAgent(model="gpt-4-0125-preview", max_workers=max_workers, agent_name="prediction_prophet_gpt-4-0125-preview"),  # Too expensive to be enabled by default.
+            # PredictionProphetAgent(model="gpt-4-turbo", max_workers=max_workers, agent_name="prediction_prophet_gpt-4-turbo"),  # Too expensive to be enabled by default.
         ],
         cache_path=cache_path,
         only_cached=only_cached,
