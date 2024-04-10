@@ -92,7 +92,7 @@ def make_debated_prediction(prompt: str, additional_information: str, api_key: S
 
     prediction_chain = (
         prediction_prompt |
-        ChatOpenAI(model="gpt-4-0125-preview", api_key=secretstr_to_v1_secretstr(api_key)) |
+        ChatOpenAI(model="gpt-4-turbo", api_key=secretstr_to_v1_secretstr(api_key)) |
         StrOutputParser()
     )
 
@@ -106,7 +106,7 @@ def make_debated_prediction(prompt: str, additional_information: str, api_key: S
         ConversableAgent(
             name=f"Predictor_Agent_{i}",
             system_message=PREDICTION_PROMPT,
-            llm_config={"config_list": [{"model": "gpt-4-0125-preview", "api_key": api_key.get_secret_value()}]},
+            llm_config={"config_list": [{"model": "gpt-4-turbo", "api_key": api_key.get_secret_value()}]},
             human_input_mode="NEVER")
         for i in range(2) ]
     

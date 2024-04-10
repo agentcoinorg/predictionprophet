@@ -13,7 +13,7 @@ from pydantic.types import SecretStr
 def research(
     goal: str,
     use_summaries: bool,
-    model: str = "gpt-4-0125-preview",
+    model: str = "gpt-4-turbo",
     initial_subqueries_limit: int = 20,
     subqueries_limit: int = 4,
     scrape_content_split_chunk_size: int = 800,
