@@ -8,12 +8,14 @@ from datetime import datetime, timezone
 import json
 from dotenv import load_dotenv
 import re
-from concurrent.futures import Future, ThreadPoolExecutor
+import gc
+from concurrent.futures import Future
 from itertools import groupby
 from operator import itemgetter
 from enum import Enum
 from bs4 import BeautifulSoup, NavigableString
 from googleapiclient.discovery import build
+from prediction_prophet.functions.parallelism import THREADPOOL
 
 import requests
 from requests import Session
@@ -27,10 +29,10 @@ from langchain.schema.output_parser import StrOutputParser
 from langchain_openai import OpenAIEmbeddings
 
 from dateutil import parser
-from evo_prophet.functions.utils import check_not_none
+from prediction_prophet.functions.utils import check_not_none
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
-from evo_prophet.functions.cache import persistent_inmemory_cache
-from evo_prophet.functions.parallelism import par_map
+from prediction_prophet.functions.cache import persistent_inmemory_cache
+from prediction_prophet.functions.parallelism import par_map
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 
@@ -885,41 +887,40 @@ def process_in_batches(
     }
     session.headers.update(headers)
 
-    # Using ThreadPoolExecutor to execute requests in parallel
-    with ThreadPoolExecutor() as executor:
-        # Loop through the URLs in batch_size of size 'batch_size'
-        for i in range(0, len(urls), batch_size):
-            batch = urls[i : i + batch_size]
+    # Using THREADPOOL to execute requests in parallel
+    # Loop through the URLs in batch_size of size 'batch_size'
+    for i in range(0, len(urls), batch_size):
+        batch = urls[i : i + batch_size]
 
-            # Submit the batch of URLs for processing
-            futures = []
-            for url in batch:
-                try:
-                    # Submit a HEAD request to the url and check Content-Type
-                    head_future = executor.submit(
-                        session.head,
-                        url,
-                        headers=headers,
-                        timeout=timeout,
-                        allow_redirects=True,
-                    )
-                    head_response = head_future.result()
-                    if "text/html" not in head_response.headers.get("Content-Type", ""):
-                        continue
-                    else:
-                        # Submit a GET request to the url
-                        futures.append(
-                            (
-                                executor.submit(
-                                    session.get, url, headers=headers, timeout=timeout
-                                ),
-                                url,
-                            )
+        # Submit the batch of URLs for processing
+        futures = []
+        for url in batch:
+            try:
+                # Submit a HEAD request to the url and check Content-Type
+                head_future = THREADPOOL.submit(
+                    session.head,
+                    url,
+                    headers=headers,
+                    timeout=timeout,
+                    allow_redirects=True,
+                )
+                head_response = head_future.result()
+                if "text/html" not in head_response.headers.get("Content-Type", ""):
+                    continue
+                else:
+                    # Submit a GET request to the url
+                    futures.append(
+                        (
+                            THREADPOOL.submit(
+                                session.get, url, headers=headers, timeout=timeout
+                            ),
+                            url,
                         )
-                except Exception as e:
-                    print(f"An error occurred: {e}")
+                    )
+            except Exception as e:
+                print(f"An error occurred: {e}")
 
-            yield futures
+        yield futures
 
 
 def extract_and_sort_sentences(
@@ -1113,6 +1114,7 @@ def fetch_additional_information(
 
     return additional_informations
 
+
 def research(
     prompt: str,
     max_tokens: int | None = None,
@@ -1160,6 +1162,10 @@ def research(
         max_add_tokens,
         enc=enc,
     )
+
+    # Spacy loads ~500MB into memory, make it free it with force.
+    del nlp
+    gc.collect()
     
     return additional_information
 

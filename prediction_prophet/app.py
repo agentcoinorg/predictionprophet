@@ -1,7 +1,7 @@
 import time
 from typing import cast
-from evo_prophet.benchmark.agents import _make_prediction
-from evo_prophet.functions.is_predictable_and_binary import is_predictable_and_binary
+from prediction_prophet.benchmark.agents import _make_prediction
+from prediction_prophet.functions.is_predictable_and_binary import is_predictable_and_binary
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction
 )
@@ -9,16 +9,15 @@ from pydantic import SecretStr
 import streamlit as st
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from evo_prophet.functions.create_embeddings_from_results import create_embeddings_from_results
-from evo_prophet.functions.generate_subqueries import generate_subqueries
-from evo_prophet.functions.prepare_report import prepare_report
-from evo_prophet.functions.rerank_subqueries import rerank_subqueries
-from evo_prophet.functions.scrape_results import scrape_results
-from evo_prophet.functions.search import search
+from prediction_prophet.functions.create_embeddings_from_results import create_embeddings_from_results
+from prediction_prophet.functions.generate_subqueries import generate_subqueries
+from prediction_prophet.functions.prepare_report import prepare_report
+from prediction_prophet.functions.rerank_subqueries import rerank_subqueries
+from prediction_prophet.functions.scrape_results import scrape_results
+from prediction_prophet.functions.search import search
 
 def research(
     goal: str,
-    openai_api_key: SecretStr,
     tavily_api_key: SecretStr,
     model: str = "gpt-4-0125-preview",
     initial_subqueries_limit: int = 20,
@@ -28,13 +27,13 @@ def research(
     top_k_per_query: int = 8
 ) -> str:
     with st.status("Generating subqueries"):
-        queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)
+        queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model)
     
         stringified_queries = '\n- ' + '\n- '.join(queries)
         st.write(f"Generated subqueries: {stringified_queries}")
         
     with st.status("Reranking subqueries"):
-        queries = rerank_subqueries(queries=queries, goal=goal, model=model, api_key=openai_api_key)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
+        queries = rerank_subqueries(queries=queries, goal=goal, model=model)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
 
         stringified_queries = '\n- ' + '\n- '.join(queries)
         st.write(f"Reranked subqueries. Will use top {subqueries_limit}: {stringified_queries}")
@@ -68,7 +67,7 @@ def research(
     )
     
     with st.status(f"Performing similarity searches"):
-        collection = create_embeddings_from_results(scraped, text_splitter, api_key=openai_api_key)
+        collection = create_embeddings_from_results(scraped, text_splitter)
         st.write("Created embeddings")
 
         vector_result_texts: list[str] = []
@@ -86,7 +85,7 @@ def research(
         st.write(f"Found {len(vector_result_texts)} relevant information chunks")
 
     with st.status(f"Preparing report"):
-        report = prepare_report(goal, vector_result_texts, model=model, api_key=openai_api_key)
+        report = prepare_report(goal, vector_result_texts, model=model)
         st.markdown(report)
 
     return report
@@ -94,23 +93,17 @@ def research(
 tavily_api_key = secret_str_from_env('TAVILY_API_KEY')
 
 if tavily_api_key == None:
-    try:
-        tavily_api_key = SecretStr(st.secrets['TAVILY_API_KEY'])
-    except:
-        st.container().error("No Tavily API Key provided")
-        st.stop()
+    st.container().error("No Tavily API Key provided")
+    st.stop()
 
 st.set_page_config(layout="wide")
-st.title("Evo Prophet")
+st.title("Prediction Prophet")
 st.write('Ask any yes-or-no question about a future outcome')
 
 with st.sidebar:
-    st.title('Evo Prophet')
+    st.title('Prediction Prophet')
     st.markdown("A web3 agent by [Polywrap](https://www.polywrap.io/)")
-    st.image('https://raw.githubusercontent.com/polywrap/evo.prophet/main/content/banner_hires.png')
-    
-    st.markdown('#')
-    openai_api_key = SecretStr(st.text_input("OpenAI API Key", type="password", key="open_ai_key"))
+    st.image('https://raw.githubusercontent.com/polywrap/predictionprophet/main/content/banner_hires.png')
     
     st.markdown('#')
     st.markdown('#')
@@ -118,7 +111,8 @@ with st.sidebar:
     st.markdown('#')
     st.markdown('#')
     st.markdown('-------')
-    st.caption('View the source code on our [github](https://github.com/polywrap/evo.prophet)')
+    st.caption('View the source code on our [github](https://github.com/polywrap/predictionprophet)')
+    st.caption('Learn more on our [substack](https://blog.polywrap.io/p/prediction-prophet-an-ai-agent-that)')
     st.caption('Join our [discord](https://discord.gg/3ebYCjXbg7)')
     
 
@@ -126,10 +120,6 @@ with st.sidebar:
 progress_placeholder = st.empty()
 
 if question := st.chat_input(placeholder='Will Twitter implement a new misinformation policy before the end of 2024?'):
-    if not openai_api_key.get_secret_value():
-        st.container().error(f"No OpenAI API key provided")
-        st.stop()
-    
     progress_placeholder.empty()
     time.sleep(0.1) # https://github.com/streamlit/streamlit/issues/5044
     
@@ -137,10 +127,10 @@ if question := st.chat_input(placeholder='Will Twitter implement a new misinform
         st.chat_message("user").write(question)
         
         with st.chat_message("assistant"):
-            st.write(f"I will evaluate the proability of '{question}' ocurring")
+            st.write(f"I will evaluate the probability of '{question}' occurring")
             
             with st.status("Evaluating question") as status:
-                (is_predictable, reasoning) = is_predictable_and_binary(question=question, api_key=openai_api_key) 
+                (is_predictable, reasoning) = is_predictable_and_binary(question=question) 
                 if not is_predictable:
                     st.container().error(f"The agent thinks this question is not predictable: \n\n{reasoning}")
                     status.update(label="Error evaluating question", state="error", expanded=True)
@@ -150,12 +140,11 @@ if question := st.chat_input(placeholder='Will Twitter implement a new misinform
                 goal=question,
                 subqueries_limit=6,
                 top_k_per_query=15,
-                openai_api_key=openai_api_key,
                 tavily_api_key=cast(SecretStr, tavily_api_key),
             )
                     
             with st.status("Making prediction"):
-                prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0, api_key=openai_api_key)
+                prediction = _make_prediction(market_question=question, additional_information=report, engine="gpt-4-0125-preview", temperature=0.0)
 
                 if prediction.outcome_prediction == None:
                     st.container().error("The agent failed to generate a prediction")

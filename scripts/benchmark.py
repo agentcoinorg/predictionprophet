@@ -3,19 +3,19 @@ import typing as t
 import typer
 from prediction_market_agent_tooling.benchmark.agents import FixedAgent, RandomAgent
 from prediction_market_agent_tooling.benchmark.benchmark import Benchmarker
-from prediction_market_agent_tooling.benchmark.utils import MarketSource, get_markets, MarketFilter, MarketSort
+from prediction_market_agent_tooling.markets.markets import MarketType, get_binary_markets, FilterBy, SortBy
 
-from evo_prophet.autonolas.research import EmbeddingModel
-from evo_prophet.benchmark.agents import EvoAgent, OlasAgent, QuestionOnlyAgent
-from evo_prophet.functions.cache import ENABLE_CACHE
+from prediction_prophet.autonolas.research import EmbeddingModel
+from prediction_prophet.benchmark.agents import PredictionProphetAgent, OlasAgent, QuestionOnlyAgent
+from prediction_prophet.functions.cache import ENABLE_CACHE
 
 
 def main(
     n: int = 10,
     output: str = "./benchmark_report.md",
-    reference: MarketSource = MarketSource.MANIFOLD,
-    filter: MarketFilter = MarketFilter.open,
-    sort: MarketSort | None = None,
+    reference: MarketType = MarketType.MANIFOLD,
+    filter: FilterBy = FilterBy.OPEN,
+    sort: SortBy = SortBy.NONE,
     max_workers: int = 1,
     cache_path: t.Optional[str] = "predictions_cache.json",
     only_cached: bool = False,
@@ -24,7 +24,7 @@ def main(
     Polymarket usually contains higher quality questions, 
     but on Manifold, additionally to filtering by MarketFilter.resolved, you can sort by MarketSort.newest.
     """
-    markets = get_markets(number=n, source=reference, filter_=filter, sort=sort)
+    markets = get_binary_markets(n, reference, filter_by=filter, sort_by=sort)
     markets_deduplicated = list(({m.question: m for m in markets}.values()))
     if len(markets) != len(markets_deduplicated):
         print(
@@ -59,31 +59,31 @@ def main(
                 agent_name="olas_gpt-3.5-turbo-0125_openai-embeddings",
                 embedding_model=EmbeddingModel.openai,
             ),
-            EvoAgent(
+            PredictionProphetAgent(
                 model="gpt-3.5-turbo-0125",
                 max_workers=max_workers,
-                agent_name="evo_gpt-3.5-turbo-0125_summary",
+                agent_name="prediction_prophet_gpt-3.5-turbo-0125_summary",
                 use_summaries=True,
             ),
-            EvoAgent(
+            PredictionProphetAgent(
                 model="gpt-3.5-turbo-0125",
                 max_workers=max_workers,
-                agent_name="evo_gpt-3.5-turbo-0125",
+                agent_name="prediction_prophet_gpt-3.5-turbo-0125",
             ),
-            EvoAgent(
+            PredictionProphetAgent(
                 model="gpt-3.5-turbo-0125",
                 max_workers=max_workers,
-                agent_name="evo_gpt-3.5-turbo-0125_summary_tavilyrawcontent",
+                agent_name="prediction_prophet_gpt-3.5-turbo-0125_summary_tavilyrawcontent",
                 use_summaries=True,
                 use_tavily_raw_content=True,
             ),
-            EvoAgent(
+            PredictionProphetAgent(
                 model="gpt-3.5-turbo-0125",
                 max_workers=max_workers,
-                agent_name="evo_gpt-3.5-turbo-0125_tavilyrawcontent",
+                agent_name="prediction_prophet_gpt-3.5-turbo-0125_tavilyrawcontent",
                 use_tavily_raw_content=True,
             ),
-            # EvoAgent(model="gpt-4-0125-preview", max_workers=max_workers, agent_name="evo_gpt-4-0125-preview"),  # Too expensive to be enabled by default.
+            # PredictionProphetAgent(model="gpt-4-0125-preview", max_workers=max_workers, agent_name="prediction_prophet_gpt-4-0125-preview"),  # Too expensive to be enabled by default.
         ],
         cache_path=cache_path,
         only_cached=only_cached,

@@ -6,9 +6,9 @@ import pandas as pd
 from tqdm import tqdm
 from urllib.parse import urlparse
 from collections import defaultdict
-from prediction_market_agent_tooling.benchmark.utils import get_markets, MarketSource
-from evo_prophet.functions.web_search import web_search
-from evo_prophet.autonolas.research import safe_get_urls_from_query
+from prediction_market_agent_tooling.markets.markets import get_binary_markets, MarketType
+from prediction_prophet.functions.web_search import web_search
+from prediction_prophet.autonolas.research import safe_get_urls_from_query
 
 ENGINES: dict[str, t.Callable[[str, int], list[str]]] = {
     "tavily": lambda q, limit: [x.url for x in web_search(q, max_results=limit)],
@@ -18,11 +18,11 @@ ENGINES: dict[str, t.Callable[[str, int], list[str]]] = {
 
 def main(
     n: int = 10,
-    source: MarketSource = MarketSource.MANIFOLD,
+    source: MarketType = MarketType.MANIFOLD,
     max_results_per_query: int = 10,
     output: str = "results",
 ) -> None:
-    markets = get_markets(n, source)
+    markets = get_binary_markets(n, source)
 
     summary = defaultdict(list)
     links: dict[str, dict[str, list[str]]] = defaultdict(dict)

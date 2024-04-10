@@ -7,23 +7,23 @@ from prediction_market_agent_tooling.benchmark.utils import (
     Prediction,
 )
 from datetime import datetime
-from evo_prophet.autonolas.research import EmbeddingModel
-from evo_prophet.autonolas.research import make_prediction, get_urls_from_queries
-from evo_prophet.autonolas.research import research as research_autonolas
-from evo_prophet.functions.evaluate_question import is_predictable
-from evo_prophet.functions.rephrase_question import rephrase_question
-from evo_prophet.functions.research import research as research_evo
-from evo_prophet.functions.search import search
-from evo_prophet.functions.utils import url_is_older_than
-from evo_prophet.models.WebSearchResult import WebSearchResult
+from prediction_prophet.autonolas.research import EmbeddingModel
+from prediction_prophet.autonolas.research import make_prediction, get_urls_from_queries
+from prediction_prophet.autonolas.research import research as research_autonolas
+from prediction_prophet.functions.evaluate_question import is_predictable
+from prediction_prophet.functions.rephrase_question import rephrase_question
+from prediction_prophet.functions.research import research as prophet_research
+from prediction_prophet.functions.search import search
+from prediction_prophet.functions.utils import url_is_older_than
+from prediction_prophet.models.WebSearchResult import WebSearchResult
 from unittest.mock import patch
-from evo_prophet.functions.search import search
+from prediction_prophet.functions.search import search
 from prediction_market_agent_tooling.benchmark.utils import (
     OutcomePrediction,
     Prediction,
 )
 from pydantic.types import SecretStr
-from evo_prophet.autonolas.research import Prediction as LLMCompletionPredictionDict
+from prediction_prophet.autonolas.research import Prediction as LLMCompletionPredictionDict
 
 def _make_prediction(
     market_question: str,
@@ -144,16 +144,16 @@ class OlasAgent(AbstractBenchmarkedAgent):
             ]
             return results_filtered
     
-        with patch('evo_prophet.autonolas.research.get_urls_from_queries', side_effect=side_effect, autospec=True):
+        with patch('prediction_prophet.autonolas.research.get_urls_from_queries', side_effect=side_effect, autospec=True):
             return self.predict(market_question)
 
 
-class EvoAgent(AbstractBenchmarkedAgent):
+class PredictionProphetAgent(AbstractBenchmarkedAgent):
     def __init__(
         self,
         model: str,
         temperature: float = 0.0,
-        agent_name: str = "evo",
+        agent_name: str = "prediction_prophet",
         use_summaries: bool = False,
         use_tavily_raw_content: bool = False,
         max_workers: t.Optional[int] = None,
@@ -173,7 +173,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
         return result
     
     def research(self, market_question: str) -> str:
-        return research_evo(
+        return prophet_research(
             goal=market_question,
             model=self.model,
             use_summaries=self.use_summaries,
@@ -190,7 +190,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
                 temperature=self.temperature,
             )
         except ValueError as e:
-            print(f"Error in EvoAgent's predict: {e}")
+            print(f"Error in PredictionProphet's predict: {e}")
             return Prediction()
 
     def predict_restricted(
@@ -204,7 +204,7 @@ class EvoAgent(AbstractBenchmarkedAgent):
             ]
             return results_filtered
     
-        with patch('evo_prophet.functions.research.search', side_effect=side_effect, autospec=True):
+        with patch('prediction_prophet.functions.research.search', side_effect=side_effect, autospec=True):
             return self.predict(market_question)
 
 class RephrasingOlasAgent(OlasAgent):
@@ -249,6 +249,6 @@ class RephrasingOlasAgent(OlasAgent):
 AGENTS = [
     OlasAgent,
     RephrasingOlasAgent,
-    EvoAgent,
+    PredictionProphetAgent,
     QuestionOnlyAgent,
 ]

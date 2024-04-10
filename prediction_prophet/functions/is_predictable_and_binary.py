@@ -1,8 +1,8 @@
 import json
-from evo_prophet.autonolas.research import clean_completion_json
+from prediction_prophet.autonolas.research import clean_completion_json
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
-from evo_prophet.functions.cache import persistent_inmemory_cache
+from prediction_prophet.functions.cache import persistent_inmemory_cache
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
@@ -56,7 +56,7 @@ def is_predictable_and_binary(
 
     prompt = ChatPromptTemplate.from_template(template=prompt_template)
     messages = prompt.format_messages(question=question)
-    completion = llm(messages, max_tokens=256).content
+    completion = str(llm(messages, max_tokens=256).content)
     response = json.loads(clean_completion_json(completion))
 
     return (response["is_predictable"], response["reasoning"])

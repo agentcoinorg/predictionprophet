@@ -1,5 +1,5 @@
-# evo.prophet
-![](./docs/imgs//banner_hires.png)
+# Prediction Prophet
+![](./docs/imgs/banner_hires.png)
 
 ---
 
@@ -9,7 +9,7 @@
 
 ## Welcome!
 
-evo.prophet is an agent that specializes in making informed predictions, based on web research. To try it yourself head to [predictionprophet.ai](https://predictionprophet.ai) or build and run from source following these [setup instructions](#setup).
+Prediction Prophet is an agent that specializes in making informed predictions, based on web research. To try it yourself head to [predictionprophet.ai](https://predictionprophet.ai) or build and run from source following these [setup instructions](#setup).
 
 ![](./docs/imgs/predictionprophet-app.png)
 
@@ -19,13 +19,13 @@ Join our [Discord community](https://discord.gg/k7UCsH3ps9) for support and disc
 
 [![Join us on Discord](https://invidget.switchblade.xyz/k7UCsH3ps9)](https://discord.com/invite/k7UCsH3ps9)
 
-If you have questions or encounter issues, please don't hesitate to [create a new issue](https://github.com/polywrap/evo.prophet/issues/new) to get support.
+If you have questions or encounter issues, please don't hesitate to [create a new issue](https://github.com/polywrap/predictionprophet/issues/new) to get support.
 
 
 ## How It Works
 ![](./docs/imgs/diagram.png)
 
-To elaborate further, given a question like `"Will Twitter implement a new misinformation policy before the 2024 elections?"`, evo.prophet will:  
+To elaborate further, given a question like `"Will Twitter implement a new misinformation policy before the 2024 elections?"`, Prophet will:  
 
 1. Generate `n` web search queries and re-ranks them using an LLM call, selecting only the most relevant ones
 2. Search the web for each query, using [Tavily](https://tavily.com/)
@@ -33,14 +33,14 @@ To elaborate further, given a question like `"Will Twitter implement a new misin
 4. Use Langchain's `RecursiveCharacterTextSplitter` to split the content of all pages into chunks and create embeddings. All chunks are stored with the content as metadata.
 5. Iterate over the queries selected on step `1` and vector search for the most relevant chunks created in step `4`.
 6. Aggregate all relevant chunks and prepare a report.
-7. Make a prediction using multi-agent debate.
+7. Make a prediction.
 
 ## Setup
 
 ### Installation
 
 1. Clone the repository 
-    > `git clone https://github.com/polywrap/evo.prophet`
+    > `git clone https://github.com/polywrap/predictionprophet`
 2. Copy the `.env.template` file and rename it to `.env`.  
     > `cp .env.template .env`
 3. Find the line that says OPENAI_API_KEY=, and add your unique [OpenAI](https://openai.com/) API Key  
@@ -69,7 +69,7 @@ poetry run research "Will Twitter implement a new misinformation policy before t
 ### Front-End
 
 ```bash
-poetry run streamlit run ./evo_prophet/app.py
+poetry run streamlit run ./prediction_prophet/app.py
 ```
 
 ## Possible Future Improvements

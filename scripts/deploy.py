@@ -1,31 +1,31 @@
 import typer
 import getpass
 import typing as t
-from git import Repo
 from datetime import datetime
 from prediction_market_agent_tooling.markets.markets import MarketType
-from evo_prophet.deployment.models import DeployableAgentER, DeployableAgentER_EvoGPT3, DeployableAgentER_OlasEmbeddingOA
+from prediction_prophet.deployment.models import DeployableAgentER, DeployableAgentER_PredictionProphetGPT3, DAPredictionProphetGPT4, DeployableAgentER_OlasEmbeddingOA
 from prediction_market_agent_tooling.config import APIKeys
+from prediction_market_agent_tooling.tools.utils import get_current_git_commit_sha, get_current_git_url
 from prediction_market_agent_tooling.gtypes import private_key_type, DatetimeWithTimezone
-from prediction_market_agent_tooling.tools.web3_utils import verify_address
 from pydantic.types import SecretStr
 
 
 DEPLOYABLE_AGENTS = [
-    DeployableAgentER_EvoGPT3,
+    DeployableAgentER_PredictionProphetGPT3,
+    DAPredictionProphetGPT4,
     DeployableAgentER_OlasEmbeddingOA
 ]
 
 
 def deploy(
     market_type: MarketType,
+    timeout: int = typer.Option(),
     deployable_agent_name: str = typer.Option(),
     manifold_api_key_secret_name: str = typer.Option(),
     openai_api_key_secret_name: str = typer.Option(),
     tavity_api_key_secret_name: str = typer.Option(),
     google_search_api_key_name: str = typer.Option(),
     google_search_engine_id_name: str = typer.Option(),
-    bet_from_address: str = typer.Option(),
     bet_from_private_key_secret_name: str = typer.Option(),
     start_time: datetime | None = None,
 ) -> None:
@@ -40,25 +40,25 @@ def deploy(
     chosen_agent_class: t.Type[DeployableAgentER] = [agent for agent in DEPLOYABLE_AGENTS if agent.__name__ == deployable_agent_name][0]
     
     chosen_agent_class().deploy_gcp(
-        repository=f"git+https://github.com/polywrap/evo.prophet.git@{Repo('.').active_branch.name}",
+        repository=f"git+{get_current_git_url()}@{get_current_git_commit_sha()}",
         market_type=market_type,
         api_keys=APIKeys(
-            BET_FROM_ADDRESS=verify_address(bet_from_address),
             MANIFOLD_API_KEY=SecretStr(f"{manifold_api_key_secret_name}:latest"),
             BET_FROM_PRIVATE_KEY=private_key_type(f"{bet_from_private_key_secret_name}:latest"),
+            OPENAI_API_KEY=SecretStr(f"{openai_api_key_secret_name}:latest"),
+            GOOGLE_SEARCH_API_KEY=SecretStr(f"{google_search_api_key_name}:latest"),
+            GOOGLE_SEARCH_ENGINE_ID=SecretStr(f"{google_search_engine_id_name}:latest"),
         ),
         memory=2048,
         labels={
             "owner": getpass.getuser().lower(),
         },
         secrets={
-            "OPENAI_API_KEY": f"{openai_api_key_secret_name}:latest",
             "TAVILY_API_KEY": f"{tavity_api_key_secret_name}:latest",
-            "GOOGLE_SEARCH_API_KEY": f"{google_search_api_key_name}:latest",
-            "GOOGLE_SEARCH_ENGINE_ID": f"{google_search_engine_id_name}:latest",
         },
         cron_schedule="0 */2 * * *",
         start_time=DatetimeWithTimezone(start_time) if start_time else None,
+        timeout=timeout,
     )
 
 
