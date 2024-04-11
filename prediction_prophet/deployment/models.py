@@ -1,3 +1,4 @@
+import typing as t
 from decimal import Decimal
 from loguru import logger
 from datetime import timedelta
@@ -33,7 +34,7 @@ class DeployableAgentER(DeployableAgent):
         )) if isinstance(market, OmenAgentMarket) else should_not_happen(f"Uknown market: {market}")
         return market.question in recently_betted_questions
 
-    def pick_markets(self, markets: list[AgentMarket]) -> list[AgentMarket]:
+    def pick_markets(self, markets: t.Sequence[AgentMarket]) -> t.Sequence[AgentMarket]:
         picked_markets: list[AgentMarket] = []
         for market in markets:
             logger.info(f"Looking if we recently bet on '{market.question}'.")
