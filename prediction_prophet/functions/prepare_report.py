@@ -7,7 +7,6 @@ from langchain.schema.output_parser import StrOutputParser
 from prediction_prophet.functions.cache import persistent_inmemory_cache
 from prediction_prophet.functions.utils import trim_to_n_tokens
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
-from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 from pydantic.types import SecretStr
 
 
@@ -29,7 +28,7 @@ Content:
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key)) |
+        ChatOpenAI(model=model, api_key=api_key.get_secret_value() if api_key else None) |
         StrOutputParser()
     )
 
@@ -70,7 +69,7 @@ def prepare_report(goal: str, scraped: list[str], model: str, api_key: SecretStr
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key)) |
+        ChatOpenAI(model=model, api_key=api_key.get_secret_value() if api_key else None) |
         StrOutputParser()
     )
 
