@@ -34,7 +34,6 @@ from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from prediction_prophet.functions.cache import persistent_inmemory_cache
 from prediction_prophet.functions.parallelism import par_map
 from pydantic.types import SecretStr
-from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 
 load_dotenv()
 
@@ -1185,7 +1184,7 @@ def make_prediction(
 
     prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
 
-    llm = ChatOpenAI(model=engine, temperature=temperature, api_key=secretstr_to_v1_secretstr(api_key))
+    llm = ChatOpenAI(model=engine, temperature=temperature, api_key=api_key.get_secret_value() if api_key else None)
     formatted_messages = prediction_prompt.format_messages(user_prompt=prompt, additional_information=additional_information, timestamp=formatted_time_utc)
     generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5)
 
