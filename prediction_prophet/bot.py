@@ -50,9 +50,9 @@ if discord_bot_token == None:
     raise Exception("No discord bot token provided")
 
 
-async def handle_prediction(goal: str, message: discord.Message, message_prophet: str):
-    message_prophet = message_prophet + "\n### Generating subqueries..."
-    await message.edit(content=message_prophet)
+async def handle_prediction(
+    goal: str, message: discord.Message, thread: discord.Thread, message_prophet: str
+):
     queries = generate_subqueries(
         query=goal, limit=initial_subqueries_limit, model=model
     )
@@ -119,18 +119,18 @@ async def handle_prediction(goal: str, message: discord.Message, message_prophet
     )
 
     if prediction.outcome_prediction == None:
-        message_prophet = (
-            message_prophet + "\n### The agent failed to generate a prediction"
-        )
-        await message.edit(content=message_prophet)
+        await message.edit(content="\n### The agent failed to generate a prediction")
         return
 
     outcome_prediction = cast(OutcomePrediction, prediction.outcome_prediction)
-    message_prophet = (
-        message_prophet
-        + f"\n# Probability: {outcome_prediction.p_yes * 100}%. Confidence: {outcome_prediction.confidence * 100}%"
+    await message.edit(
+        content=f"With **{outcome_prediction.confidence * 100}% confidence**, I'd say this outcome has a **{outcome_prediction.p_yes * 100}% probability** of happening"
     )
-    await message.edit(content=message_prophet)
+    report_file_name = f"report-{str(thread.id)}.md"
+    with open(report_file_name, "w") as f:
+        f.write(report)
+    await thread.send(file=discord.File(report_file_name, filename="report.md"))
+    os.remove(report_file_name)
 
 
 class ProphetClient(discord.Client):
@@ -142,12 +142,12 @@ class ProphetClient(discord.Client):
         TODO:
             - Add channel ID
             - Add validation of 5 requets per user per day
-            - 
+            -
         """
         if str(self.user.id) in message.content:
             goal = remove_username_from_message_content(message.content)
             channel = await message.create_thread(
-                name=f'Assessing the likelihood of "{goal}" occurring'
+                name=f"Assessing the likelihood of asked question occurring"
             )
             message_prophet = "# Evaluating question..."
             message = await channel.send(message_prophet)
@@ -157,7 +157,7 @@ class ProphetClient(discord.Client):
                     content=f"The agent thinks this question is not predictable: \n{reasoning}"
                 )
                 return
-            await handle_prediction(goal, message, message_prophet)
+            await handle_prediction(goal, message, channel, message_prophet)
 
 
 intents = discord.Intents(messages=True)
