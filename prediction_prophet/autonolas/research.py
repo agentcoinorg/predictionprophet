@@ -30,6 +30,7 @@ from langchain_openai import OpenAIEmbeddings
 
 from dateutil import parser
 from prediction_prophet.functions.utils import check_not_none
+from prediction_market_agent_tooling.gtypes import Probability
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from prediction_prophet.functions.cache import persistent_inmemory_cache
 from prediction_prophet.functions.parallelism import par_map
@@ -314,8 +315,8 @@ class EmbeddingModel(Enum):
 class Prediction(TypedDict):
     decision: Optional[str]
     decision_token_prob: Optional[float]
-    p_yes: float
-    p_no: float
+    p_yes: Probability
+    p_no: Probability
     confidence: float
     info_utility: float
 

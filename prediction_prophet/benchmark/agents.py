@@ -51,11 +51,7 @@ def completion_prediction_json_to_pydantic_model(
     completion_prediction: LLMCompletionPredictionDict,
 ) -> Prediction:
     return Prediction(
-        outcome_prediction=OutcomePrediction(
-            p_yes=completion_prediction["p_yes"],
-            confidence=completion_prediction["confidence"],
-            info_utility=completion_prediction["info_utility"],
-        ),
+        outcome_prediction=OutcomePrediction.model_validate(completion_prediction),
     )
 
 
@@ -68,7 +64,7 @@ class QuestionOnlyAgent(AbstractBenchmarkedAgent):
         max_workers: t.Optional[int] = None,
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
-        self.model = model
+        self.model: str = model
         self.temperature = temperature
 
     def predict(
@@ -101,7 +97,7 @@ class OlasAgent(AbstractBenchmarkedAgent):
         embedding_model: EmbeddingModel = EmbeddingModel.spacy,
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
-        self.model = model
+        self.model: str = model
         self.temperature = temperature
         self.embedding_model = embedding_model
 
@@ -159,7 +155,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         max_workers: t.Optional[int] = None,
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
-        self.model = model
+        self.model: str = model
         self.temperature = temperature
         self.use_summaries = use_summaries
         self.use_tavily_raw_content = use_tavily_raw_content
