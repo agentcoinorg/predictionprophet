@@ -449,13 +449,13 @@ files = [
 
 [[package]]
 name = "blinker"
-version = "1.8.1"
+version = "1.8.2"
 description = "Fast, simple object-to-object and broadcast signaling"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "blinker-1.8.1-py3-none-any.whl", hash = "sha256:5f1cdeff423b77c31b89de0565cd03e5275a03028f44b2b15f912632a58cced6"},
-    {file = "blinker-1.8.1.tar.gz", hash = "sha256:da44ec748222dcd0105ef975eed946da197d5bdf8bafb6aa92f5bc89da63fa25"},
+    {file = "blinker-1.8.2-py3-none-any.whl", hash = "sha256:1779309f71bf239144b9399d06ae925637cf6634cf6bd131104184531bf67c01"},
+    {file = "blinker-1.8.2.tar.gz", hash = "sha256:8f77b09d3bf7c795e969e9486f39c2c5e9c39d4ee07424be2bc594ece9642d83"},
 ]
 
 [[package]]
@@ -2782,13 +2782,13 @@ extended-testing = ["aiosqlite (>=0.19.0,<0.20.0)", "aleph-alpha-client (>=2.15.
 
 [[package]]
 name = "langchain-core"
-version = "0.1.50"
+version = "0.1.52"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = "<4.0,>=3.8.1"
 files = [
-    {file = "langchain_core-0.1.50-py3-none-any.whl", hash = "sha256:19d57477de5ebcb55febc3bc94c6c9aac62a6199b0802cfa326ca718d84d985e"},
-    {file = "langchain_core-0.1.50.tar.gz", hash = "sha256:a01e3149a117ed00ef086cc74d8d1b9437d650a0a3c80c8a3786f4dcbb8d1ef9"},
+    {file = "langchain_core-0.1.52-py3-none-any.whl", hash = "sha256:62566749c92e8a1181c255c788548dc16dbc319d896cd6b9c95dc17af9b2a6db"},
+    {file = "langchain_core-0.1.52.tar.gz", hash = "sha256:084c3fc452f5a6966c28ab3ec5dbc8b8d26fc3f63378073928f4e29d90b6393f"},
 ]
 
 [package.dependencies]
@@ -2856,13 +2856,13 @@ test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "langfuse"
-version = "2.29.0"
+version = "2.29.1"
 description = "A client library for accessing langfuse"
 optional = false
 python-versions = "<4.0,>=3.8.1"
 files = [
-    {file = "langfuse-2.29.0-py3-none-any.whl", hash = "sha256:e0bbb49ca4da3f8a4f51aab0ad47c975def6167e318fbb8cfefe7f457bd7a020"},
-    {file = "langfuse-2.29.0.tar.gz", hash = "sha256:e18053f5670c4c1165d233dc620f0cb5f9890af60519ef0de38cff6cc2e22a38"},
+    {file = "langfuse-2.29.1-py3-none-any.whl", hash = "sha256:73819e8c62c9aa5de531ee9aa986b50bf6090eda300c10243fff2a0ffdb1e48e"},
+    {file = "langfuse-2.29.1.tar.gz", hash = "sha256:320a5e739863f500292ecc1eeb75648eb7337af6cf38ce21c1f50f7767796840"},
 ]
 
 [package.dependencies]
@@ -3751,13 +3751,13 @@ sympy = "*"
 
 [[package]]
 name = "openai"
-version = "1.25.2"
+version = "1.26.0"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.7.1"
 files = [
-    {file = "openai-1.25.2-py3-none-any.whl", hash = "sha256:8df66384343e81ae49f5b9ee7d2d67df3b98d578d1e3a50994111e1c6062bf5e"},
-    {file = "openai-1.25.2.tar.gz", hash = "sha256:a2b4a6ae9afb8b5578b5b69315ecc6c01564d4c8dbe18fe2375bb9547ff5038c"},
+    {file = "openai-1.26.0-py3-none-any.whl", hash = "sha256:884ced523fb0225780f8b0e0ed6f7e014049c32d049a41ad0ac962869f1055d1"},
+    {file = "openai-1.26.0.tar.gz", hash = "sha256:642e857b60855702ee6ff665e8fa80946164f77b92e58fd24e01b545685b8405"},
 ]
 
 [package.dependencies]
@@ -4226,13 +4226,13 @@ test = ["coverage", "flake8", "freezegun (==0.3.15)", "mock (>=2.0.0)", "pylint"
 
 [[package]]
 name = "prediction-market-agent-tooling"
-version = "0.23.0"
+version = "0.24.0"
 description = "Tools to benchmark, deploy and monitor prediction market agents."
 optional = false
 python-versions = "<3.12,>=3.10"
 files = [
-    {file = "prediction_market_agent_tooling-0.23.0-py3-none-any.whl", hash = "sha256:2394202d8093d61686e5ad2fda5c4d9305f86d1d7cfd19d222d695ad4f704fd8"},
-    {file = "prediction_market_agent_tooling-0.23.0.tar.gz", hash = "sha256:ea2ebb1d9262e5b03c76c1c302b4a30e62ab9d7fe9d472bdeb417e8b54a55474"},
+    {file = "prediction_market_agent_tooling-0.24.0-py3-none-any.whl", hash = "sha256:9c7d38668e01d9240a3d145faddc4fec37241cfb5522f9cfa81bc9f2f1fbc2a0"},
+    {file = "prediction_market_agent_tooling-0.24.0.tar.gz", hash = "sha256:75397d82ed8d5f1e31a4dea840dc01a8341e66f3c4eae839fa190cd4c0304cbb"},
 ]
 
 [package.dependencies]
@@ -5955,17 +5955,18 @@ tiktoken = ">=0.5.2,<1"
 
 [[package]]
 name = "tenacity"
-version = "8.2.3"
+version = "8.3.0"
 description = "Retry code until it succeeds"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "tenacity-8.2.3-py3-none-any.whl", hash = "sha256:ce510e327a630c9e1beaf17d42e6ffacc88185044ad85cf74c0a8887c6a0f88c"},
-    {file = "tenacity-8.2.3.tar.gz", hash = "sha256:5398ef0d78e63f40007c1fb4c0bff96e1911394d2fa8d194f77619c05ff6cc8a"},
+    {file = "tenacity-8.3.0-py3-none-any.whl", hash = "sha256:3649f6443dbc0d9b01b9d8020a9c4ec7a1ff5f6f3c6c8a036ef371f573fe9185"},
+    {file = "tenacity-8.3.0.tar.gz", hash = "sha256:953d4e6ad24357bceffbc9707bc74349aca9d245f68eb65419cf0c249a1949a2"},
 ]
 
 [package.extras]
-doc = ["reno", "sphinx", "tornado (>=4.5)"]
+doc = ["reno", "sphinx"]
+test = ["pytest", "tornado (>=4.5)", "typeguard"]
 
 [[package]]
 name = "termcolor"
@@ -7066,4 +7067,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.10"
-content-hash = "39b1e69da8fe1a3f03ccc84156e7b9bb20a9d73ebc409acbb0f205eb4be69440"
+content-hash = "eae1a07038071b4644dd767a97b104f4afb6dea83aad8b25ed85e3af12090d32"
