@@ -1,10 +1,11 @@
+import logging
+
 try:
     __import__('pysqlite3')
     import sys
     sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 except ImportError:
-    print("pysqlite3-binary not found, using sqlite3 instead.")
-
+    logging.info("pysqlite3-binary not found, using sqlite3 instead.")
 
 import os
 from langchain_openai import OpenAIEmbeddings
