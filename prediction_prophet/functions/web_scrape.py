@@ -17,7 +17,7 @@ def fetch_html(url: str, timeout: int) -> Response:
     return response
 
 
-def web_scrape(url: str, timeout: int = 10000) -> str:
+def web_scrape(url: str, timeout: int = 10) -> str:
     try:
         response = fetch_html(url=url, timeout=timeout)
 
