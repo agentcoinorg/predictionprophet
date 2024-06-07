@@ -18,7 +18,7 @@ def scrape_results(results: list[WebSearchResult]) -> list[WebScrapeResult]:
 
 
 def scrape_results_firecrawl(results: list[WebSearchResult]) -> list[WebScrapeResult]:
-    app = FirecrawlApp(api_key=os.getenv("FIRECRAW_API_KEY"))
+    app = FirecrawlApp(api_key=os.getenv("FIRECRAWL_API_KEY"))
     params = {
         "pageOptions": {
             "onlyMainContent": True
