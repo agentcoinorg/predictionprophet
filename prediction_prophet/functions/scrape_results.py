@@ -17,7 +17,7 @@ def scrape_results(results: list[WebSearchResult]) -> list[WebScrapeResult]:
     return scraped
 
 
-def scrape_results_firescrap(results: list[WebSearchResult]) -> list[WebScrapeResult]:
+def scrape_results_firecraw(results: list[WebSearchResult]) -> list[WebScrapeResult]:
     app = FirecrawlApp(api_key=os.getenv("FIRECRAW_API_KEY"))
     params = {
         "pageOptions": {

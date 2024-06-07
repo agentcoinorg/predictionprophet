@@ -1,7 +1,7 @@
 import streamlit as st
 from dotenv import load_dotenv
 from prediction_prophet.functions.web_search import web_search
-from prediction_prophet.functions.scrape_results import scrape_results, scrape_results_firescrap
+from prediction_prophet.functions.scrape_results import scrape_results, scrape_results_firecraw
 
 load_dotenv()
 st.set_page_config(layout="wide")
@@ -14,7 +14,7 @@ if not query:
 
 search = web_search(query)
 scrape = scrape_results(search)
-fire_scrape = scrape_results_firescrap(search)
+fire_scrape = scrape_results_firecraw(search)
 
 index = int(st.number_input("Index", min_value=0, max_value=len(search) - 1, value=0))
 
