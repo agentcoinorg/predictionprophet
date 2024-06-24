@@ -1,5 +1,5 @@
 # Prediction Prophet
-![](./docs/imgs/banner_hires.png)
+![](./docs/imgs/banner.png)
 
 ---
 
