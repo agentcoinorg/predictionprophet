@@ -19,7 +19,7 @@ Join our [Discord community](https://discord.gg/k7UCsH3ps9) for support and disc
 
 [![Join us on Discord](https://invidget.switchblade.xyz/k7UCsH3ps9)](https://discord.com/invite/k7UCsH3ps9)
 
-If you have questions or encounter issues, please don't hesitate to [create a new issue](https://github.com/polywrap/predictionprophet/issues/new) to get support.
+If you have questions or encounter issues, please don't hesitate to [create a new issue](https://github.com/agentcoinorg/predictionprophet/issues/new) to get support.
 
 
 ## How It Works
@@ -40,7 +40,7 @@ To elaborate further, given a question like `"Will Twitter implement a new misin
 ### Installation
 
 1. Clone the repository 
-    > `git clone https://github.com/polywrap/predictionprophet`
+    > `git clone https://github.com/agentcoinorg/predictionprophet`
 2. Copy the `.env.template` file and rename it to `.env`.  
     > `cp .env.template .env`
 3. Find the line that says OPENAI_API_KEY=, and add your unique [OpenAI](https://openai.com/) API Key  
