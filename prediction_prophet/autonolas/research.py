@@ -21,6 +21,7 @@ import requests
 from requests import Session
 import spacy
 import spacy.util
+import spacy.cli
 import tiktoken
 
 from langchain_openai import ChatOpenAI
