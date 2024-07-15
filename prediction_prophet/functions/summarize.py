@@ -3,7 +3,9 @@ from langchain_openai import ChatOpenAI
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.llm import LLMChain
-from langchain.chains.summarize import ReduceDocumentsChain, StuffDocumentsChain, MapReduceDocumentsChain
+from langchain.chains.combine_documents.reduce import ReduceDocumentsChain
+from langchain.chains.combine_documents.stuff import  StuffDocumentsChain
+from langchain.chains.combine_documents.map_reduce import MapReduceDocumentsChain
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 def summarize(objective: str, content: str) -> str:
