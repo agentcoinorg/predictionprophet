@@ -725,13 +725,13 @@ numpy = "*"
 
 [[package]]
 name = "chromadb"
-version = "0.4.22"
+version = "0.4.24"
 description = "Chroma."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "chromadb-0.4.22-py3-none-any.whl", hash = "sha256:ad210b27b4cda2f09d15adc9c83c81bfa66b69f39648a27b637306e40de0680d"},
-    {file = "chromadb-0.4.22.tar.gz", hash = "sha256:c793149e1c2bbbb52d77602c6c0594c5752f04cd9be12619250ddad2082af27a"},
+    {file = "chromadb-0.4.24-py3-none-any.whl", hash = "sha256:3a08e237a4ad28b5d176685bd22429a03717fe09d35022fb230d516108da01da"},
+    {file = "chromadb-0.4.24.tar.gz", hash = "sha256:a5c80b4e4ad9b236ed2d4899a5b9e8002b489293f2881cb2cadab5b199ee1c72"},
 ]
 
 [package.dependencies]
@@ -749,6 +749,7 @@ opentelemetry-api = ">=1.2.0"
 opentelemetry-exporter-otlp-proto-grpc = ">=1.2.0"
 opentelemetry-instrumentation-fastapi = ">=0.41b0"
 opentelemetry-sdk = ">=1.2.0"
+orjson = ">=3.9.12"
 overrides = ">=7.3.1"
 posthog = ">=2.4.0"
 pulsar-client = ">=3.1.0"
@@ -7166,4 +7167,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.10"
-content-hash = "75a91fae39a54f575c97f3748e3e525ed30c6aee3ddb76c1ddc4f6766f723ede"
+content-hash = "5373a44d5c0cd6ffb565ff62e7ebd1632cecbe7a610a93797f0d015f901c6cbe"

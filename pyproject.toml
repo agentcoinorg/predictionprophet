@@ -14,7 +14,7 @@ markdownify = "0.11.6"
 pandas = "2.1.1"
 pytest = "^8.0.0"
 openai = "^1.10.0"
-chromadb = "0.4.22"
+chromadb = "0.4.24"
 spacy = "3.7.5"
 en_core_web_md = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.1/en_core_web_md-3.7.1-py3-none-any.whl" }
 google-api-python-client = "2.95.0"
