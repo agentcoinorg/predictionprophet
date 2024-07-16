@@ -4,6 +4,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
+from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 
 rerank_queries_template = """
 I will present you with a list of queries to search the web for, for answers to the question: {goal}.
@@ -23,7 +24,7 @@ def rerank_subqueries(queries: list[str], goal: str, model: str, api_key: Secret
 
     rerank_results_chain = (
         rerank_results_prompt |
-        ChatOpenAI(model=model, api_key=api_key.get_secret_value() if api_key else None) |
+        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key)) |
         StrOutputParser()
     )
 

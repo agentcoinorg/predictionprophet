@@ -1,4 +1,5 @@
 import logging
+import typing as t
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from prediction_prophet.functions.create_embeddings_from_results import create_embeddings_from_results
@@ -9,6 +10,9 @@ from prediction_prophet.functions.rerank_subqueries import rerank_subqueries
 from prediction_prophet.functions.scrape_results import scrape_results
 from prediction_prophet.functions.search import search
 from pydantic.types import SecretStr
+
+if t.TYPE_CHECKING:
+    from loguru import Logger
 
 def research(
     goal: str,
@@ -22,7 +26,7 @@ def research(
     use_tavily_raw_content: bool = False,
     openai_api_key: SecretStr | None = None,
     tavily_api_key: SecretStr | None = None,
-    logger: logging.Logger = logging.getLogger()
+    logger: t.Union[logging.Logger, "Logger"] = logging.getLogger()
 ) -> str:
     logger.info("Started subqueries generation")
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)
