@@ -16,6 +16,9 @@ Return ONLY the web searches, separated by commas and without quotes.
 Limit your searches to {search_limit}.
 """
 def generate_subqueries(query: str, limit: int, model: str, api_key: SecretStr | None = None) -> list[str]:
+    if limit == 0:
+        return [query]
+
     if api_key == None:
         api_key = secret_str_from_env("OPENAI_API_KEY")
             
