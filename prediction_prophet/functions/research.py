@@ -29,7 +29,7 @@ def research(
     logger: t.Union[logging.Logger, "Logger"] = logging.getLogger()
 ) -> str:
     logger.info("Started subqueries generation")
-    queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key) if initial_subqueries_limit > 0 else [goal]
+    queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)
     
     stringified_queries = '\n- ' + '\n- '.join(queries)
     logger.info(f"Generated subqueries: {stringified_queries}")
