@@ -10,6 +10,7 @@ from prediction_prophet.functions.rerank_subqueries import rerank_subqueries
 from prediction_prophet.functions.scrape_results import scrape_results
 from prediction_prophet.functions.search import search
 from pydantic.types import SecretStr
+from prediction_market_agent_tooling.tools.tavily_cached.tavily_models import TavilyResponseCache
 
 if t.TYPE_CHECKING:
     from loguru import Logger
@@ -26,7 +27,8 @@ def research(
     use_tavily_raw_content: bool = False,
     openai_api_key: SecretStr | None = None,
     tavily_api_key: SecretStr | None = None,
-    logger: t.Union[logging.Logger, "Logger"] = logging.getLogger()
+    logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
+    tavily_cache: TavilyResponseCache | None = None,
 ) -> str:
     logger.info("Started subqueries generation")
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)
@@ -44,7 +46,8 @@ def research(
     search_results_with_queries = search(
         queries, 
         lambda result: not result.url.startswith("https://www.youtube"),
-        tavily_api_key=tavily_api_key
+        tavily_api_key=tavily_api_key,
+        tavily_cache=tavily_cache,
     )
 
     if not search_results_with_queries:
