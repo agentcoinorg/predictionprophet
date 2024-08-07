@@ -2,7 +2,6 @@ import logging
 import typing as t
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-
 from prediction_prophet.functions.create_embeddings_from_results import create_embeddings_from_results
 from prediction_prophet.functions.generate_subqueries import generate_subqueries
 from prediction_prophet.functions.prepare_report import prepare_report, prepare_summary
