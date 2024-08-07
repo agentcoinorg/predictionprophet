@@ -24,6 +24,7 @@ from prediction_market_agent_tooling.benchmark.utils import (
 )
 from pydantic.types import SecretStr
 from prediction_prophet.autonolas.research import Prediction as LLMCompletionPredictionDict
+from prediction_market_agent_tooling.tools.tavily_cached.tavily_models import TavilyResponseCache
 
 def _make_prediction(
     market_question: str,
@@ -153,12 +154,14 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         use_summaries: bool = False,
         use_tavily_raw_content: bool = False,
         max_workers: t.Optional[int] = None,
+        tavily_cache: TavilyResponseCache | None = None,
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model: str = model
         self.temperature = temperature
         self.use_summaries = use_summaries
         self.use_tavily_raw_content = use_tavily_raw_content
+        self.tavily_cache = tavily_cache
 
     def is_predictable(self, market_question: str) -> bool:
         (result, _) = is_predictable(question=market_question)
@@ -174,6 +177,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             model=self.model,
             use_summaries=self.use_summaries,
             use_tavily_raw_content=self.use_tavily_raw_content,
+            tavily_cache=self.tavily_cache,
         )
     
     def predict(self, market_question: str) -> Prediction:
@@ -193,7 +197,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         self, market_question: str, time_restriction_up_to: datetime
     ) -> Prediction:
         def side_effect(*args: t.Any, **kwargs: t.Any) -> list[tuple[str, WebSearchResult]]:
-            results: list[tuple[str, WebSearchResult]] = search(*args, **kwargs)
+            results: list[tuple[str, WebSearchResult]] = search(*args, tavily_cache=self.tavily_cache, **kwargs)
             results_filtered = [
                 r for r in results
                 if url_is_older_than(r[1].url, time_restriction_up_to)
