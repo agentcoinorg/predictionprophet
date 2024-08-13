@@ -1197,13 +1197,10 @@ def make_prediction(
 
     prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
 
-    config: RunnableConfig = {}
-    if add_langfuse_callback:
-        config["callbacks"] = [langfuse_context.get_current_langchain_handler()]
-
+    callbacks = [langfuse_context.get_current_langchain_handler()] if add_langfuse_callback else None
     llm = ChatOpenAI(model=engine, temperature=temperature, api_key=secretstr_to_v1_secretstr(api_key))
     formatted_messages = prediction_prompt.format_messages(user_prompt=prompt, additional_information=additional_information, timestamp=formatted_time_utc)
-    generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5, config=config)
+    generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5, callbacks=callbacks)
 
     completion = generation.generations[0][0].text
 

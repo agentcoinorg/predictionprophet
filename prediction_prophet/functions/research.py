@@ -73,7 +73,7 @@ def research(
         raise ValueError(f"No search results found for the goal {goal}.")
 
     scrape_args = [result for (_, result) in search_results_with_queries]
-    websites_to_scrape = sorted(set(result.url for result in scrape_args))
+    websites_to_scrape = set(result.url for result in scrape_args)
     
     stringified_websites = '\n- ' + '\n- '.join(websites_to_scrape)
     logger.info(f"Found the following relevant results: {stringified_websites}")
@@ -148,6 +148,6 @@ def research(
         all_queries=all_queries,
         reranked_queries=queries,
         report=report,
-        websites_to_scrape=websites_to_scrape,
+        websites_to_scrape=list(websites_to_scrape),
         websites_scraped=scraped,
     )
