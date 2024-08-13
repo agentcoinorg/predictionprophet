@@ -5,6 +5,8 @@ from langchain.prompts import ChatPromptTemplate
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
+from langfuse.decorators import langfuse_context
+from langchain_core.runnables.config import RunnableConfig
 
 
 subquery_generation_template = """
@@ -15,7 +17,7 @@ Return ONLY the web searches, separated by commas and without quotes.
 
 Limit your searches to {search_limit}.
 """
-def generate_subqueries(query: str, limit: int, model: str, api_key: SecretStr | None = None) -> list[str]:
+def generate_subqueries(query: str, limit: int, model: str, api_key: SecretStr | None = None, add_langfuse_callback: bool = False) -> list[str]:
     if limit == 0:
         return [query]
 
@@ -29,6 +31,10 @@ def generate_subqueries(query: str, limit: int, model: str, api_key: SecretStr |
         ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key)) |
         CommaSeparatedListOutputParser()
     )
+
+    config: RunnableConfig = {}
+    if add_langfuse_callback:
+        config["callbacks"] = [langfuse_context.get_current_langchain_handler()]
 
     subqueries = subquery_generation_chain.invoke({
         "query": query,

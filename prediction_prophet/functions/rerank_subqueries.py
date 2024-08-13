@@ -5,6 +5,8 @@ from langchain.schema.output_parser import StrOutputParser
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
+from langfuse.decorators import langfuse_context
+from langchain_core.runnables.config import RunnableConfig
 
 rerank_queries_template = """
 I will present you with a list of queries to search the web for, for answers to the question: {goal}.
@@ -16,7 +18,7 @@ Return them, in order of relevance, as a comma separated list of strings.
 
 Queries: {queries}
 """
-def rerank_subqueries(queries: list[str], goal: str, model: str, api_key: SecretStr | None = None) -> list[str]:
+def rerank_subqueries(queries: list[str], goal: str, model: str, api_key: SecretStr | None = None, add_langfuse_callback: bool = False) -> list[str]:
     if api_key == None:
         api_key = secret_str_from_env("OPENAI_API_KEY")
             
@@ -28,9 +30,13 @@ def rerank_subqueries(queries: list[str], goal: str, model: str, api_key: Secret
         StrOutputParser()
     )
 
+    config: RunnableConfig = {}
+    if add_langfuse_callback:
+        config["callbacks"] = [langfuse_context.get_current_langchain_handler()]
+
     responses: str = rerank_results_chain.invoke({
         "goal": goal,
         "queries": "\n---query---\n".join(queries)
-    })
+    }, config=config)
 
     return responses.split(",")
