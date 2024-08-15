@@ -118,15 +118,24 @@ class OlasAgent(AbstractBenchmarkedAgent):
             embedding_model=self.embedding_model,
             add_langfuse_callback=add_langfuse_callback,
         )
+    
+    def make_prediction(
+        self, market_question: str, additional_information: str, add_langfuse_callback: bool = False
+    ) -> Prediction:
+        return _make_prediction(
+            market_question=market_question,
+            additional_information=additional_information,
+            engine=self.model,
+            temperature=self.temperature,
+            add_langfuse_callback=add_langfuse_callback,
+    )
 
     def predict(self, market_question: str, add_langfuse_callback: bool = False) -> Prediction:
         try:
             researched = self.research(market_question=market_question, add_langfuse_callback=add_langfuse_callback)
-            return _make_prediction(
+            return self.make_prediction(
                 market_question=market_question,
                 additional_information=researched,
-                engine=self.model,
-                temperature=self.temperature,
                 add_langfuse_callback=add_langfuse_callback,
             )
         except ValueError as e:
@@ -180,15 +189,25 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             use_tavily_raw_content=self.use_tavily_raw_content,
             add_langfuse_callback=add_langfuse_callback,
         )
+    
+
+    def make_prediction(
+        self, market_question: str, additional_information: str, add_langfuse_callback: bool = False
+    ) -> Prediction:
+        return _make_prediction(
+            market_question=market_question,
+            additional_information=additional_information,
+            engine=self.model,
+            temperature=self.temperature,
+            add_langfuse_callback=add_langfuse_callback,
+    )
 
     def predict(self, market_question: str, add_langfuse_callback: bool = False) -> Prediction:
         try:
             research = self.research(market_question, add_langfuse_callback=add_langfuse_callback)
-            return _make_prediction(
+            return self.make_prediction(
                 market_question=market_question,
                 additional_information=research.report,
-                engine=self.model,
-                temperature=self.temperature,
                 add_langfuse_callback=add_langfuse_callback,
             )
         except ValueError as e:
