@@ -134,7 +134,8 @@ def research(
                 content,
                 "gpt-3.5-turbo-0125",
                 api_key=openai_api_key,
-                trim_content_to_tokens=14_000
+                trim_content_to_tokens=14_000,
+                add_langfuse_callback=add_langfuse_callback,
             )
             for content in url_to_content_deemed_most_useful.values()
         ]

@@ -39,6 +39,6 @@ def generate_subqueries(query: str, limit: int, model: str, api_key: SecretStr |
     subqueries = subquery_generation_chain.invoke({
         "query": query,
         "search_limit": limit
-    })
+    }, config=config)
 
     return [query] + [subquery.strip('\"') for subquery in subqueries]

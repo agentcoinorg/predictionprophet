@@ -13,7 +13,7 @@ from langfuse.decorators import langfuse_context
 from langchain_core.runnables.config import RunnableConfig
 
 @persistent_inmemory_cache
-def prepare_summary(goal: str, content: str, model: str, api_key: SecretStr | None = None, trim_content_to_tokens: t.Optional[int] = None) -> str:
+def prepare_summary(goal: str, content: str, model: str, api_key: SecretStr | None = None, trim_content_to_tokens: t.Optional[int] = None, add_langfuse_callback: bool = False) -> str:
     if api_key == None:
         api_key = secret_str_from_env("OPENAI_API_KEY")
     
@@ -34,10 +34,14 @@ Content:
         StrOutputParser()
     )
 
+    config: RunnableConfig = {}
+    if add_langfuse_callback:
+        config["callbacks"] = [langfuse_context.get_current_langchain_handler()]
+
     response: str = research_evaluation_chain.invoke({
         "goal": goal,
         "content": content
-    })
+    }, config=config)
 
     return response
 
