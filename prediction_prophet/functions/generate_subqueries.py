@@ -5,7 +5,7 @@ from langchain.prompts import ChatPromptTemplate
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
-from prediction_market_agent_tooling.tools.langfuse_ import get_langfuse_langchain_config
+from prediction_market_agent_tooling.tools.langfuse_ import get_langfuse_langchain_config, observe
 
 
 subquery_generation_template = """
@@ -16,6 +16,7 @@ Return ONLY the web searches, separated by commas and without quotes.
 
 Limit your searches to {search_limit}.
 """
+@observe()
 def generate_subqueries(query: str, limit: int, model: str, api_key: SecretStr | None = None) -> list[str]:
     if limit == 0:
         return [query]

@@ -9,9 +9,10 @@ from prediction_prophet.functions.utils import trim_to_n_tokens
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
-from prediction_market_agent_tooling.tools.langfuse_ import get_langfuse_langchain_config
+from prediction_market_agent_tooling.tools.langfuse_ import get_langfuse_langchain_config, observe
 
 @persistent_inmemory_cache
+@observe()
 def prepare_summary(goal: str, content: str, model: str, api_key: SecretStr | None = None, trim_content_to_tokens: t.Optional[int] = None) -> str:
     if api_key == None:
         api_key = secret_str_from_env("OPENAI_API_KEY")
@@ -41,6 +42,7 @@ Content:
     return response
 
 
+@observe()
 def prepare_report(goal: str, scraped: list[str], model: str, api_key: SecretStr | None = None) -> str:
     if api_key == None:
         api_key = secret_str_from_env("OPENAI_API_KEY")
