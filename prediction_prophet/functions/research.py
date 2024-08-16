@@ -11,6 +11,7 @@ from prediction_prophet.functions.scrape_results import scrape_results
 from prediction_prophet.functions.search import search
 from pydantic.types import SecretStr
 from pydantic import BaseModel
+from prediction_market_agent_tooling.tools.langfuse_ import observe
 
 if t.TYPE_CHECKING:
     from loguru import Logger
@@ -24,6 +25,7 @@ class Research(BaseModel):
     websites_scraped: list[WebScrapeResult]
 
 
+@observe()
 def research(
     goal: str,
     use_summaries: bool,
@@ -39,7 +41,6 @@ def research(
     openai_api_key: SecretStr | None = None,
     tavily_api_key: SecretStr | None = None,
     logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
-    add_langfuse_callback: bool = False,
 ) -> Research:
     # Validate args
     if min_scraped_sites > max_results_per_search * subqueries_limit:
@@ -50,13 +51,13 @@ def research(
         )
 
     logger.info("Started subqueries generation")
-    all_queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key, add_langfuse_callback=add_langfuse_callback)
+    all_queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)
     
     stringified_queries = '\n- ' + '\n- '.join(all_queries)
     logger.info(f"Generated subqueries: {stringified_queries}")
     
     logger.info("Started subqueries reranking")
-    queries = rerank_subqueries(queries=all_queries, goal=goal, model=model, api_key=openai_api_key, add_langfuse_callback=add_langfuse_callback)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else all_queries
+    queries = rerank_subqueries(queries=all_queries, goal=goal, model=model, api_key=openai_api_key)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else all_queries
 
     stringified_queries = '\n- ' + '\n- '.join(queries)
     logger.info(f"Reranked subqueries. Will use top {subqueries_limit}: {stringified_queries}")
@@ -135,14 +136,13 @@ def research(
                 "gpt-3.5-turbo-0125",
                 api_key=openai_api_key,
                 trim_content_to_tokens=14_000,
-                add_langfuse_callback=add_langfuse_callback,
             )
             for content in url_to_content_deemed_most_useful.values()
         ]
         logger.info(f"Information summarized")
 
     logger.info(f"Started preparing report")
-    report = prepare_report(goal, vector_result_texts, model=model, api_key=openai_api_key, add_langfuse_callback=add_langfuse_callback)
+    report = prepare_report(goal, vector_result_texts, model=model, api_key=openai_api_key)
     logger.info(f"Report prepared")
 
     return Research(

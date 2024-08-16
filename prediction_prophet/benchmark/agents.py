@@ -24,14 +24,16 @@ from prediction_market_agent_tooling.benchmark.utils import (
 )
 from pydantic.types import SecretStr
 from prediction_prophet.autonolas.research import Prediction as LLMCompletionPredictionDict
+from prediction_market_agent_tooling.tools.langfuse_ import observe
 
+
+@observe()
 def _make_prediction(
     market_question: str,
     additional_information: str,
     engine: str,
     temperature: float,
     api_key: SecretStr | None = None,
-    add_langfuse_callback: bool = False,
 ) -> Prediction:
     """
     We prompt model to output a simple flat JSON and convert it to a more structured pydantic model here.
@@ -42,7 +44,6 @@ def _make_prediction(
         engine=engine,
         temperature=temperature,
         api_key=api_key,
-        add_langfuse_callback=add_langfuse_callback,
     )
     return completion_prediction_json_to_pydantic_model(
         prediction
@@ -111,32 +112,21 @@ class OlasAgent(AbstractBenchmarkedAgent):
         (result, _) = is_predictable(question=market_question)
         return result
     
-    def research(self, market_question: str, add_langfuse_callback: bool = False) -> str:
+    def research(self, market_question: str) -> str:
         return research_autonolas(
             prompt=market_question,
             engine=self.model,
             embedding_model=self.embedding_model,
-            add_langfuse_callback=add_langfuse_callback,
         )
-    
-    def make_prediction(
-        self, market_question: str, additional_information: str, add_langfuse_callback: bool = False
-    ) -> Prediction:
-        return _make_prediction(
-            market_question=market_question,
-            additional_information=additional_information,
-            engine=self.model,
-            temperature=self.temperature,
-            add_langfuse_callback=add_langfuse_callback,
-    )
 
-    def predict(self, market_question: str, add_langfuse_callback: bool = False) -> Prediction:
+    def predict(self, market_question: str) -> Prediction:
         try:
-            researched = self.research(market_question=market_question, add_langfuse_callback=add_langfuse_callback)
-            return self.make_prediction(
+            researched = self.research(market_question=market_question)
+            return _make_prediction(
                 market_question=market_question,
                 additional_information=researched,
-                add_langfuse_callback=add_langfuse_callback,
+                engine=self.model,
+                temperature=self.temperature,
             )
         except ValueError as e:
             print(f"Error in OlasAgent's predict: {e}")
@@ -181,35 +171,23 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         (result, _) = is_predictable(question=market_question)
         return result
     
-    def research(self, market_question: str, add_langfuse_callback: bool = False) -> Research:
+    def research(self, market_question: str) -> Research:
         return prophet_research(
             goal=market_question,
             model=self.model,
             use_summaries=self.use_summaries,
             use_tavily_raw_content=self.use_tavily_raw_content,
-            add_langfuse_callback=add_langfuse_callback,
         )
-    
 
-    def make_prediction(
-        self, market_question: str, additional_information: str, add_langfuse_callback: bool = False
-    ) -> Prediction:
-        return _make_prediction(
-            market_question=market_question,
-            additional_information=additional_information,
-            engine=self.model,
-            temperature=self.temperature,
-            add_langfuse_callback=add_langfuse_callback,
-    )
-
-    def predict(self, market_question: str, add_langfuse_callback: bool = False) -> Prediction:
+    def predict(self, market_question: str) -> Prediction:
         try:
-            research = self.research(market_question, add_langfuse_callback=add_langfuse_callback)
-            return self.make_prediction(
+            research = self.research(market_question)
+            return _make_prediction(
                 market_question=market_question,
                 additional_information=research.report,
-                add_langfuse_callback=add_langfuse_callback,
-            )
+                engine=self.model,
+                temperature=self.temperature,
+        )
         except ValueError as e:
             print(f"Error in PredictionProphet's predict: {e}")
             return Prediction()
@@ -245,12 +223,12 @@ class RephrasingOlasAgent(OlasAgent):
             max_workers=max_workers,
         )
 
-    def research(self, market_question: str, add_langfuse_callback: bool = False) -> str:
+    def research(self, market_question: str) -> str:
         questions = rephrase_question(question=market_question)
 
-        report_original = super().research(market_question=questions.original_question, add_langfuse_callback=add_langfuse_callback)
-        report_negated = super().research(market_question=questions.negated_question, add_langfuse_callback=add_langfuse_callback)
-        report_universal = super().research(market_question=questions.open_ended_question, add_langfuse_callback=add_langfuse_callback)
+        report_original = super().research(market_question=questions.original_question)
+        report_negated = super().research(market_question=questions.negated_question)
+        report_universal = super().research(market_question=questions.open_ended_question)
 
         report_concat = "\n\n---\n\n".join(
             [

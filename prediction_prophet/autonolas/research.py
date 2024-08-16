@@ -38,7 +38,7 @@ from prediction_prophet.functions.parallelism import par_map
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 from langfuse.decorators import langfuse_context
-from langchain_core.runnables.config import RunnableConfig
+from prediction_market_agent_tooling.tools.langfuse_ import get_langfuse_langchain_config, observe
 
 load_dotenv()
 
@@ -1038,6 +1038,7 @@ def join_and_group_sentences(
     return final_output
 
 
+@observe()
 def fetch_additional_information(
     event_question: str,
     max_add_words: int,
@@ -1046,7 +1047,6 @@ def fetch_additional_information(
     engine: str = "gpt-3.5-turbo",
     temperature: float = 0.5,
     max_compl_tokens: int = 500,
-    add_langfuse_callback: bool = False,
 ) -> str:
     """
     Get urls from a web search and extract relevant information based on an event question.
@@ -1078,10 +1078,6 @@ def fetch_additional_information(
         ("user", url_query_prompt),
     ]
 
-    config: RunnableConfig = {}
-    if add_langfuse_callback:
-        config["callbacks"] = [langfuse_context.get_current_langchain_handler()]
-
     # Fetch queries from the OpenAI engine
     research_prompt = ChatPromptTemplate.from_messages(messages=messages)
     research_chain = (
@@ -1095,7 +1091,7 @@ def fetch_additional_information(
         ) |
         StrOutputParser()
     )
-    response = research_chain.invoke({}, config=config)
+    response = research_chain.invoke({}, config=get_langfuse_langchain_config())
 
     # Parse the response content
     try:
@@ -1124,13 +1120,13 @@ def fetch_additional_information(
     return additional_informations
 
 
+@observe()
 def research(
     prompt: str,
     max_tokens: int | None = None,
     temperature: float | None = None,
     engine: str = "gpt-3.5-turbo",
     embedding_model: EmbeddingModel = EmbeddingModel.spacy,
-    add_langfuse_callback: bool = False,
 ) -> str:
     prompt = f"\"{prompt}\""
     max_compl_tokens =  max_tokens or DEFAULT_OPENAI_SETTINGS["max_compl_tokens"]
@@ -1164,7 +1160,6 @@ def research(
         nlp=nlp,
         max_add_words=max_add_words,
         embedding_model=embedding_model,
-        add_langfuse_callback=add_langfuse_callback,
     )
 
     # Truncate additional information to stay within the chat completion token limit of 4096
@@ -1181,13 +1176,13 @@ def research(
     return additional_information
 
 
+@observe()
 def make_prediction(
     prompt: str,
     additional_information: str,
     temperature: float = 0.7,
     engine: str = "gpt-3.5-turbo-0125",
     api_key: SecretStr | None = None,
-    add_langfuse_callback: bool = False,
 ) -> Prediction:
     if api_key == None:
         api_key = secret_str_from_env("OPENAI_API_KEY")
@@ -1197,10 +1192,9 @@ def make_prediction(
 
     prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
 
-    callbacks = [langfuse_context.get_current_langchain_handler()] if add_langfuse_callback else None
     llm = ChatOpenAI(model=engine, temperature=temperature, api_key=secretstr_to_v1_secretstr(api_key))
     formatted_messages = prediction_prompt.format_messages(user_prompt=prompt, additional_information=additional_information, timestamp=formatted_time_utc)
-    generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5, callbacks=callbacks)
+    generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5, callbacks=[langfuse_context.get_current_langchain_handler()])
 
     completion = generation.generations[0][0].text
 
