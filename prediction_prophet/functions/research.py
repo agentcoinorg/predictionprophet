@@ -132,5 +132,6 @@ def research(
     logger.info(f"Started preparing report")
     report = prepare_report(goal, vector_result_texts, model=model, api_key=openai_api_key)
     logger.info(f"Report prepared")
+    logger.info(report)
 
     return report
