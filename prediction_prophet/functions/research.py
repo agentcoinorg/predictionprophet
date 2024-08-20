@@ -21,6 +21,8 @@ def research(
     model: str = "gpt-4-0125-preview",
     initial_subqueries_limit: int = 20,
     subqueries_limit: int = 4,
+    max_results_per_search: int = 5,
+    min_scraped_sites: int = 0,
     scrape_content_split_chunk_size: int = 800,
     scrape_content_split_chunk_overlap: int = 225,
     top_k_per_query: int = 8,
@@ -30,6 +32,14 @@ def research(
     logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
     tavily_storage: TavilyStorage | None = None,
 ) -> str:
+    # Validate args
+    if min_scraped_sites > max_results_per_search * subqueries_limit:
+        raise ValueError(
+            f"min_scraped_sites ({min_scraped_sites}) must be less than or "
+            f"equal to max_results_per_search ({max_results_per_search}) * "
+            f"subqueries_limit ({subqueries_limit})."
+        )
+
     logger.info("Started subqueries generation")
     queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)
     
@@ -44,10 +54,11 @@ def research(
     
     logger.info(f"Started web searching")
     search_results_with_queries = search(
-        queries, 
+        queries,
         lambda result: not result.url.startswith("https://www.youtube"),
         tavily_api_key=tavily_api_key,
         tavily_storage=tavily_storage,
+        max_results_per_search=max_results_per_search,
     )
 
     if not search_results_with_queries:
@@ -67,7 +78,18 @@ def research(
         content=result.raw_content,
     ) for result in scrape_args if result.raw_content]
     scraped = [result for result in scraped if result.content != ""]
-    
+
+    unique_scraped_websites = set([result.url for result in scraped])
+    if len(scraped) < min_scraped_sites:
+        # Get urls that were not scraped
+        raise ValueError(
+            f"Only successfully scraped content from "
+            f"{len(unique_scraped_websites)} websites, out of a possible "
+            f"{len(websites_to_scrape)} websites, which is less than the "
+            f"minimum required ({min_scraped_sites}). The following websites "
+            f"were not scraped: {websites_to_scrape - unique_scraped_websites}"
+        )
+
     logger.info(f"Scraped content from {len(scraped)} websites")
 
     text_splitter = RecursiveCharacterTextSplitter(
@@ -113,5 +135,6 @@ def research(
     logger.info(f"Started preparing report")
     report = prepare_report(goal, vector_result_texts, model=model, api_key=openai_api_key)
     logger.info(f"Report prepared")
+    logger.info(report)
 
     return report
