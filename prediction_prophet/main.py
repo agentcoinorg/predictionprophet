@@ -1,5 +1,5 @@
 import logging
-from altair import cast
+from typing import cast
 import click
 import time
 from dotenv import load_dotenv
