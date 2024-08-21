@@ -10,11 +10,23 @@ from prediction_prophet.functions.rerank_subqueries import rerank_subqueries
 from prediction_prophet.functions.scrape_results import scrape_results
 from prediction_prophet.functions.search import search
 from pydantic.types import SecretStr
+from pydantic import BaseModel
+from prediction_market_agent_tooling.tools.langfuse_ import observe
 from prediction_market_agent_tooling.tools.tavily_storage.tavily_models import TavilyStorage
 
 if t.TYPE_CHECKING:
     from loguru import Logger
 
+
+class Research(BaseModel):
+    report: str
+    all_queries: list[str]
+    reranked_queries: list[str]
+    websites_to_scrape: list[str]
+    websites_scraped: list[WebScrapeResult]
+
+
+@observe()
 def research(
     goal: str,
     use_summaries: bool,
@@ -31,7 +43,7 @@ def research(
     tavily_api_key: SecretStr | None = None,
     logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
     tavily_storage: TavilyStorage | None = None,
-) -> str:
+) -> Research:
     # Validate args
     if min_scraped_sites > max_results_per_search * subqueries_limit:
         raise ValueError(
@@ -41,13 +53,13 @@ def research(
         )
 
     logger.info("Started subqueries generation")
-    queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)
+    all_queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)
     
-    stringified_queries = '\n- ' + '\n- '.join(queries)
+    stringified_queries = '\n- ' + '\n- '.join(all_queries)
     logger.info(f"Generated subqueries: {stringified_queries}")
     
     logger.info("Started subqueries reranking")
-    queries = rerank_subqueries(queries=queries, goal=goal, model=model, api_key=openai_api_key)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
+    queries = rerank_subqueries(queries=all_queries, goal=goal, model=model, api_key=openai_api_key)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else all_queries
 
     stringified_queries = '\n- ' + '\n- '.join(queries)
     logger.info(f"Reranked subqueries. Will use top {subqueries_limit}: {stringified_queries}")
@@ -65,7 +77,7 @@ def research(
         raise ValueError(f"No search results found for the goal {goal}.")
 
     scrape_args = [result for (_, result) in search_results_with_queries]
-    websites_to_scrape = set([result.url for result in scrape_args])
+    websites_to_scrape = set(result.url for result in scrape_args)
     
     stringified_websites = '\n- ' + '\n- '.join(websites_to_scrape)
     logger.info(f"Found the following relevant results: {stringified_websites}")
@@ -126,7 +138,7 @@ def research(
                 content,
                 "gpt-3.5-turbo-0125",
                 api_key=openai_api_key,
-                trim_content_to_tokens=14_000
+                trim_content_to_tokens=14_000,
             )
             for content in url_to_content_deemed_most_useful.values()
         ]
@@ -137,4 +149,10 @@ def research(
     logger.info(f"Report prepared")
     logger.info(report)
 
-    return report
+    return Research(
+        all_queries=all_queries,
+        reranked_queries=queries,
+        report=report,
+        websites_to_scrape=list(websites_to_scrape),
+        websites_scraped=scraped,
+    )

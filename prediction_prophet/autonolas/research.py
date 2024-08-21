@@ -37,6 +37,8 @@ from prediction_prophet.functions.cache import persistent_inmemory_cache
 from prediction_prophet.functions.parallelism import par_map
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
+from langfuse.decorators import langfuse_context
+from prediction_market_agent_tooling.tools.langfuse_ import get_langfuse_langchain_config, observe
 
 load_dotenv()
 
@@ -1036,6 +1038,7 @@ def join_and_group_sentences(
     return final_output
 
 
+@observe()
 def fetch_additional_information(
     event_question: str,
     max_add_words: int,
@@ -1088,7 +1091,7 @@ def fetch_additional_information(
         ) |
         StrOutputParser()
     )
-    response = research_chain.invoke({})
+    response = research_chain.invoke({}, config=get_langfuse_langchain_config())
 
     # Parse the response content
     try:
@@ -1117,6 +1120,7 @@ def fetch_additional_information(
     return additional_informations
 
 
+@observe()
 def research(
     prompt: str,
     max_tokens: int | None = None,
@@ -1165,19 +1169,20 @@ def research(
         enc=enc,
     )
 
-    # Spacy loads ~500MB into memory, make it free it with force.
+    # Spacy loads ~500MB into memory. Free it with force.
     del nlp
     gc.collect()
     
     return additional_information
 
 
+@observe()
 def make_prediction(
     prompt: str,
     additional_information: str,
     temperature: float = 0.7,
     engine: str = "gpt-3.5-turbo-0125",
-    api_key: SecretStr | None = None
+    api_key: SecretStr | None = None,
 ) -> Prediction:
     if api_key == None:
         api_key = secret_str_from_env("OPENAI_API_KEY")
@@ -1189,7 +1194,7 @@ def make_prediction(
 
     llm = ChatOpenAI(model=engine, temperature=temperature, api_key=secretstr_to_v1_secretstr(api_key))
     formatted_messages = prediction_prompt.format_messages(user_prompt=prompt, additional_information=additional_information, timestamp=formatted_time_utc)
-    generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5)
+    generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5, callbacks=[langfuse_context.get_current_langchain_handler()])
 
     completion = generation.generations[0][0].text
 

@@ -13,7 +13,7 @@ from prediction_prophet.autonolas.research import make_prediction, get_urls_from
 from prediction_prophet.autonolas.research import research as research_autonolas
 from prediction_prophet.functions.evaluate_question import is_predictable
 from prediction_prophet.functions.rephrase_question import rephrase_question
-from prediction_prophet.functions.research import research as prophet_research
+from prediction_prophet.functions.research import Research, research as prophet_research
 from prediction_prophet.functions.search import search
 from prediction_prophet.functions.utils import url_is_older_than
 from prediction_prophet.models.WebSearchResult import WebSearchResult
@@ -25,18 +25,20 @@ from prediction_market_agent_tooling.benchmark.utils import (
 )
 from pydantic.types import SecretStr
 from prediction_prophet.autonolas.research import Prediction as LLMCompletionPredictionDict
+from prediction_market_agent_tooling.tools.langfuse_ import observe
 from prediction_market_agent_tooling.tools.tavily_storage.tavily_models import TavilyStorage
 
 if t.TYPE_CHECKING:
     from loguru import Logger
 
 
+@observe()
 def _make_prediction(
     market_question: str,
     additional_information: str,
     engine: str,
     temperature: float,
-    api_key: SecretStr | None = None
+    api_key: SecretStr | None = None,
 ) -> Prediction:
     """
     We prompt model to output a simple flat JSON and convert it to a more structured pydantic model here.
@@ -46,7 +48,7 @@ def _make_prediction(
         additional_information=additional_information,
         engine=engine,
         temperature=temperature,
-        api_key=api_key
+        api_key=api_key,
     )
     return completion_prediction_json_to_pydantic_model(
         prediction
@@ -178,7 +180,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         (result, _) = is_predictable(question=market_question)
         return result
     
-    def research(self, market_question: str) -> str:
+    def research(self, market_question: str) -> Research:
         return prophet_research(
             goal=market_question,
             model=self.model,
@@ -187,16 +189,16 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             tavily_storage=self.tavily_storage,
             logger=self.logger,
         )
-    
+
     def predict(self, market_question: str) -> Prediction:
         try:
-            report = self.research(market_question)
+            research = self.research(market_question)
             return _make_prediction(
                 market_question=market_question,
-                additional_information=report,
+                additional_information=research.report,
                 engine=self.model,
                 temperature=self.temperature,
-            )
+        )
         except ValueError as e:
             print(f"Error in PredictionProphet's predict: {e}")
             return Prediction()
