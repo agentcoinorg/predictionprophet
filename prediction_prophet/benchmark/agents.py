@@ -1,3 +1,4 @@
+import logging
 import typing as t
 
 from prediction_market_agent_tooling.benchmark.agents import (
@@ -25,6 +26,10 @@ from prediction_market_agent_tooling.benchmark.utils import (
 from pydantic.types import SecretStr
 from prediction_prophet.autonolas.research import Prediction as LLMCompletionPredictionDict
 from prediction_market_agent_tooling.tools.langfuse_ import observe
+from prediction_market_agent_tooling.tools.tavily_storage.tavily_models import TavilyStorage
+
+if t.TYPE_CHECKING:
+    from loguru import Logger
 
 
 @observe()
@@ -156,12 +161,16 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         use_summaries: bool = False,
         use_tavily_raw_content: bool = False,
         max_workers: t.Optional[int] = None,
+        tavily_storage: TavilyStorage | None = None,
+        logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model: str = model
         self.temperature = temperature
         self.use_summaries = use_summaries
         self.use_tavily_raw_content = use_tavily_raw_content
+        self.tavily_storage = tavily_storage
+        self.logger = logger
 
     def is_predictable(self, market_question: str) -> bool:
         (result, _) = is_predictable(question=market_question)
@@ -177,6 +186,8 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             model=self.model,
             use_summaries=self.use_summaries,
             use_tavily_raw_content=self.use_tavily_raw_content,
+            tavily_storage=self.tavily_storage,
+            logger=self.logger,
         )
 
     def predict(self, market_question: str) -> Prediction:
