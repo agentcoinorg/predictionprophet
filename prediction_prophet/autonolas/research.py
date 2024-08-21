@@ -1169,7 +1169,7 @@ def research(
         enc=enc,
     )
 
-    # Spacy loads ~500MB into memory, make it free with force.
+    # Spacy loads ~500MB into memory. Free it with force.
     del nlp
     gc.collect()
     
