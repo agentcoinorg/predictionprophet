@@ -19,7 +19,7 @@ def safe_web_search(
     try:
         return web_search(query, max_results, tavily_api_key, tavily_storage)
     except Exception as e:
-        logger.error(f"Error when searching for `{query}` in web_search: {e}")
+        logger.warning(f"Error when searching for `{query}` in web_search: {e}")
         return None
 
 
