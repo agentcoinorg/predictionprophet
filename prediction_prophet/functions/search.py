@@ -1,16 +1,25 @@
-import requests
+import logging
 import typing as t
 from prediction_prophet.functions.web_search import WebSearchResult, web_search
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.tools.tavily_storage.tavily_models import TavilyStorage
 
+if t.TYPE_CHECKING:
+    from loguru import Logger
 
-def safe_web_search(query: str, max_results: int = 5, tavily_api_key: SecretStr | None = None, tavily_storage: TavilyStorage | None = None) -> t.Optional[list[WebSearchResult]]:
+
+def safe_web_search(
+    query: str, 
+    max_results: int = 5, 
+    tavily_api_key: SecretStr | None = None, 
+    tavily_storage: TavilyStorage | None = None,
+    logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
+) -> t.Optional[list[WebSearchResult]]:
     try:
         return web_search(query, max_results, tavily_api_key, tavily_storage)
-    except requests.exceptions.HTTPError as e:
-        print(f"Error in web_search: {e}")
+    except Exception as e:
+        logger.error(f"Error when searching for `{query}` in web_search: {e}")
         return None
 
 
@@ -20,6 +29,7 @@ def search(
     tavily_api_key: SecretStr | None = None,
     tavily_storage: TavilyStorage | None = None,
     max_results_per_search: int = 5,
+    logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
 ) -> list[tuple[str, WebSearchResult]]:
     maybe_results: list[t.Optional[list[WebSearchResult]]] = []
 
@@ -32,7 +42,7 @@ def search(
 
     results = [result for result in maybe_results if result is not None]
     if len(results) != len(maybe_results):
-        print(f"Warning: {len(maybe_results) - len(results)} queries out of {len(maybe_results)} failed to return results.")
+        logger.warning(f"{len(maybe_results) - len(results)} queries out of {len(maybe_results)} failed to return results.")
 
     results_with_queries: list[tuple[str, WebSearchResult]] = []
 
