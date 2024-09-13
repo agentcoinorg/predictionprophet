@@ -1196,7 +1196,7 @@ def make_prediction(
 
     llm = ChatOpenAI(model=engine, temperature=temperature, api_key=secretstr_to_v1_secretstr(api_key))
     formatted_messages = prediction_prompt.format_messages(user_prompt=prompt, additional_information=additional_information, timestamp=formatted_time_utc)
-    generation = llm.generate([formatted_messages], logprobs=log_probs, top_logprobs=top_logprobs, callbacks=[langfuse_context.get_current_langchain_handler()])
+    generation = llm.generate([formatted_messages], logprobs=log_probs, top_logprobs=top_logprobs if log_probs else None, callbacks=[langfuse_context.get_current_langchain_handler()])
 
     completion = generation.generations[0][0].text
 
