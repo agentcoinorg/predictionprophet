@@ -31,6 +31,7 @@ def research(
     goal: str,
     use_summaries: bool,
     model: str = "gpt-4-0125-preview",
+    temperature: float = 0.7,
     initial_subqueries_limit: int = 20,
     subqueries_limit: int = 4,
     max_results_per_search: int = 5,
@@ -53,13 +54,13 @@ def research(
         )
 
     logger.info("Started subqueries generation")
-    all_queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, api_key=openai_api_key)
+    all_queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, temperature=temperature, api_key=openai_api_key)
     
     stringified_queries = '\n- ' + '\n- '.join(all_queries)
     logger.info(f"Generated subqueries: {stringified_queries}")
     
     logger.info("Started subqueries reranking")
-    queries = rerank_subqueries(queries=all_queries, goal=goal, model=model, api_key=openai_api_key)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else all_queries
+    queries = rerank_subqueries(queries=all_queries, goal=goal, model=model, temperature=temperature, api_key=openai_api_key)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else all_queries
 
     stringified_queries = '\n- ' + '\n- '.join(queries)
     logger.info(f"Reranked subqueries. Will use top {subqueries_limit}: {stringified_queries}")
@@ -145,7 +146,7 @@ def research(
         logger.info(f"Information summarized")
 
     logger.info(f"Started preparing report")
-    report = prepare_report(goal, vector_result_texts, model=model, api_key=openai_api_key)
+    report = prepare_report(goal, vector_result_texts, model=model, temperature=temperature, api_key=openai_api_key)
     logger.info(f"Report prepared")
     logger.info(report)
 
