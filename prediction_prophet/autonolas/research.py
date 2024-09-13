@@ -1182,7 +1182,7 @@ def make_prediction(
     additional_information: str,
     temperature: float = 0.7,
     engine: str = "gpt-3.5-turbo-0125",
-    log_probs: bool = True,
+    log_probs: bool = False,
     top_logprobs: int = 5,
     api_key: SecretStr | None = None,
 ) -> Prediction:
