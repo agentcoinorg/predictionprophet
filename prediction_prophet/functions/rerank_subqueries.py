@@ -18,7 +18,7 @@ Return them, in order of relevance, as a comma separated list of strings.
 Queries: {queries}
 """
 @observe()
-def rerank_subqueries(queries: list[str], goal: str, model: str, api_key: SecretStr | None = None) -> list[str]:
+def rerank_subqueries(queries: list[str], goal: str, model: str, temperature: float, api_key: SecretStr | None = None) -> list[str]:
     if api_key == None:
         api_key = secret_str_from_env("OPENAI_API_KEY")
             
@@ -26,7 +26,7 @@ def rerank_subqueries(queries: list[str], goal: str, model: str, api_key: Secret
 
     rerank_results_chain = (
         rerank_results_prompt |
-        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key)) |
+        ChatOpenAI(model=model, temperature=temperature, api_key=secretstr_to_v1_secretstr(api_key)) |
         StrOutputParser()
     )
 

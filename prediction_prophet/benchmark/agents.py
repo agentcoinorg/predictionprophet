@@ -156,7 +156,8 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
     def __init__(
         self,
         model: str,
-        temperature: float = 0.0,
+        research_temperature: float = 0.7,
+        prediction_temperature: float = 0.0,
         agent_name: str = "prediction_prophet",
         use_summaries: bool = False,
         use_tavily_raw_content: bool = False,
@@ -166,7 +167,8 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model: str = model
-        self.temperature = temperature
+        self.research_temperature = research_temperature
+        self.prediction_temperature = prediction_temperature
         self.use_summaries = use_summaries
         self.use_tavily_raw_content = use_tavily_raw_content
         self.tavily_storage = tavily_storage
@@ -184,6 +186,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         return prophet_research(
             goal=market_question,
             model=self.model,
+            temperature=self.research_temperature,
             use_summaries=self.use_summaries,
             use_tavily_raw_content=self.use_tavily_raw_content,
             tavily_storage=self.tavily_storage,
@@ -197,7 +200,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
                 market_question=market_question,
                 additional_information=research.report,
                 engine=self.model,
-                temperature=self.temperature,
+                temperature=self.prediction_temperature,
         )
         except ValueError as e:
             print(f"Error in PredictionProphet's predict: {e}")

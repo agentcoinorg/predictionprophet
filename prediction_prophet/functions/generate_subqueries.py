@@ -17,7 +17,7 @@ Return ONLY the web searches, separated by commas and without quotes.
 Limit your searches to {search_limit}.
 """
 @observe()
-def generate_subqueries(query: str, limit: int, model: str, api_key: SecretStr | None = None) -> list[str]:
+def generate_subqueries(query: str, limit: int, model: str, temperature: float, api_key: SecretStr | None = None) -> list[str]:
     if limit == 0:
         return [query]
 
@@ -28,7 +28,7 @@ def generate_subqueries(query: str, limit: int, model: str, api_key: SecretStr |
 
     subquery_generation_chain = (
         subquery_generation_prompt |
-        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key)) |
+        ChatOpenAI(model=model, temperature=temperature, api_key=secretstr_to_v1_secretstr(api_key)) |
         CommaSeparatedListOutputParser()
     )
 

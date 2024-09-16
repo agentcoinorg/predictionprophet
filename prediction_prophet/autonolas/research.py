@@ -1182,6 +1182,8 @@ def make_prediction(
     additional_information: str,
     temperature: float = 0.7,
     engine: str = "gpt-3.5-turbo-0125",
+    log_probs: bool = False,
+    top_logprobs: int = 5,
     api_key: SecretStr | None = None,
 ) -> Prediction:
     if api_key == None:
@@ -1194,21 +1196,22 @@ def make_prediction(
 
     llm = ChatOpenAI(model=engine, temperature=temperature, api_key=secretstr_to_v1_secretstr(api_key))
     formatted_messages = prediction_prompt.format_messages(user_prompt=prompt, additional_information=additional_information, timestamp=formatted_time_utc)
-    generation = llm.generate([formatted_messages], logprobs=True, top_logprobs=5, callbacks=[langfuse_context.get_current_langchain_handler()])
+    generation = llm.generate([formatted_messages], logprobs=log_probs, top_logprobs=top_logprobs if log_probs else None, callbacks=[langfuse_context.get_current_langchain_handler()])
 
     completion = generation.generations[0][0].text
 
     # Get probability that is based on the token's top logprobs.
     decision, probability = None, None
-    for token in check_not_none(generation.generations[0][0].generation_info)["logprobs"]["content"]:  
-        # Check if the token is a decision token, we prompt the model for it to be there, so it is in 99% of cases.
-        if token["token"] in ("y", "n"):
-            decision = token["token"]
-            probability = math.exp(token["logprob"])
-            break
+    if log_probs:
+        for token in check_not_none(generation.generations[0][0].generation_info)["logprobs"]["content"]:  
+            # Check if the token is a decision token, we prompt the model for it to be there, so it is in 99% of cases.
+            if token["token"] in ("y", "n"):
+                decision = token["token"]
+                probability = math.exp(token["logprob"])
+                break
 
-    if decision is None or probability is None:
-        raise ValueError(f"No decision found in completion from {engine=}, {completion=}, {formatted_messages=}")
+        if decision is None or probability is None:
+            raise ValueError(f"No decision found in completion from {engine=}, {completion=}, {formatted_messages=}")
 
     response: Prediction = json.loads(clean_completion_json(completion))
     response["decision"] = decision

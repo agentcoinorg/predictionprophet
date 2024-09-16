@@ -20,6 +20,7 @@ def research(
     goal: str,
     tavily_api_key: SecretStr,
     model: str = "gpt-4-0125-preview",
+    temperature: float = 0.7, 
     initial_subqueries_limit: int = 20,
     subqueries_limit: int = 4,
     scrape_content_split_chunk_size: int = 800,
@@ -27,13 +28,13 @@ def research(
     top_k_per_query: int = 8
 ) -> str:
     with st.status("Generating subqueries"):
-        queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model)
+        queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, model=model, temperature=temperature)
     
         stringified_queries = '\n- ' + '\n- '.join(queries)
         st.write(f"Generated subqueries: {stringified_queries}")
         
     with st.status("Reranking subqueries"):
-        queries = rerank_subqueries(queries=queries, goal=goal, model=model)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
+        queries = rerank_subqueries(queries=queries, goal=goal, model=model, temperature=temperature)[:subqueries_limit] if initial_subqueries_limit > subqueries_limit else queries
 
         stringified_queries = '\n- ' + '\n- '.join(queries)
         st.write(f"Reranked subqueries. Will use top {subqueries_limit}: {stringified_queries}")
@@ -85,7 +86,7 @@ def research(
         st.write(f"Found {len(vector_result_texts)} relevant information chunks")
 
     with st.status(f"Preparing report"):
-        report = prepare_report(goal, vector_result_texts, model=model)
+        report = prepare_report(goal, vector_result_texts, model=model, temperature=temperature)
         st.markdown(report)
 
     return report

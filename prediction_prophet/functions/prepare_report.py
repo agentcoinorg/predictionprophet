@@ -43,7 +43,7 @@ Content:
 
 
 @observe()
-def prepare_report(goal: str, scraped: list[str], model: str, api_key: SecretStr | None = None) -> str:
+def prepare_report(goal: str, scraped: list[str], model: str, temperature: float, api_key: SecretStr | None = None) -> str:
     if api_key == None:
         api_key = secret_str_from_env("OPENAI_API_KEY")
         
@@ -72,7 +72,7 @@ def prepare_report(goal: str, scraped: list[str], model: str, api_key: SecretStr
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key)) |
+        ChatOpenAI(model=model, temperature=temperature, api_key=secretstr_to_v1_secretstr(api_key)) |
         StrOutputParser()
     )
 
