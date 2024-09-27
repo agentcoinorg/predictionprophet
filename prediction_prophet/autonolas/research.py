@@ -112,7 +112,7 @@ ADDITIONAL_INFORMATION:
 
 OUTPUT_FORMAT:
 * Your output response must be only a single JSON object to be parsed by Python's "json.loads()".
-* The JSON must contain five fields: "decision", "p_yes", "p_no", "confidence", and "info_utility".
+* The JSON must contain five fields: "decision", "p_yes", "p_no", "confidence", and "info_utility".{reasoning_field}
    - "decision": The decision you made. Either `y` (for `Yes`) or `n` (for `No`).
    - "p_yes": Probability that the market question's outcome will be `Yes`. Ranging from 0 (lowest probability) to 1 (maximum probability).
    - "p_no": Probability that the market questions outcome will be `No`. Ranging from 0 (lowest probability) to 1 (maximum probability).
@@ -121,6 +121,8 @@ OUTPUT_FORMAT:
 * The sum of "p_yes" and "p_no" must equal 1.
 * Output only the JSON object in your response. Do not include any other contents in your response.
 """
+
+REASONING_FIELD_INSTRUCTIONS = "\n  - 'reasoning': A string containing the reasoning behind your decision, and the rest of the answer you're about to give."
 
 URL_QUERY_PROMPT = """
 You are a Large Language Model in a multi-agent system. Your task is to formulate search engine queries based on \
@@ -323,6 +325,7 @@ class Prediction(TypedDict):
     p_no: Probability
     confidence: float
     info_utility: float
+    reasoning: Optional[str]
 
 
 @tenacity.retry(stop=tenacity.stop_after_attempt(3), wait=tenacity.wait_fixed(1), reraise=True)
@@ -1184,6 +1187,7 @@ def make_prediction(
     engine: str = "gpt-3.5-turbo-0125",
     log_probs: bool = False,
     top_logprobs: int = 5,
+    include_reasoning: bool = False,
     api_key: SecretStr | None = None,
 ) -> Prediction:
     if api_key == None:
@@ -1195,7 +1199,12 @@ def make_prediction(
     prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
 
     llm = ChatOpenAI(model=engine, temperature=temperature, api_key=secretstr_to_v1_secretstr(api_key))
-    formatted_messages = prediction_prompt.format_messages(user_prompt=prompt, additional_information=additional_information, timestamp=formatted_time_utc)
+    formatted_messages = prediction_prompt.format_messages(
+        user_prompt=prompt,
+        additional_information=additional_information,
+        reasoning_field=REASONING_FIELD_INSTRUCTIONS if include_reasoning else "",
+        timestamp=formatted_time_utc,
+    )
     generation = llm.generate([formatted_messages], logprobs=log_probs, top_logprobs=top_logprobs if log_probs else None, callbacks=[langfuse_context.get_current_langchain_handler()])
 
     completion = generation.generations[0][0].text
