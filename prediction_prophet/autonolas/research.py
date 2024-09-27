@@ -342,6 +342,7 @@ def list_to_list_str(l: List[str]) -> str:
             list_str += f' and "{item}"'
         else:
             list_str += f', "{item}"'
+    return list_str
 
 def fields_dict_to_bullet_list(fields_dict: Dict[str, str]) -> str:
     """
