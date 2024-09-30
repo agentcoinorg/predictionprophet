@@ -103,8 +103,8 @@ st.write('Ask any yes-or-no question about a future outcome')
 
 with st.sidebar:
     st.title('Prediction Prophet')
-    st.markdown("A web3 agent by [Polywrap](https://www.polywrap.io/)")
-    st.image('https://raw.githubusercontent.com/polywrap/predictionprophet/main/content/banner_hires.png')
+    st.markdown("A web3 agent by [Agentcoin](https://www.agentcoin.tv/)")
+    st.image('https://raw.githubusercontent.com/agentcoinorg/predictionprophet/main/docs/imgs/banner.png')
     
     st.markdown('#')
     st.markdown('#')
@@ -112,9 +112,9 @@ with st.sidebar:
     st.markdown('#')
     st.markdown('#')
     st.markdown('-------')
-    st.caption('View the source code on our [github](https://github.com/polywrap/predictionprophet)')
-    st.caption('Learn more on our [substack](https://blog.polywrap.io/p/prediction-prophet-an-ai-agent-that)')
-    st.caption('Join our [discord](https://discord.gg/3ebYCjXbg7)')
+    st.caption('View the source code on our [github](https://github.com/agentcoinorg/predictionprophet)')
+    st.caption('Learn more on our [substack](https://www.agentcoin.tv/blog/prediction-prophet)')
+    st.caption('Join our [discord](https://discord.com/invite/6gk85fetcT)')
     
 
 # TODO: find a better way to clear the history
