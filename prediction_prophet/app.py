@@ -154,6 +154,8 @@ if question := st.chat_input(placeholder='Will Twitter implement a new misinform
                 outcome_prediction = cast(OutcomePrediction, prediction.outcome_prediction)
             
                 st.write(f"Probability: {outcome_prediction.p_yes * 100}%. Confidence: {outcome_prediction.confidence * 100}%")
+                if outcome_prediction.reasoning:
+                    st.write(f"Reasoning: {outcome_prediction.reasoning}")
                 if not prediction:
                     st.container().error("No prediction was generated.")
                     st.stop()

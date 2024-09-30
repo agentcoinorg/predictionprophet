@@ -38,6 +38,7 @@ def _make_prediction(
     additional_information: str,
     engine: str,
     temperature: float,
+    include_reasoning: bool = False,
     api_key: SecretStr | None = None,
 ) -> Prediction:
     """
@@ -49,6 +50,7 @@ def _make_prediction(
         engine=engine,
         temperature=temperature,
         api_key=api_key,
+        include_reasoning=include_reasoning,
     )
     return completion_prediction_json_to_pydantic_model(
         prediction
@@ -159,6 +161,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         research_temperature: float = 0.7,
         prediction_temperature: float = 0.0,
         agent_name: str = "prediction_prophet",
+        include_reasoning: bool = False,
         use_summaries: bool = False,
         use_tavily_raw_content: bool = False,
         max_workers: t.Optional[int] = None,
@@ -167,6 +170,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model: str = model
+        self.include_reasoning = include_reasoning
         self.research_temperature = research_temperature
         self.prediction_temperature = prediction_temperature
         self.use_summaries = use_summaries
@@ -201,6 +205,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
                 additional_information=research.report,
                 engine=self.model,
                 temperature=self.prediction_temperature,
+                include_reasoning=self.include_reasoning,
         )
         except ValueError as e:
             print(f"Error in PredictionProphet's predict: {e}")
