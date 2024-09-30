@@ -27,6 +27,7 @@ from pydantic.types import SecretStr
 from prediction_prophet.autonolas.research import Prediction as LLMCompletionPredictionDict
 from prediction_market_agent_tooling.tools.langfuse_ import observe
 from prediction_market_agent_tooling.tools.tavily_storage.tavily_models import TavilyStorage
+from prediction_market_agent_tooling.config import APIKeys
 
 if t.TYPE_CHECKING:
     from loguru import Logger
@@ -167,6 +168,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         max_workers: t.Optional[int] = None,
         tavily_storage: TavilyStorage | None = None,
         logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
+        researches: t.Optional[t.Dict[str, Research]] = None,
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model: str = model
@@ -177,6 +179,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         self.use_tavily_raw_content = use_tavily_raw_content
         self.tavily_storage = tavily_storage
         self.logger = logger
+        self.researches = researches or {}
 
     def is_predictable(self, market_question: str) -> bool:
         (result, _) = is_predictable(question=market_question)
@@ -195,11 +198,16 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             use_tavily_raw_content=self.use_tavily_raw_content,
             tavily_storage=self.tavily_storage,
             logger=self.logger,
+            tavily_api_key=APIKeys().tavily_api_key,
         )
 
     def predict(self, market_question: str) -> Prediction:
         try:
-            research = self.research(market_question)
+            if market_question in self.researches:
+                research = self.researches[market_question]
+            else:
+                assert False, "Research reports are not cached"
+                research = self.research(market_question)
             return _make_prediction(
                 market_question=market_question,
                 additional_information=research.report,

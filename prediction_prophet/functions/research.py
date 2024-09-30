@@ -1,3 +1,4 @@
+import json
 import logging
 import typing as t
 
@@ -26,6 +27,29 @@ class Research(BaseModel):
     websites_scraped: list[WebScrapeResult]
 
 
+class ResearchCache(BaseModel):
+    researches: dict[str, Research]
+
+    def save(self, path: str) -> None:
+        with open(path, "w") as f:
+            json.dump(self.model_dump(), f, indent=2)
+
+    @staticmethod
+    def load(path: str) -> "ResearchCache":
+        with open(path, "r") as f:
+            return ResearchCache.model_validate(json.load(f))
+
+    def get_research(self, market_question: str) -> Research:
+        return self.researches[market_question]
+
+    def add_research(
+        self, question: str, research: Research
+    ) -> None:
+        assert (
+            question not in self.researches
+        ), f"Question `{question}` already exists in the cache."
+        self.researches[question] = research
+
 @observe()
 def research(
     goal: str,
@@ -44,7 +68,7 @@ def research(
     tavily_api_key: SecretStr | None = None,
     logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
     tavily_storage: TavilyStorage | None = None,
-) -> Research:
+) -> Research | None:
     # Validate args
     if min_scraped_sites > max_results_per_search * subqueries_limit:
         raise ValueError(
@@ -75,7 +99,7 @@ def research(
     )
 
     if not search_results_with_queries:
-        raise ValueError(f"No search results found for the goal {goal}.")
+        return None
 
     scrape_args = [result for (_, result) in search_results_with_queries]
     websites_to_scrape = set(result.url for result in scrape_args)
