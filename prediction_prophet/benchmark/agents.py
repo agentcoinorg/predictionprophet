@@ -164,6 +164,10 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         include_reasoning: bool = False,
         use_summaries: bool = False,
         use_tavily_raw_content: bool = False,
+        initial_subqueries_limit: int = 20,
+        subqueries_limit: int = 4,
+        max_results_per_search: int = 5,
+        min_scraped_sites: int = 5,
         max_workers: t.Optional[int] = None,
         tavily_storage: TavilyStorage | None = None,
         logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
@@ -175,6 +179,10 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         self.prediction_temperature = prediction_temperature
         self.use_summaries = use_summaries
         self.use_tavily_raw_content = use_tavily_raw_content
+        self.initial_subqueries_limit = initial_subqueries_limit
+        self.subqueries_limit = subqueries_limit
+        self.max_results_per_search = max_results_per_search
+        self.min_scraped_sites = min_scraped_sites
         self.tavily_storage = tavily_storage
         self.logger = logger
 
@@ -193,6 +201,10 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             temperature=self.research_temperature,
             use_summaries=self.use_summaries,
             use_tavily_raw_content=self.use_tavily_raw_content,
+            initial_subqueries_limit=self.initial_subqueries_limit,
+            subqueries_limit=self.subqueries_limit,
+            max_results_per_search=self.max_results_per_search,
+            min_scraped_sites=self.min_scraped_sites,
             tavily_storage=self.tavily_storage,
             logger=self.logger,
         )
