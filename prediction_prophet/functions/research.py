@@ -12,7 +12,7 @@ from prediction_prophet.functions.search import search
 from pydantic.types import SecretStr
 from pydantic import BaseModel
 from prediction_market_agent_tooling.tools.langfuse_ import observe
-from prediction_market_agent_tooling.tools.tavily_storage.tavily_models import TavilyStorage
+from prediction_market_agent_tooling.tools.tavily.tavily_storage import TavilyStorage
 
 if t.TYPE_CHECKING:
     from loguru import Logger

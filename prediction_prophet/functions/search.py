@@ -3,7 +3,7 @@ import typing as t
 from prediction_prophet.functions.web_search import WebSearchResult, web_search
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pydantic.types import SecretStr
-from prediction_market_agent_tooling.tools.tavily_storage.tavily_models import TavilyStorage
+from prediction_market_agent_tooling.tools.tavily.tavily_storage import TavilyStorage
 
 if t.TYPE_CHECKING:
     from loguru import Logger

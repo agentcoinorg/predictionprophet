@@ -2,8 +2,8 @@ from pydantic.types import SecretStr
 
 from prediction_prophet.models.WebSearchResult import WebSearchResult
 from prediction_market_agent_tooling.config import APIKeys
-from prediction_market_agent_tooling.tools.tavily_storage.tavily_models import TavilyStorage
-from prediction_market_agent_tooling.tools.tavily_storage.tavily_storage import tavily_search
+from prediction_market_agent_tooling.tools.tavily.tavily_storage import TavilyStorage
+from prediction_market_agent_tooling.tools.tavily.tavily_search import tavily_search
 
 
 
