@@ -4666,8 +4666,8 @@ openai = ["openai (>=1.0.0,<2.0.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/gnosis/prediction-market-agent-tooling.git"
-reference = "170412ff7b563094a6d14ce72a2046c4a76480db"
-resolved_reference = "170412ff7b563094a6d14ce72a2046c4a76480db"
+reference = "42d49e4f31ccfae44da6657c0c62289768c81e82"
+resolved_reference = "42d49e4f31ccfae44da6657c0c62289768c81e82"
 
 [[package]]
 name = "preshed"
@@ -7868,4 +7868,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.10"
-content-hash = "bb27ad02a2bc3731d1d7df2d20a73227b81fd632d0c6238783329bcf0db1bab6"
+content-hash = "5fb32ffde1009a51517559285bb4ee266d252b178d0cc3bb314a634f93003d45"
