@@ -30,7 +30,7 @@ scikit-learn = "^1.4.0"
 typer = ">=0.9.0,<1.0.0"
 types-requests = "^2.31.0.20240125"
 types-python-dateutil = "^2.9.0"
-prediction-market-agent-tooling = { git = "https://github.com/gnosis/prediction-market-agent-tooling.git", rev = "34c17e37e9b255e21af5ef71575523c48ba7b94f", extras = ["langchain", "google"] }
+prediction-market-agent-tooling = { git = "https://github.com/gnosis/prediction-market-agent-tooling.git", rev = "12cc53967fb4091a8ed32fb1adf2abb297b385a4", extras = ["langchain", "google"] }
 # prediction-market-agent-tooling = { version = ">=0.54.0,<1", extras = ["langchain", "google"] }
 langchain-community = "^0.2.6"
 memory-profiler = "^0.61.0"
