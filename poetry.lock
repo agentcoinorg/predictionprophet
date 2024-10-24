@@ -4089,13 +4089,13 @@ sympy = "*"
 
 [[package]]
 name = "openai"
-version = "1.52.1"
+version = "1.52.2"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.7.1"
 files = [
-    {file = "openai-1.52.1-py3-none-any.whl", hash = "sha256:f23e83df5ba04ee0e82c8562571e8cb596cd88f9a84ab783e6c6259e5ffbfb4a"},
-    {file = "openai-1.52.1.tar.gz", hash = "sha256:383b96c7e937cbec23cad5bf5718085381e4313ca33c5c5896b54f8e1b19d144"},
+    {file = "openai-1.52.2-py3-none-any.whl", hash = "sha256:57e9e37bc407f39bb6ec3a27d7e8fb9728b2779936daa1fcf95df17d3edfaccc"},
+    {file = "openai-1.52.2.tar.gz", hash = "sha256:87b7d0f69d85f5641678d414b7ee3082363647a5c66a462ed7f3ccb59582da0d"},
 ]
 
 [package.dependencies]
@@ -4612,62 +4612,58 @@ name = "prediction-market-agent-tooling"
 version = "0.55.0"
 description = "Tools to benchmark, deploy and monitor prediction market agents."
 optional = false
-python-versions = ">=3.10,<3.12"
-files = []
-develop = false
+python-versions = "<3.12,>=3.10"
+files = [
+    {file = "prediction_market_agent_tooling-0.55.0-py3-none-any.whl", hash = "sha256:f799867be52db9379e24b7164dac85298b0b6d06d0dc51802ab20ee62d47355e"},
+    {file = "prediction_market_agent_tooling-0.55.0.tar.gz", hash = "sha256:ee6e97b1f35ca43f53364ae24a08edb032bd881a400be270197198506bfcef9d"},
+]
 
 [package.dependencies]
-autoflake = "^2.2.1"
+autoflake = ">=2.2.1,<3.0.0"
 base58 = ">=1.0.2,<2.0"
-cron-validator = "^1.0.8"
+cron-validator = ">=1.0.8,<2.0.0"
 eth-account = ">=0.8.0,<0.12.0"
-eth-typing = "^3.0.0"
-functions-framework = "^3.5.0"
-google-api-python-client = {version = "2.95.0", optional = true}
-google-cloud-functions = "^1.16.0"
-google-cloud-resource-manager = "^1.12.0"
-google-cloud-secret-manager = "^2.18.2"
-hishel = "^0.0.31"
-isort = "^5.13.2"
-langchain = {version = "^0.2.6", optional = true}
+eth-typing = ">=3.0.0,<4.0.0"
+functions-framework = ">=3.5.0,<4.0.0"
+google-api-python-client = {version = "2.95.0", optional = true, markers = "extra == \"google\""}
+google-cloud-functions = ">=1.16.0,<2.0.0"
+google-cloud-resource-manager = ">=1.12.0,<2.0.0"
+google-cloud-secret-manager = ">=2.18.2,<3.0.0"
+hishel = ">=0.0.31,<0.0.32"
+isort = ">=5.13.2,<6.0.0"
+langchain = {version = ">=0.2.6,<0.3.0", optional = true, markers = "extra == \"langchain\""}
 langchain-community = ">=0.0.19"
-langchain-openai = {version = "^0.1.0", optional = true}
-langfuse = "^2.42.0"
-loguru = "^0.7.2"
-loky = "^3.4.1"
-numpy = "^1.26.4"
-pinatapy-vourhey = "^0.2.0"
-prompt-toolkit = "^3.0.43"
-psycopg2-binary = "^2.9.9"
-pydantic = "^2.6.1"
-pydantic-settings = "^2.4.0"
-pymongo = "^4.8.0"
-python-dateutil = "^2.9.0.post0"
-safe-cli = "^1.0.0"
-safe-eth-py = "^6.0.0b14"
-scikit-learn = "^1.3.1"
-sqlmodel = "^0.0.22"
-streamlit = "^1.31.0"
-subgrounds = "^1.9.1"
-tabulate = "^0.9.0"
-tavily-python = "^0.5.0"
-tqdm = "^4.66.2"
+langchain-openai = {version = ">=0.1.0,<0.2.0", optional = true, markers = "extra == \"langchain\""}
+langfuse = ">=2.42.0,<3.0.0"
+loguru = ">=0.7.2,<0.8.0"
+loky = ">=3.4.1,<4.0.0"
+numpy = ">=1.26.4,<2.0.0"
+pinatapy-vourhey = ">=0.2.0,<0.3.0"
+prompt-toolkit = ">=3.0.43,<4.0.0"
+psycopg2-binary = ">=2.9.9,<3.0.0"
+pydantic = ">=2.6.1,<3.0.0"
+pydantic-settings = ">=2.4.0,<3.0.0"
+pymongo = ">=4.8.0,<5.0.0"
+python-dateutil = ">=2.9.0.post0,<3.0.0"
+safe-cli = ">=1.0.0,<2.0.0"
+safe-eth-py = ">=6.0.0b14,<7.0.0"
+scikit-learn = ">=1.3.1,<2.0.0"
+sqlmodel = ">=0.0.22,<0.0.23"
+streamlit = ">=1.31.0,<2.0.0"
+subgrounds = ">=1.9.1,<2.0.0"
+tabulate = ">=0.9.0,<0.10.0"
+tavily-python = ">=0.5.0,<0.6.0"
+tqdm = ">=4.66.2,<5.0.0"
 typer = ">=0.9.0,<1.0.0"
-types-python-dateutil = "^2.9.0.20240906"
-types-pytz = "^2024.1.0.20240203"
-types-requests = "^2.31.0.0"
-web3 = "^6.15.1"
+types-python-dateutil = ">=2.9.0.20240906,<3.0.0.0"
+types-pytz = ">=2024.1.0.20240203,<2025.0.0.0"
+types-requests = ">=2.31.0.0,<3.0.0.0"
+web3 = ">=6.15.1,<7.0.0"
 
 [package.extras]
 google = ["google-api-python-client (==2.95.0)"]
 langchain = ["langchain (>=0.2.6,<0.3.0)", "langchain-openai (>=0.1.0,<0.2.0)"]
 openai = ["openai (>=1.0.0,<2.0.0)"]
-
-[package.source]
-type = "git"
-url = "https://github.com/gnosis/prediction-market-agent-tooling.git"
-reference = "3101ea542185c16befc0464f674eac854b40a700"
-resolved_reference = "3101ea542185c16befc0464f674eac854b40a700"
 
 [[package]]
 name = "preshed"
@@ -4838,13 +4834,13 @@ files = [
 
 [[package]]
 name = "proto-plus"
-version = "1.24.0"
+version = "1.25.0"
 description = "Beautiful, Pythonic protocol buffers."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "proto-plus-1.24.0.tar.gz", hash = "sha256:30b72a5ecafe4406b0d339db35b56c4059064e69227b8c3bda7462397f966445"},
-    {file = "proto_plus-1.24.0-py3-none-any.whl", hash = "sha256:402576830425e5f6ce4c2a6702400ac79897dab0b4343821aa5188b0fab81a12"},
+    {file = "proto_plus-1.25.0-py3-none-any.whl", hash = "sha256:c91fc4a65074ade8e458e95ef8bac34d4008daa7cce4a12d6707066fca648961"},
+    {file = "proto_plus-1.25.0.tar.gz", hash = "sha256:fbb17f57f7bd05a68b7707e745e26528b0b3c34e378db91eef93912c54982d91"},
 ]
 
 [package.dependencies]
@@ -7868,4 +7864,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.10"
-content-hash = "406e507fa1d6addd82a301124b0e8d15b9d3c2bf67edf634ceb33486d38ae4c9"
+content-hash = "82fc0b783275d8fbc1019be1039e7079c1880e42b3fe89c84cd964c9bae3a06a"
