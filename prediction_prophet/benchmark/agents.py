@@ -169,7 +169,6 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         max_results_per_search: int = 5,
         min_scraped_sites: int = 5,
         max_workers: t.Optional[int] = None,
-        tavily_storage: TavilyStorage | None = None,
         logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
@@ -183,7 +182,6 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         self.subqueries_limit = subqueries_limit
         self.max_results_per_search = max_results_per_search
         self.min_scraped_sites = min_scraped_sites
-        self.tavily_storage = tavily_storage
         self.logger = logger
 
     def is_predictable(self, market_question: str) -> bool:
@@ -205,7 +203,6 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             subqueries_limit=self.subqueries_limit,
             max_results_per_search=self.max_results_per_search,
             min_scraped_sites=self.min_scraped_sites,
-            tavily_storage=self.tavily_storage,
             logger=self.logger,
         )
 

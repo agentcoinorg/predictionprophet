@@ -4,7 +4,6 @@ import typing as t
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
-from prediction_prophet.functions.cache import persistent_inmemory_cache
 from prediction_prophet.functions.utils import trim_to_n_tokens
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from pydantic.types import SecretStr

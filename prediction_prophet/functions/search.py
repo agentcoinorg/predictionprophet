@@ -3,7 +3,6 @@ import typing as t
 from prediction_prophet.functions.web_search import WebSearchResult, web_search
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pydantic.types import SecretStr
-from prediction_market_agent_tooling.tools.tavily.tavily_storage import TavilyStorage
 
 if t.TYPE_CHECKING:
     from loguru import Logger
@@ -13,11 +12,10 @@ def safe_web_search(
     query: str, 
     max_results: int = 5, 
     tavily_api_key: SecretStr | None = None, 
-    tavily_storage: TavilyStorage | None = None,
     logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
 ) -> t.Optional[list[WebSearchResult]]:
     try:
-        return web_search(query, max_results, tavily_api_key, tavily_storage)
+        return web_search(query, max_results, tavily_api_key)
     except Exception as e:
         logger.warning(f"Error when searching for `{query}` in web_search: {e}")
         return None
@@ -27,7 +25,6 @@ def search(
     queries: list[str],
     filter: t.Callable[[WebSearchResult], bool] = lambda x: True,
     tavily_api_key: SecretStr | None = None,
-    tavily_storage: TavilyStorage | None = None,
     max_results_per_search: int = 5,
     logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
 ) -> list[tuple[str, WebSearchResult]]:
@@ -36,7 +33,7 @@ def search(
     # Each result will have a query associated with it
     # We only want to keep the results that are unique
     with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(safe_web_search, query, max_results_per_search, tavily_api_key, tavily_storage) for query in queries}
+        futures = {executor.submit(safe_web_search, query, max_results_per_search, tavily_api_key) for query in queries}
         for future in as_completed(futures):
             maybe_results.append(future.result())
 
