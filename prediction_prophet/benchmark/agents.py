@@ -11,7 +11,6 @@ from datetime import datetime
 from prediction_prophet.autonolas.research import EmbeddingModel
 from prediction_prophet.autonolas.research import make_prediction, get_urls_from_queries
 from prediction_prophet.autonolas.research import research as research_autonolas
-from prediction_prophet.functions.evaluate_question import is_predictable
 from prediction_prophet.functions.rephrase_question import rephrase_question
 from prediction_prophet.functions.research import Research, research as prophet_research
 from prediction_prophet.functions.search import search
@@ -26,6 +25,7 @@ from prediction_market_agent_tooling.benchmark.utils import (
 from pydantic.types import SecretStr
 from prediction_prophet.autonolas.research import Prediction as LLMCompletionPredictionDict
 from prediction_market_agent_tooling.tools.langfuse_ import observe
+from prediction_market_agent_tooling.tools.is_predictable import is_predictable_binary
 from prediction_market_agent_tooling.tools.tavily.tavily_storage import TavilyStorage
 
 if t.TYPE_CHECKING:
@@ -112,11 +112,11 @@ class OlasAgent(AbstractBenchmarkedAgent):
         self.embedding_model = embedding_model
 
     def is_predictable(self, market_question: str) -> bool:
-        (result, _) = is_predictable(question=market_question)
+        result = is_predictable_binary(question=market_question)
         return result
 
     def is_predictable_restricted(self, market_question: str, time_restriction_up_to: datetime) -> bool:
-        (result, _) = is_predictable(question=market_question)
+        result = is_predictable_binary(question=market_question)
         return result
     
     def research(self, market_question: str) -> str:
@@ -187,11 +187,11 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         self.logger = logger
 
     def is_predictable(self, market_question: str) -> bool:
-        (result, _) = is_predictable(question=market_question)
+        result = is_predictable_binary(question=market_question)
         return result
 
     def is_predictable_restricted(self, market_question: str, time_restriction_up_to: datetime) -> bool:
-        (result, _) = is_predictable(question=market_question)
+        result = is_predictable_binary(question=market_question)
         return result
     
     def research(self, market_question: str) -> Research:
