@@ -32,6 +32,7 @@ from langchain_openai import OpenAIEmbeddings
 
 from dateutil import parser
 from prediction_prophet.functions.utils import check_not_none
+from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from prediction_market_agent_tooling.gtypes import Probability
 from prediction_market_agent_tooling.config import APIKeys
 from prediction_market_agent_tooling.tools.caches.db_cache import db_cache

@@ -10,7 +10,6 @@ from pydantic.types import SecretStr
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 from prediction_market_agent_tooling.tools.langfuse_ import get_langfuse_langchain_config, observe
 
-@persistent_inmemory_cache
 @observe()
 def prepare_summary(goal: str, content: str, model: str, api_key: SecretStr | None = None, trim_content_to_tokens: t.Optional[int] = None) -> str:
     if api_key == None:
