@@ -9,7 +9,7 @@ from pydantic import SecretStr
 from langchain.schema.output_parser import StrOutputParser
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
-from prediction_market_agent_tooling.tools.utils import secret_str_from_env
+from prediction_market_agent_tooling.config import APIKeys
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 
 
@@ -85,7 +85,7 @@ give you convincing arguments. Nonetheless, be strong in your position and argum
     
 def make_debated_prediction(prompt: str, additional_information: str, api_key: SecretStr | None = None) -> Prediction:
     if api_key == None:
-        api_key = secret_str_from_env("OPENAI_API_KEY")
+        api_key = APIKeys().openai_api_key
         
     formatted_time_utc = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds') + "Z"
     
