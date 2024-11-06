@@ -3,7 +3,7 @@ from langchain_openai import ChatOpenAI
 from langchain.output_parsers import CommaSeparatedListOutputParser
 from langchain.prompts import ChatPromptTemplate
 from pydantic.types import SecretStr
-from prediction_market_agent_tooling.tools.utils import secret_str_from_env
+from prediction_market_agent_tooling.config import APIKeys
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 from prediction_market_agent_tooling.tools.langfuse_ import get_langfuse_langchain_config, observe
 
@@ -22,7 +22,7 @@ def generate_subqueries(query: str, limit: int, model: str, temperature: float, 
         return [query]
 
     if api_key == None:
-        api_key = secret_str_from_env("OPENAI_API_KEY")
+        api_key = APIKeys().openai_api_key
             
     subquery_generation_prompt = ChatPromptTemplate.from_template(template=subquery_generation_template)
 

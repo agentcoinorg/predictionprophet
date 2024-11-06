@@ -3,7 +3,7 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from pydantic.types import SecretStr
-from prediction_market_agent_tooling.tools.utils import secret_str_from_env
+from prediction_market_agent_tooling.config import APIKeys
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 from prediction_market_agent_tooling.tools.langfuse_ import get_langfuse_langchain_config, observe
 
@@ -20,7 +20,7 @@ Queries: {queries}
 @observe()
 def rerank_subqueries(queries: list[str], goal: str, model: str, temperature: float, api_key: SecretStr | None = None) -> list[str]:
     if api_key == None:
-        api_key = secret_str_from_env("OPENAI_API_KEY")
+        api_key = APIKeys().openai_api_key
             
     rerank_results_prompt = ChatPromptTemplate.from_template(template=rerank_queries_template)
 

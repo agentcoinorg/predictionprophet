@@ -37,6 +37,7 @@ from prediction_market_agent_tooling.gtypes import Probability
 from prediction_market_agent_tooling.config import APIKeys
 from prediction_market_agent_tooling.tools.caches.db_cache import db_cache
 from prediction_prophet.functions.parallelism import par_map
+from prediction_market_agent_tooling.config import APIKeys
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 from langfuse.decorators import langfuse_context
@@ -1222,7 +1223,7 @@ def make_prediction(
     api_key: SecretStr | None = None,
 ) -> Prediction:
     if api_key == None:
-        api_key = secret_str_from_env("OPENAI_API_KEY")
+        api_key = APIKeys().openai_api_key
     
     current_time_utc = datetime.now(timezone.utc)
     formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
