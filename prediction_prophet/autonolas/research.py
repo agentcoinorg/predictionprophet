@@ -2,6 +2,7 @@
 import os
 import math
 import tenacity
+from datetime import timedelta
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Any, Dict, Generator, List, Optional, Tuple, TypedDict
 from datetime import datetime, timezone
@@ -31,9 +32,10 @@ from langchain_openai import OpenAIEmbeddings
 
 from dateutil import parser
 from prediction_prophet.functions.utils import check_not_none
-from prediction_market_agent_tooling.gtypes import Probability
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
-from prediction_prophet.functions.cache import persistent_inmemory_cache
+from prediction_market_agent_tooling.gtypes import Probability
+from prediction_market_agent_tooling.config import APIKeys
+from prediction_market_agent_tooling.tools.caches.db_cache import db_cache
 from prediction_prophet.functions.parallelism import par_map
 from prediction_market_agent_tooling.config import APIKeys
 from pydantic.types import SecretStr
@@ -359,7 +361,7 @@ def fields_dict_to_bullet_list(fields_dict: Dict[str, str]) -> str:
     return bullet_list
 
 @tenacity.retry(stop=tenacity.stop_after_attempt(3), wait=tenacity.wait_fixed(1), reraise=True)
-@persistent_inmemory_cache
+@db_cache(max_age=timedelta(days=1))
 def search_google(query: str, num: int = 3) -> List[str]:
     """Search Google using a custom search engine."""
     service = build("customsearch", "v1", developerKey=os.getenv("GOOGLE_SEARCH_API_KEY"))
@@ -694,7 +696,7 @@ def concatenate_short_sentences(sentences: list[str], len_sentence_threshold: in
     return modified_sentences
 
 
-@persistent_inmemory_cache
+@db_cache
 def openai_embedding_cached(text: str, model: str = "text-embedding-ada-002") -> list[float]:
     emb = OpenAIEmbeddings(model=model)
     vector: list[float] = emb.embed_query(text)

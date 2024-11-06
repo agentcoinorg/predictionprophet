@@ -12,7 +12,6 @@ from prediction_prophet.functions.search import search
 from pydantic.types import SecretStr
 from pydantic import BaseModel
 from prediction_market_agent_tooling.tools.langfuse_ import observe
-from prediction_market_agent_tooling.tools.tavily.tavily_storage import TavilyStorage
 
 if t.TYPE_CHECKING:
     from loguru import Logger
@@ -43,7 +42,6 @@ def research(
     openai_api_key: SecretStr | None = None,
     tavily_api_key: SecretStr | None = None,
     logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
-    tavily_storage: TavilyStorage | None = None,
 ) -> Research:
     # Validate args
     if min_scraped_sites > max_results_per_search * subqueries_limit:
@@ -70,7 +68,6 @@ def research(
         queries,
         lambda result: not result.url.startswith("https://www.youtube"),
         tavily_api_key=tavily_api_key,
-        tavily_storage=tavily_storage,
         max_results_per_search=max_results_per_search,
     )
 

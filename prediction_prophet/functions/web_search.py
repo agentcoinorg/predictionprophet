@@ -2,18 +2,16 @@ from pydantic.types import SecretStr
 
 from prediction_prophet.models.WebSearchResult import WebSearchResult
 from prediction_market_agent_tooling.config import APIKeys
-from prediction_market_agent_tooling.tools.tavily.tavily_storage import TavilyStorage
 from prediction_market_agent_tooling.tools.tavily.tavily_search import tavily_search
 
 
 
-def web_search(query: str, max_results: int = 5, tavily_api_key: SecretStr | None = None, tavily_storage: TavilyStorage | None = None) -> list[WebSearchResult]:
+def web_search(query: str, max_results: int = 5, tavily_api_key: SecretStr | None = None) -> list[WebSearchResult]:
     response = tavily_search(
         query=query,
         search_depth="advanced",
         max_results=max_results,
         include_raw_content=True,
-        tavily_storage=tavily_storage,
         api_keys=APIKeys(TAVILY_API_KEY=tavily_api_key) if tavily_api_key else None,
     )
 

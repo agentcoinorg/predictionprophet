@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import NoReturn, Type, TypeVar, Optional
 from googleapiclient.discovery import build
-from prediction_prophet.functions.cache import persistent_inmemory_cache
+from prediction_market_agent_tooling.tools.caches.db_cache import db_cache
 
 T = TypeVar("T")
 
@@ -58,7 +58,7 @@ def trim_to_n_tokens(content: str, n: int, model: str) -> str:
     return encoder.decode(encoder.encode(content)[:n])
 
 
-@persistent_inmemory_cache
+@db_cache
 def url_is_older_than(url: str, older_than: datetime) -> bool:
     service = build("customsearch", "v1", developerKey=os.environ["GOOGLE_SEARCH_API_KEY"])
     date_restrict = f"d{(datetime.now().date() - older_than.date()).days}"  # {d,w,m,y}N to restrict the search to the last N days, weeks, months or years.
