@@ -145,7 +145,7 @@ class OlasAgent(AbstractBenchmarkedAgent):
             results: list[str] = get_urls_from_queries(*args, **kwargs)
             results_filtered = [
                 url for url in results
-                if url_is_older_than(url, time_restriction_up_to)
+                if url_is_older_than(url, time_restriction_up_to.date())
             ]
             return results_filtered
     
@@ -226,7 +226,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             results: list[tuple[str, WebSearchResult]] = search(*args, **kwargs)
             results_filtered = [
                 r for r in results
-                if url_is_older_than(r[1].url, time_restriction_up_to)
+                if url_is_older_than(r[1].url, time_restriction_up_to.date())
             ]
             return results_filtered
     
