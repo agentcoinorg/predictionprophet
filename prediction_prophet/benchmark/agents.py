@@ -222,7 +222,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         except (NoResulsFoundError, NotEnoughScrapedSitesError) as e:
             self.logger.warning(f"Problem in PredictionProphet's predict: {e}")
             return Prediction()
-        except Exception as e:
+        except ValueError as e:
             self.logger.error(f"Error in PredictionProphet's predict: {e}")
             return Prediction()
 
