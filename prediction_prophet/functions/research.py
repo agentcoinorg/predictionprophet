@@ -25,6 +25,14 @@ class Research(BaseModel):
     websites_scraped: list[WebScrapeResult]
 
 
+class NoResulsFoundError(ValueError):
+    pass
+
+
+class NotEnoughScrapedSitesError(ValueError):
+    pass
+
+
 @observe()
 def research(
     goal: str,
@@ -72,7 +80,7 @@ def research(
     )
 
     if not search_results_with_queries:
-        raise ValueError(f"No search results found for the goal {goal}.")
+        raise NoResulsFoundError(f"No search results found for the goal {goal}.")
 
     scrape_args = [result for (_, result) in search_results_with_queries]
     websites_to_scrape = set(result.url for result in scrape_args)
@@ -92,7 +100,7 @@ def research(
     unique_scraped_websites = set([result.url for result in scraped])
     if len(scraped) < min_scraped_sites:
         # Get urls that were not scraped
-        raise ValueError(
+        raise NotEnoughScrapedSitesError(
             f"Only successfully scraped content from "
             f"{len(unique_scraped_websites)} websites, out of a possible "
             f"{len(websites_to_scrape)} websites, which is less than the "
