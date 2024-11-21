@@ -1,6 +1,6 @@
 import tiktoken
 import os
-from datetime import datetime
+from datetime import datetime, date
 from typing import NoReturn, Type, TypeVar, Optional
 from googleapiclient.discovery import build
 from prediction_market_agent_tooling.tools.caches.db_cache import db_cache
@@ -59,9 +59,9 @@ def trim_to_n_tokens(content: str, n: int, model: str) -> str:
 
 
 @db_cache
-def url_is_older_than(url: str, older_than: datetime) -> bool:
+def url_is_older_than(url: str, older_than: date) -> bool:
     service = build("customsearch", "v1", developerKey=os.environ["GOOGLE_SEARCH_API_KEY"])
-    date_restrict = f"d{(datetime.now().date() - older_than.date()).days}"  # {d,w,m,y}N to restrict the search to the last N days, weeks, months or years.
+    date_restrict = f"d{(datetime.now().date() - older_than).days}"  # {d,w,m,y}N to restrict the search to the last N days, weeks, months or years.
 
     search = (
         service
@@ -80,7 +80,7 @@ def url_is_older_than(url: str, older_than: datetime) -> bool:
     return True if int(search["searchInformation"]["totalResults"]) == 0 or not any(url in item["link"] for item in search["items"]) else False
 
 
-def time_restrict_urls(urls: list[str], time_restriction_up_to: datetime) -> list[str]:
+def time_restrict_urls(urls: list[str], time_restriction_up_to: date) -> list[str]:
     restricted_urls: list[str] = []
     for url in urls:
         if url_is_older_than(url, time_restriction_up_to):
