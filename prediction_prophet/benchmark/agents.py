@@ -12,7 +12,7 @@ from prediction_prophet.autonolas.research import EmbeddingModel
 from prediction_prophet.autonolas.research import make_prediction, get_urls_from_queries
 from prediction_prophet.autonolas.research import research as research_autonolas
 from prediction_prophet.functions.rephrase_question import rephrase_question
-from prediction_prophet.functions.research import Research, research as prophet_research
+from prediction_prophet.functions.research import NoResulsFoundError, NotEnoughScrapedSitesError, Research, research as prophet_research
 from prediction_prophet.functions.search import search
 from prediction_prophet.functions.utils import url_is_older_than
 from prediction_prophet.models.WebSearchResult import WebSearchResult
@@ -71,10 +71,12 @@ class QuestionOnlyAgent(AbstractBenchmarkedAgent):
         temperature: float = 0.0,
         agent_name: str = "question-only",
         max_workers: t.Optional[int] = None,
+        logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model: str = model
         self.temperature = temperature
+        self.logger = logger
 
     def predict(
         self, market_question: str
@@ -87,7 +89,7 @@ class QuestionOnlyAgent(AbstractBenchmarkedAgent):
                 temperature=self.temperature,
             )
         except ValueError as e:
-            print(f"Error in QuestionOnlyAgent's predict: {e}")
+            self.logger.error(f"Error in QuestionOnlyAgent's predict: {e}")
             return Prediction()
         
     def predict_restricted(
@@ -104,11 +106,13 @@ class OlasAgent(AbstractBenchmarkedAgent):
         agent_name: str = "olas",
         max_workers: t.Optional[int] = None,
         embedding_model: EmbeddingModel = EmbeddingModel.spacy,
+        logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
         self.model: str = model
         self.temperature = temperature
         self.embedding_model = embedding_model
+        self.logger = logger
 
     def is_predictable(self, market_question: str) -> bool:
         result = is_predictable_binary(question=market_question)
@@ -135,7 +139,7 @@ class OlasAgent(AbstractBenchmarkedAgent):
                 temperature=self.temperature,
             )
         except ValueError as e:
-            print(f"Error in OlasAgent's predict: {e}")
+            self.logger.error(f"Error in OlasAgent's predict: {e}")
             return Prediction()
 
     def predict_restricted(
@@ -215,8 +219,11 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
                 temperature=self.prediction_temperature,
                 include_reasoning=self.include_reasoning,
         )
+        except (NoResulsFoundError, NotEnoughScrapedSitesError) as e:
+            self.logger.warning(f"Problem in PredictionProphet's predict: {e}")
+            return Prediction()
         except ValueError as e:
-            print(f"Error in PredictionProphet's predict: {e}")
+            self.logger.error(f"Error in PredictionProphet's predict: {e}")
             return Prediction()
 
     def predict_restricted(
