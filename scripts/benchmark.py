@@ -50,12 +50,14 @@ def main(
                 max_workers=max_workers,
             ),
             OlasAgent(
-                agent=Agent("openai:gpt-3.5-turbo-0125"),
+                research_agent=Agent("openai:gpt-3.5-turbo-0125"),
+                prediction_agent=Agent("openai:gpt-3.5-turbo-0125"),
                 max_workers=max_workers,
                 agent_name="olas_gpt-3.5-turbo-0125",
             ),
             OlasAgent(
-                agent=Agent("openai:gpt-3.5-turbo-0125"),
+                research_agent=Agent("openai:gpt-3.5-turbo-0125"),
+                prediction_agent=Agent("openai:gpt-3.5-turbo-0125"),
                 max_workers=max_workers,
                 agent_name="olas_gpt-3.5-turbo-0125_openai-embeddings",
                 embedding_model=EmbeddingModel.openai,

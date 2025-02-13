@@ -1071,10 +1071,8 @@ def fetch_additional_information(
     event_question: str,
     max_add_words: int,
     nlp: spacy.Language,
+    agent: Agent,
     embedding_model: EmbeddingModel,
-    engine: str = "gpt-3.5-turbo",
-    temperature: float = 0.5,
-    max_compl_tokens: int = 500,
 ) -> str:
     """
     Get urls from a web search and extract relevant information based on an event question.
@@ -1082,10 +1080,7 @@ def fetch_additional_information(
     Args:
         event_question (str): The question related to the event.
         max_add_words (int): The maximum number of words allowed for additional information.
-        temperature (float): The temperature parameter for the engine.
-        engine (str): The openai engine. Defaults to "gpt-3.5-turbo".
-        temperature (float): The temperature parameter for the engine. Defaults to 1.0.
-        max_compl_tokens (int): The maximum number of tokens for the engine's response.
+        agent (Agent): PydanticAI agent.
 
     Returns:
         str: The relevant information fetched from all the URLs concatenated.
@@ -1100,32 +1095,17 @@ def fetch_additional_information(
     #     # return empty additional information if the prompt is flagged
     #     return ""
 
-    # Create messages for the OpenAI engine
-    messages = [
-        ("system", "You are a helpful assistant."),
-        ("user", url_query_prompt),
-    ]
+    # Register system prompt if not already set on the agent
+    if not agent._system_prompts and not agent._system_prompts:
+        agent.system_prompt()(lambda: "You are a helpful assistant.")
 
-    # Fetch queries from the OpenAI engine
-    research_prompt = ChatPromptTemplate.from_messages(messages=messages)
-    research_chain = (
-        research_prompt |
-        ChatOpenAI(
-            model=engine,
-            temperature=temperature,
-            max_tokens=max_compl_tokens,
-            n=1, 
-            timeout=120,
-        ) |
-        StrOutputParser()
-    )
-    response = research_chain.invoke({}, config=get_langfuse_langchain_config())
+    response = agent.run_sync(url_query_prompt).data
 
     # Parse the response content
     try:
         json_data = json.loads(clean_completion_json(response))
     except json.decoder.JSONDecodeError as e:
-        raise ValueError(f"The response from {engine=} could not be parsed as JSON: {response=}") from e
+        raise ValueError(f"The response from {agent=} could not be parsed as JSON: {response=}") from e
 
     # Get URLs from queries
     urls = get_urls_from_queries(
@@ -1152,13 +1132,12 @@ def fetch_additional_information(
 def research(
     prompt: str,
     max_tokens: int | None = None,
-    temperature: float | None = None,
-    engine: str = "gpt-3.5-turbo",
+    agent: Agent | None = None,
     embedding_model: EmbeddingModel = EmbeddingModel.spacy,
 ) -> str:
     prompt = f"\"{prompt}\""
     max_compl_tokens =  max_tokens or DEFAULT_OPENAI_SETTINGS["max_compl_tokens"]
-    temperature = temperature or DEFAULT_OPENAI_SETTINGS["temperature"]
+    agent = agent or Agent(model="gpt-3.5-turbo", model_settings=ModelSettings(temperature=DEFAULT_OPENAI_SETTINGS["temperature"]))
 
     # Load the spacy model
     nlp = spacy.load("en_core_web_md")
@@ -1169,7 +1148,8 @@ def research(
         raise ValueError("No event question found in prompt.")
 
     # Get the tiktoken base encoding
-    enc = tiktoken.encoding_for_model(engine)
+    assert agent.model is not None
+    enc = tiktoken.encoding_for_model(agent.model if isinstance(agent.model, str) else agent.model.model_name)
 
     # Calculate the maximum number of tokens and words that can be consumed by the additional information string
     max_add_tokens = get_max_tokens_for_additional_information(
@@ -1182,9 +1162,7 @@ def research(
     # Fetch additional information
     additional_information = fetch_additional_information(
         event_question=event_question,
-        engine=engine,
-        temperature=0.5,
-        max_compl_tokens=max_compl_tokens,
+        agent=agent,
         nlp=nlp,
         max_add_words=max_add_words,
         embedding_model=embedding_model,

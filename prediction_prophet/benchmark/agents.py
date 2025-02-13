@@ -94,14 +94,16 @@ class QuestionOnlyAgent(AbstractBenchmarkedAgent):
 class OlasAgent(AbstractBenchmarkedAgent):
     def __init__(
         self,
-        agent: Agent,
+        research_agent: Agent,
+        prediction_agent: Agent,
         agent_name: str = "olas",
         max_workers: t.Optional[int] = None,
         embedding_model: EmbeddingModel = EmbeddingModel.spacy,
         logger: t.Union[logging.Logger, "Logger"] = logging.getLogger(),
     ):
         super().__init__(agent_name=agent_name, max_workers=max_workers)
-        self.agent: Agent = agent
+        self.research_agent = research_agent
+        self.prediction_agent = prediction_agent
         self.embedding_model = embedding_model
         self.logger = logger
 
@@ -114,10 +116,9 @@ class OlasAgent(AbstractBenchmarkedAgent):
         return result
     
     def research(self, market_question: str) -> str:
-        assert isinstance(self.agent.model, str)
         return research_autonolas(
             prompt=market_question,
-            engine=self.agent.model,
+            agent=self.research_agent,
             embedding_model=self.embedding_model,
         )
 
@@ -127,7 +128,7 @@ class OlasAgent(AbstractBenchmarkedAgent):
             return _make_prediction(
                 market_question=market_question,
                 additional_information=researched,
-                agent=self.agent,
+                agent=self.prediction_agent,
             )
         except ValueError as e:
             self.logger.error(f"Error in OlasAgent's predict: {e}")
@@ -230,13 +231,15 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
 class RephrasingOlasAgent(OlasAgent):
     def __init__(
         self,
-        agent: Agent,
+        research_agent: Agent,
+        prediction_agent: Agent,
         agent_name: str = "reph-olas",
         max_workers: t.Optional[int] = None,
         embedding_model: EmbeddingModel = EmbeddingModel.spacy,
     ):
         super().__init__(
-            agent=agent,
+            research_agent=research_agent,
+            prediction_agent=prediction_agent,
             embedding_model=embedding_model,
             agent_name=agent_name,
             max_workers=max_workers,
