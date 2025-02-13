@@ -1,6 +1,5 @@
 
 import os
-import math
 import tenacity
 from datetime import timedelta
 from sklearn.metrics.pairwise import cosine_similarity
@@ -10,6 +9,8 @@ import json
 from dotenv import load_dotenv
 import re
 import gc
+from pydantic_ai import Agent
+from pydantic_ai.settings import ModelSettings
 from concurrent.futures import Future
 from itertools import groupby
 from operator import itemgetter
@@ -32,15 +33,9 @@ from langchain_openai import OpenAIEmbeddings
 
 from dateutil import parser
 from prediction_prophet.functions.utils import check_not_none
-from prediction_market_agent_tooling.tools.utils import secret_str_from_env
 from prediction_market_agent_tooling.gtypes import Probability
-from prediction_market_agent_tooling.config import APIKeys
 from prediction_market_agent_tooling.tools.caches.db_cache import db_cache
 from prediction_prophet.functions.parallelism import par_map
-from prediction_market_agent_tooling.config import APIKeys
-from pydantic.types import SecretStr
-from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
-from langfuse.decorators import langfuse_context
 from prediction_market_agent_tooling.tools.langfuse_ import get_langfuse_langchain_config, observe
 
 load_dotenv()
@@ -325,8 +320,6 @@ class EmbeddingModel(Enum):
 
 
 class Prediction(TypedDict):
-    decision: Optional[str]
-    decision_token_prob: Optional[float]
     p_yes: Probability
     p_no: Probability
     confidence: float
@@ -1215,26 +1208,18 @@ def research(
 def make_prediction(
     prompt: str,
     additional_information: str,
-    temperature: float = 0.7,
-    engine: str = "gpt-3.5-turbo-0125",
-    log_probs: bool = False,
-    top_logprobs: int = 5,
+    agent: Agent | None,
     include_reasoning: bool = False,
-    api_key: SecretStr | None = None,
 ) -> Prediction:
-    if api_key == None:
-        api_key = APIKeys().openai_api_key
+    agent = agent or Agent(model="gpt-3.5-turbo-0125", model_settings=ModelSettings(temperature=0.7))
     
     current_time_utc = datetime.now(timezone.utc)
     formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
 
-    prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
-
-    llm = ChatOpenAI(model=engine, temperature=temperature, api_key=secretstr_to_v1_secretstr(api_key))
     field_descriptions = FIELDS_DESCRIPTIONS.copy()
     if not include_reasoning:
         field_descriptions.pop("reasoning")
-    formatted_messages = prediction_prompt.format_messages(
+    prediction_prompt = PREDICTION_PROMPT.format(
         user_prompt=prompt,
         additional_information=additional_information,
         n_fields=len(field_descriptions),
@@ -1242,26 +1227,9 @@ def make_prediction(
         fields_description=fields_dict_to_bullet_list(field_descriptions),
         timestamp=formatted_time_utc,
     )
-    generation = llm.generate([formatted_messages], logprobs=log_probs, top_logprobs=top_logprobs if log_probs else None, callbacks=[langfuse_context.get_current_langchain_handler()])
-
-    completion = generation.generations[0][0].text
-
-    # Get probability that is based on the token's top logprobs.
-    decision, probability = None, None
-    if log_probs:
-        for token in check_not_none(generation.generations[0][0].generation_info)["logprobs"]["content"]:  
-            # Check if the token is a decision token, we prompt the model for it to be there, so it is in 99% of cases.
-            if token["token"] in ("y", "n"):
-                decision = token["token"]
-                probability = math.exp(token["logprob"])
-                break
-
-        if decision is None or probability is None:
-            raise ValueError(f"No decision found in completion from {engine=}, {completion=}, {formatted_messages=}")
-
+    result = agent.run_sync(prediction_prompt)
+    completion = result.data
     response: Prediction = json.loads(clean_completion_json(completion))
-    response["decision"] = decision
-    response["decision_token_prob"] = probability
     
     return response
 
