@@ -26,9 +26,6 @@ import spacy.util
 import spacy.cli
 import tiktoken
 
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser
 from langchain_openai import OpenAIEmbeddings
 
 from dateutil import parser
@@ -36,7 +33,7 @@ from prediction_prophet.functions.utils import check_not_none
 from prediction_market_agent_tooling.gtypes import Probability
 from prediction_market_agent_tooling.tools.caches.db_cache import db_cache
 from prediction_prophet.functions.parallelism import par_map
-from prediction_market_agent_tooling.tools.langfuse_ import get_langfuse_langchain_config, observe
+from prediction_market_agent_tooling.tools.langfuse_ import observe
 
 load_dotenv()
 
