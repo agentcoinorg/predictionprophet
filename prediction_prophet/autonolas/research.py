@@ -1093,7 +1093,7 @@ def fetch_additional_information(
     #     return ""
 
     # Register system prompt if not already set on the agent
-    if not agent._system_prompts and not agent._system_prompts:
+    if not agent._system_prompts and not agent._system_prompt_functions and not agent._system_prompt_dynamic_functions:
         agent.system_prompt()(lambda: "You are a helpful assistant.")
 
     response = agent.run_sync(url_query_prompt).data
