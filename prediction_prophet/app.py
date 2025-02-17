@@ -18,7 +18,7 @@ from prediction_prophet.functions.search import search
 def research(
     goal: str,
     tavily_api_key: SecretStr,
-    model: KnownModelName = "openai:gpt-4o",
+    model: KnownModelName = "gpt-4o",
     temperature: float = 0.7, 
     initial_subqueries_limit: int = 20,
     subqueries_limit: int = 4,
@@ -146,7 +146,7 @@ if question := st.chat_input(placeholder='Will Twitter implement a new misinform
             )
                     
             with st.status("Making prediction"):
-                prediction = _make_prediction(market_question=question, additional_information=report, agent=Agent("openai:gpt-4o", model_settings=ModelSettings(temperature=0.0)))
+                prediction = _make_prediction(market_question=question, additional_information=report, agent=Agent("gpt-4o", model_settings=ModelSettings(temperature=0.0)))
 
                 if prediction.outcome_prediction == None:
                     st.container().error("The agent failed to generate a prediction")

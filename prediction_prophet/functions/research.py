@@ -60,7 +60,7 @@ def research(
             f"subqueries_limit ({subqueries_limit})."
         )
     
-    agent = agent or Agent("openai:gpt-4o", model_settings=ModelSettings(temperature=0.7))
+    agent = agent or Agent("gpt-4o", model_settings=ModelSettings(temperature=0.7))
 
     logger.info("Started subqueries generation")
     all_queries = generate_subqueries(query=goal, limit=initial_subqueries_limit, agent=agent)
