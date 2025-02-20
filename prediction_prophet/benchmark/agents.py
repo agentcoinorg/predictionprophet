@@ -159,7 +159,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
         use_summaries: bool = False,
         use_tavily_raw_content: bool = False,
         initial_subqueries_limit: int = 20,
-        subqueries_limit: int = 4,
+        subqueries_limit: int = 5,
         max_results_per_search: int = 5,
         min_scraped_sites: int = 5,
         max_workers: t.Optional[int] = None,
