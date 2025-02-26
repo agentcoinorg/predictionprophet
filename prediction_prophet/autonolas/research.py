@@ -34,6 +34,7 @@ from prediction_market_agent_tooling.gtypes import Probability
 from prediction_market_agent_tooling.tools.caches.db_cache import db_cache
 from prediction_prophet.functions.parallelism import par_map
 from prediction_market_agent_tooling.tools.langfuse_ import observe
+from prediction_market_agent_tooling.loggers import logger
 
 load_dotenv()
 
@@ -1203,9 +1204,13 @@ def make_prediction(
         timestamp=formatted_time_utc,
     )
     result = agent.run_sync(prediction_prompt)
+
     completion = result.data
-    response: Prediction = json.loads(clean_completion_json(completion))
-    
+    logger.info(f"Completion: {completion}")
+    completion_clean = clean_completion_json(completion)
+    logger.info(f"Completion cleaned: {completion_clean}")
+    response: Prediction = json.loads(completion_clean)
+
     return response
 
 
