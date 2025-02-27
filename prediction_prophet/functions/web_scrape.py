@@ -16,7 +16,11 @@ def fetch_html(url: str, timeout: int) -> Response:
     response = requests.get(url, headers=headers, timeout=timeout)
     return response
 
-@db_cache(max_age=timedelta(days=1), ignore_args=["timeout"])
+@db_cache(
+    max_age=timedelta(days=1),
+    ignore_args=["timeout"],
+    log_error_on_unsavable_data=False, # Sometimes it returns funky data that aren't serializable.
+)
 def web_scrape_strict(url: str, timeout: int = 10) -> str:
     response = fetch_html(url=url, timeout=timeout)
 
