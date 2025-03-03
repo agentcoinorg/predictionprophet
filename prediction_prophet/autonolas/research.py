@@ -1227,6 +1227,8 @@ def clean_completion_json(completion: str) -> str:
     into just { ... }
     ```
     """
+    completion = completion.strip().replace("\n", " ")
+    completion = " ".join(completion.split())
     start_index = completion.find("{")
     end_index = completion.rfind("}")
     completion = completion[start_index : end_index + 1]
