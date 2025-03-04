@@ -18,6 +18,7 @@ from enum import Enum
 from bs4 import BeautifulSoup, NavigableString
 from googleapiclient.discovery import build
 from prediction_prophet.functions.parallelism import THREADPOOL
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 import requests
 from requests import Session
@@ -1103,7 +1104,7 @@ def fetch_additional_information(
     try:
         json_data = json.loads(clean_completion_json(response))
     except json.decoder.JSONDecodeError as e:
-        raise ValueError(f"The response from {agent=} could not be parsed as JSON: {response=}") from e
+        raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {response=}") from e
 
     # Get URLs from queries
     urls = get_urls_from_queries(
@@ -1209,7 +1210,11 @@ def make_prediction(
     logger.info(f"Completion: {completion}")
     completion_clean = clean_completion_json(completion)
     logger.info(f"Completion cleaned: {completion_clean}")
-    response: Prediction = json.loads(completion_clean)
+
+    try:
+        response: Prediction = json.loads(completion_clean)
+    except json.decoder.JSONDecodeError as e:
+        raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {completion_clean=}") from e
 
     return response
 
