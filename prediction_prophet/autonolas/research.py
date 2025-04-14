@@ -18,6 +18,7 @@ from enum import Enum
 from bs4 import BeautifulSoup, NavigableString
 from googleapiclient.discovery import build
 from prediction_prophet.functions.parallelism import THREADPOOL
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 import requests
 from requests import Session
@@ -34,6 +35,7 @@ from prediction_market_agent_tooling.gtypes import Probability
 from prediction_market_agent_tooling.tools.caches.db_cache import db_cache
 from prediction_prophet.functions.parallelism import par_map
 from prediction_market_agent_tooling.tools.langfuse_ import observe
+from prediction_market_agent_tooling.loggers import logger
 
 load_dotenv()
 
@@ -1102,7 +1104,7 @@ def fetch_additional_information(
     try:
         json_data = json.loads(clean_completion_json(response))
     except json.decoder.JSONDecodeError as e:
-        raise ValueError(f"The response from {agent=} could not be parsed as JSON: {response=}") from e
+        raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {response=}") from e
 
     # Get URLs from queries
     urls = get_urls_from_queries(
@@ -1203,9 +1205,17 @@ def make_prediction(
         timestamp=formatted_time_utc,
     )
     result = agent.run_sync(prediction_prompt)
+
     completion = result.data
-    response: Prediction = json.loads(clean_completion_json(completion))
-    
+    logger.info(f"Completion: {completion}")
+    completion_clean = clean_completion_json(completion)
+    logger.info(f"Completion cleaned: {completion_clean}")
+
+    try:
+        response: Prediction = json.loads(completion_clean)
+    except json.decoder.JSONDecodeError as e:
+        raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {completion_clean=}") from e
+
     return response
 
 
@@ -1222,6 +1232,8 @@ def clean_completion_json(completion: str) -> str:
     into just { ... }
     ```
     """
+    completion = completion.strip().replace("\n", " ")
+    completion = " ".join(completion.split())
     start_index = completion.find("{")
     end_index = completion.rfind("}")
     completion = completion[start_index : end_index + 1]
