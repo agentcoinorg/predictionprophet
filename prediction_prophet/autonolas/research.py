@@ -36,6 +36,7 @@ from prediction_market_agent_tooling.tools.caches.db_cache import db_cache
 from prediction_prophet.functions.parallelism import par_map
 from prediction_market_agent_tooling.tools.langfuse_ import observe
 from prediction_market_agent_tooling.loggers import logger
+from prediction_market_agent_tooling.tools.google_utils import search_google_gcp
 
 load_dotenv()
 
@@ -352,25 +353,6 @@ def fields_dict_to_bullet_list(fields_dict: Dict[str, str]) -> str:
             bullet_list += "\n"
     return bullet_list
 
-@tenacity.retry(stop=tenacity.stop_after_attempt(3), wait=tenacity.wait_fixed(1), reraise=True)
-@db_cache(max_age=timedelta(days=1))
-def search_google(query: str, num: int = 3) -> List[str]:
-    """Search Google using a custom search engine."""
-    service = build("customsearch", "v1", developerKey=os.getenv("GOOGLE_SEARCH_API_KEY"))
-    search = (
-        service.cse()
-        .list(
-            q=query,
-            cx=os.getenv("GOOGLE_SEARCH_ENGINE_ID"),
-            num=num,
-        )
-        .execute()
-    )
-    try:
-        return [result["link"] for result in search["items"]]
-    except KeyError as e:
-        raise ValueError(f"Can not parse results: {search}") from e
-
 
 def download_spacy_model(model_name: str) -> None:
     """Downloads the specified spaCy language model if it is not already installed."""
@@ -504,7 +486,7 @@ def get_urls_from_queries(queries: List[str], num: int = 3) -> List[str]:
         raise ValueError(f"The maximum number of URLs per query is {max_num_fetch}.")
 
     for query in queries:
-        fetched_urls = search_google(
+        fetched_urls = search_google_gcp(
             query=query,
             num=max_num_fetch,  # Limit the number of returned URLs per query
         )
