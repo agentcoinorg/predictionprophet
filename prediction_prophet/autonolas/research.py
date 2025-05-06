@@ -1,4 +1,3 @@
-
 import os
 import tenacity
 from datetime import timedelta
@@ -325,6 +324,7 @@ class Prediction(TypedDict):
     confidence: float
     info_utility: float
     reasoning: Optional[str]
+    logprobs: Optional[dict]
 
 def list_to_list_str(l: List[str]) -> str:
     """
@@ -1189,6 +1189,11 @@ def make_prediction(
     result = agent.run_sync(prediction_prompt)
 
     completion = result.data
+
+    logprobs = None
+    if (vendor_details := result.all_messages()[-1].vendor_details):
+        logprobs = vendor_details.get("logprobs")
+    
     logger.info(f"Completion: {completion}")
     completion_clean = clean_completion_json(completion)
     logger.info(f"Completion cleaned: {completion_clean}")
@@ -1197,7 +1202,10 @@ def make_prediction(
         response: Prediction = json.loads(completion_clean)
     except json.decoder.JSONDecodeError as e:
         raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {completion_clean=}") from e
-
+    
+    if logprobs:
+        response['logprobs'] = logprobs
+    
     return response
 
 
