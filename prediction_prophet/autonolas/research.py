@@ -1,4 +1,3 @@
-
 import os
 import tenacity
 from datetime import timedelta
@@ -37,6 +36,7 @@ from prediction_prophet.functions.parallelism import par_map
 from prediction_market_agent_tooling.tools.langfuse_ import observe
 from prediction_market_agent_tooling.loggers import logger
 from prediction_market_agent_tooling.tools.google_utils import search_google_gcp
+from prediction_prophet.functions.logprobs_parser import LogprobsParser, LogprobKey
 
 load_dotenv()
 
@@ -325,6 +325,7 @@ class Prediction(TypedDict):
     confidence: float
     info_utility: float
     reasoning: Optional[str]
+    logprobs: Optional[list[dict[str, Any]]]
 
 def list_to_list_str(l: List[str]) -> str:
     """
@@ -1189,6 +1190,11 @@ def make_prediction(
     result = agent.run_sync(prediction_prompt)
 
     completion = result.data
+
+    logprobs = None
+    if (vendor_details := result.all_messages()[-1].vendor_details): # type: ignore
+        logprobs = vendor_details.get("logprobs")
+    
     logger.info(f"Completion: {completion}")
     completion_clean = clean_completion_json(completion)
     logger.info(f"Completion cleaned: {completion_clean}")
@@ -1197,9 +1203,19 @@ def make_prediction(
         response: Prediction = json.loads(completion_clean)
     except json.decoder.JSONDecodeError as e:
         raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {completion_clean=}") from e
-
+    
+    if logprobs:
+        response['logprobs'] = LogprobsParser().parse_logprobs(logprobs, 
+        [
+            LogprobKey(name="decision", key_type=str, valid_values={"y", "n"}),        
+            LogprobKey(name="p_yes", key_type=float, valid_values=None), 
+            LogprobKey(name="p_no", key_type=float, valid_values=None),
+            LogprobKey(name="confidence", key_type=float, valid_values=None),
+            LogprobKey(name="info_utility", key_type=float, valid_values=None),
+        ]
+    )
+    
     return response
-
 
 def clean_completion_json(completion: str) -> str:
     """
