@@ -6,7 +6,7 @@ authors = ["Nestor Amesty <nestor@polywrap.io>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
+python = "~3.11.0"
 langchain = "^0.2.6"
 beautifulsoup4 = "^4,<4.13" # Bug in typing of newer version
 click = "^8.0.2"
