@@ -1,14 +1,12 @@
 import logging
-from typing import cast
+
 import click
 import time
 from dotenv import load_dotenv
 from prediction_prophet.functions.debate_prediction import make_debated_prediction
 from langchain_community.callbacks import get_openai_callback
 from prediction_prophet.functions.research import research as prophet_research
-from prediction_market_agent_tooling.benchmark.utils import (
-    OutcomePrediction
-)
+
 
 load_dotenv()
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(message)s')
@@ -61,7 +59,7 @@ def research(
 def predict(prompt: str, path: str | None = None) -> None:
     start = time.time()
 
-    with get_openai_callback() as cb:
+    with get_openai_callback():
         if path:
             report = read_text_file(path)
         else:
@@ -72,14 +70,11 @@ def predict(prompt: str, path: str | None = None) -> None:
         prediction = make_debated_prediction(prompt=prompt, additional_information=report)
 
     end = time.time()
-    
-    outcome_prediction = prediction.outcome_prediction
-    if outcome_prediction == None:
+
+    if prediction is None:
         raise ValueError("The agent failed to generate a prediction")
-    
-    outcome_prediction = cast(OutcomePrediction, prediction.outcome_prediction)
-    
-    print(f"\n\nQuestion: '{prompt}'\nProbability of ocurring: {outcome_prediction.p_yes * 100}%\nConfidence in prediction: {outcome_prediction.confidence * 100}%\nTime elapsed: {end - start}")
+
+    print(f"\n\nQuestion: '{prompt}'\nProbability of ocurring: {prediction.p_yes * 100}%\nConfidence in prediction: {prediction.confidence * 100}%\nTime elapsed: {end - start}")
 
 
 if __name__ == '__main__':

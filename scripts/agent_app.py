@@ -107,7 +107,7 @@ for idx, (column, agent) in enumerate(zip(st.columns(len(agents)), agents)):
     # Optionally, do the evaluation.
     if do_question_evaluation:
         with st.spinner("Evaluating..."):
-            is_predictable = agent.is_predictable(market_question=question) 
+            is_predictable = agent.is_predictable(market_question=question)
         if show_evaluation:
             column.markdown(f"""## Evaluation
 
