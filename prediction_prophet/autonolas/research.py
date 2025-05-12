@@ -1192,8 +1192,11 @@ def make_prediction(
     completion = result.data
 
     logprobs = None
-    if (vendor_details := result.all_messages()[-1].vendor_details): # type: ignore
-        logprobs = vendor_details.get("logprobs")
+    messages = result.all_messages()
+    if messages and hasattr(messages[-1], 'vendor_details'):
+        vendor_details = messages[-1].vendor_details
+        if vendor_details:
+            logprobs = vendor_details.get("logprobs")
     
     logger.info(f"Completion: {completion}")
     completion_clean = clean_completion_json(completion)
