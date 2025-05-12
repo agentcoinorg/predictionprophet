@@ -3463,13 +3463,13 @@ test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "logfire-api"
-version = "3.15.0"
+version = "3.15.1"
 description = "Shim for the Logfire SDK which does nothing unless Logfire is installed"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "logfire_api-3.15.0-py3-none-any.whl", hash = "sha256:1c928bfdae2b03085719a12d6d4269ed53bb7dc02d18ca6de43002d15e0ee117"},
-    {file = "logfire_api-3.15.0.tar.gz", hash = "sha256:eabd4a673a4953ab1402db4457c12270d2e0d00ad449873161dd809b2cd6fd66"},
+    {file = "logfire_api-3.15.1-py3-none-any.whl", hash = "sha256:dfe344ce3e67ccada347c98112ee044ff0a52e8900f7dc0ff20c683d0c81c13f"},
+    {file = "logfire_api-3.15.1.tar.gz", hash = "sha256:50705b905408d007163c82ba4cb76a36dd85b7d401568ea9321d1de2171eb157"},
 ]
 
 [[package]]
@@ -5088,8 +5088,10 @@ openai = ["openai (>=1.0.0,<2.0.0)"]
 optuna = ["optuna (>=4.1.0,<5.0.0)"]
 
 [package.source]
-type = "directory"
-url = "../prediction-market-agent-tooling"
+type = "git"
+url = "https://github.com/gnosis/prediction-market-agent-tooling.git"
+reference = "510-support-for-arbitrary-categorical-outcomes"
+resolved_reference = "8035acc3f948ad2a2f9f231e98a37d6c8e042168"
 
 [[package]]
 name = "preshed"
@@ -8596,4 +8598,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "9d425a047b0f61055cb6b0cf02c0f4ef106eb210a92d204c3bfb4f786c16c0ba"
+content-hash = "1c6ff0936de4f59c0cdf7ffff8e6b0cdc8d9336430ecbb798a8b3474515e3db7"
