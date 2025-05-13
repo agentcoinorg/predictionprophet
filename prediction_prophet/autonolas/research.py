@@ -36,7 +36,7 @@ from prediction_prophet.functions.parallelism import par_map
 from prediction_market_agent_tooling.tools.langfuse_ import observe
 from prediction_market_agent_tooling.loggers import logger
 from prediction_market_agent_tooling.tools.google_utils import search_google_gcp
-from prediction_prophet.functions.logprobs_parser import LogprobsParser, LogprobKey
+from prediction_market_agent_tooling.logprobs_parser import LogprobsParser, LogprobKey
 
 load_dotenv()
 
