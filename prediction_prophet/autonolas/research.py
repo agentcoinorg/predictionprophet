@@ -2,7 +2,7 @@ import os
 import tenacity
 from datetime import timedelta
 from sklearn.metrics.pairwise import cosine_similarity
-from typing import Any, Dict, Generator, List, Optional, Tuple, TypedDict
+from typing import Annotated, Literal, Any, Dict, Generator, List, Optional, Tuple, TypedDict
 from datetime import datetime, timezone
 import json
 from dotenv import load_dotenv
@@ -18,6 +18,8 @@ from bs4 import BeautifulSoup, NavigableString
 from googleapiclient.discovery import build
 from prediction_prophet.functions.parallelism import THREADPOOL
 from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic import BaseModel, Field
+
 
 import requests
 from requests import Session
@@ -36,7 +38,8 @@ from prediction_prophet.functions.parallelism import par_map
 from prediction_market_agent_tooling.tools.langfuse_ import observe
 from prediction_market_agent_tooling.loggers import logger
 from prediction_market_agent_tooling.tools.google_utils import search_google_gcp
-from prediction_market_agent_tooling.logprobs_parser import LogprobsParser, LogprobKey
+from prediction_market_agent_tooling.logprobs_parser import LogprobsParser, FieldLogprobs
+
 
 load_dotenv()
 
@@ -318,14 +321,15 @@ class EmbeddingModel(Enum):
     spacy = "spacy"
     openai = "openai"
 
-
-class Prediction(TypedDict):
-    p_yes: Probability
-    p_no: Probability
+class Prediction(BaseModel):
+    decision: Literal["y", "n"]
+    p_yes: Annotated[Probability, Field(ge=0.0, le=1.0)]
+    p_no: Annotated[Probability, Field(ge=0.0, le=1.0)]
     confidence: float
     info_utility: float
-    reasoning: Optional[str]
-    logprobs: Optional[list[dict[str, Any]]]
+    reasoning: Optional[str] = None
+    logprobs: Optional[list[FieldLogprobs]] = []
+
 
 def list_to_list_str(l: List[str]) -> str:
     """
@@ -1208,15 +1212,7 @@ def make_prediction(
         raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {completion_clean=}") from e
     
     if logprobs:
-        response['logprobs'] = LogprobsParser().parse_logprobs(logprobs, 
-        [
-            LogprobKey(name="decision", key_type=str, valid_values={"y", "n"}),        
-            LogprobKey(name="p_yes", key_type=float, valid_values=None), 
-            LogprobKey(name="p_no", key_type=float, valid_values=None),
-            LogprobKey(name="confidence", key_type=float, valid_values=None),
-            LogprobKey(name="info_utility", key_type=float, valid_values=None),
-        ]
-    )
+        response['logprobs'] = LogprobsParser(skip_fields = ["reasoning"]).parse_logprobs(logprobs, Prediction) # type: ignore
     
     return response
 
