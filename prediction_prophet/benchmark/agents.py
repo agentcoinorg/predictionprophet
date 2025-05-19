@@ -51,7 +51,7 @@ def _make_prediction(
 @observe()
 def _make_prediction_categorical(
     market_question: str,
-    market_outcomes: list[str],
+    market_outcomes: t.Sequence[str],
     additional_information: str,
     agent: Agent,
     include_reasoning: bool = False,
