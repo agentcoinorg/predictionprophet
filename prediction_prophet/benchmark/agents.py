@@ -226,7 +226,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             self.logger.error(f"Error in PredictionProphet's predict: {e}")
             return Prediction()
 
-    def predict_categorical(self, market_question: str, market_outcomes: list[str]) -> Prediction:
+    def predict_categorical(self, market_question: str, market_outcomes: t.Sequence[str]) -> Prediction:
         try:
             research = self.research(market_question)
             return Prediction(outcome_prediction=_make_prediction_categorical(
