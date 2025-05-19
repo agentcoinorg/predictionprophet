@@ -3,7 +3,7 @@ import os
 import tenacity
 from datetime import timedelta
 from sklearn.metrics.pairwise import cosine_similarity
-from typing import Any, Dict, Generator, List, Optional, Tuple, TypedDict
+from typing import Any, Dict, Generator, List, Optional, Tuple, TypedDict, Sequence
 from datetime import datetime, timezone
 import json
 from dotenv import load_dotenv
@@ -1270,7 +1270,7 @@ def make_prediction(
 @observe()
 def make_prediction_categorical(
     prompt: str,
-    possible_outcomes: list[str],
+    possible_outcomes: Sequence[str],
     additional_information: str,
     agent: Agent | None,
     include_reasoning: bool = False,
