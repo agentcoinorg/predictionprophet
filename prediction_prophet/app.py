@@ -147,13 +147,6 @@ if question := st.chat_input(placeholder='Will Twitter implement a new misinform
                     
             with st.status("Making prediction"):
                 prediction = _make_prediction(market_question=question, additional_information=report, agent=Agent("gpt-4o", model_settings=ModelSettings(temperature=0.0)))
-
-                if prediction is None:
-                    st.container().error("The agent failed to generate a prediction")
-                    st.stop()
-                
-
-            
                 st.write(f"Probability: {prediction.p_yes * 100}%. Confidence: {prediction.confidence * 100}%")
                 if prediction.reasoning:
                     st.write(f"Reasoning: {prediction.reasoning}")
