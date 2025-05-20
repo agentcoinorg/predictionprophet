@@ -1,17 +1,14 @@
 import datetime
 import json
+
 from autogen import ConversableAgent
-from prediction_market_agent_tooling.benchmark.utils import (
-    Prediction,
-)
-from prediction_prophet.benchmark.agents import completion_prediction_json_to_pydantic_model
-from pydantic import SecretStr
+from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
 from prediction_market_agent_tooling.config import APIKeys
 from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
-
+from prediction_market_agent_tooling.markets.data_models import ProbabilisticAnswer
+from pydantic import SecretStr
 
 PREDICTION_PROMPT = """
 Your task is to determine the probability of a prediction market question being answered 'Yes' or 'No'.
@@ -83,7 +80,7 @@ You will debate other agents's predictions. You can update your prediction if ot
 give you convincing arguments. Nonetheless, be strong in your position and argument back to defend your prediction.
 """
     
-def make_debated_prediction(prompt: str, additional_information: str, api_key: SecretStr | None = None) -> Prediction:
+def make_debated_prediction(prompt: str, additional_information: str, api_key: SecretStr | None = None) -> ProbabilisticAnswer:
     if api_key == None:
         api_key = APIKeys().openai_api_key
         
@@ -136,4 +133,5 @@ def make_debated_prediction(prompt: str, additional_information: str, api_key: S
         "prediction_summary": chat_result.summary
     })
     
-    return completion_prediction_json_to_pydantic_model(json.loads(result))
+
+    return ProbabilisticAnswer.model_validate(json.loads(result))

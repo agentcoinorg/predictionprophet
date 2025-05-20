@@ -1,5 +1,7 @@
 import logging
 import typing as t
+from datetime import datetime
+from unittest.mock import patch
 
 from prediction_market_agent_tooling.benchmark.agents import (
     AbstractBenchmarkedAgent,
@@ -7,25 +9,20 @@ from prediction_market_agent_tooling.benchmark.agents import (
 from prediction_market_agent_tooling.benchmark.utils import (
     Prediction,
 )
+from prediction_market_agent_tooling.markets.data_models import ProbabilisticAnswer, CategoricalProbabilisticAnswer
+from prediction_market_agent_tooling.tools.is_predictable import is_predictable_binary
+from prediction_market_agent_tooling.tools.langfuse_ import observe
 from pydantic_ai import Agent
-from datetime import datetime
+
 from prediction_prophet.autonolas.research import EmbeddingModel
 from prediction_prophet.autonolas.research import make_prediction, get_urls_from_queries
 from prediction_prophet.autonolas.research import research as research_autonolas
 from prediction_prophet.functions.rephrase_question import rephrase_question
-from prediction_prophet.functions.research import NoResulsFoundError, NotEnoughScrapedSitesError, Research, research as prophet_research
+from prediction_prophet.functions.research import NoResulsFoundError, NotEnoughScrapedSitesError, Research, \
+    research as prophet_research
 from prediction_prophet.functions.search import search
 from prediction_prophet.functions.utils import url_is_older_than
 from prediction_prophet.models.WebSearchResult import WebSearchResult
-from unittest.mock import patch
-from prediction_prophet.functions.search import search
-from prediction_market_agent_tooling.benchmark.utils import (
-    OutcomePrediction,
-    Prediction,
-)
-from prediction_prophet.autonolas.research import Prediction as LLMCompletionPredictionDict
-from prediction_market_agent_tooling.tools.langfuse_ import observe
-from prediction_market_agent_tooling.tools.is_predictable import is_predictable_binary
 
 if t.TYPE_CHECKING:
     from loguru import Logger
@@ -37,7 +34,7 @@ def _make_prediction(
     additional_information: str,
     agent: Agent,
     include_reasoning: bool = False,
-) -> Prediction:
+) -> ProbabilisticAnswer:
     """
     We prompt model to output a simple flat JSON and convert it to a more structured pydantic model here.
     """
@@ -47,17 +44,10 @@ def _make_prediction(
         agent=agent,
         include_reasoning=include_reasoning,
     )
-    return completion_prediction_json_to_pydantic_model(
-        prediction
-    )
+    return ProbabilisticAnswer.model_validate(prediction)
 
 
-def completion_prediction_json_to_pydantic_model(
-    completion_prediction: LLMCompletionPredictionDict,
-) -> Prediction:
-    return Prediction(
-        outcome_prediction=OutcomePrediction.model_validate(completion_prediction),
-    )
+
 
 
 class QuestionOnlyAgent(AbstractBenchmarkedAgent):
@@ -76,11 +66,11 @@ class QuestionOnlyAgent(AbstractBenchmarkedAgent):
         self, market_question: str
     ) -> Prediction:
         try:
-            return _make_prediction(
+            return Prediction(outcome_prediction=CategoricalProbabilisticAnswer.from_probabilistic_answer(_make_prediction(
                 market_question=market_question,
                 additional_information="",
                 agent=self.agent,
-            )
+            )))
         except ValueError as e:
             self.logger.error(f"Error in QuestionOnlyAgent's predict: {e}")
             return Prediction()
@@ -125,11 +115,11 @@ class OlasAgent(AbstractBenchmarkedAgent):
     def predict(self, market_question: str) -> Prediction:
         try:
             researched = self.research(market_question=market_question)
-            return _make_prediction(
+            return Prediction(outcome_prediction=CategoricalProbabilisticAnswer.from_probabilistic_answer(_make_prediction(
                 market_question=market_question,
                 additional_information=researched,
                 agent=self.prediction_agent,
-            )
+            )))
         except ValueError as e:
             self.logger.error(f"Error in OlasAgent's predict: {e}")
             return Prediction()
@@ -201,12 +191,13 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
     def predict(self, market_question: str) -> Prediction:
         try:
             research = self.research(market_question)
-            return _make_prediction(
+            return Prediction(outcome_prediction=CategoricalProbabilisticAnswer.from_probabilistic_answer(_make_prediction(
                 market_question=market_question,
                 additional_information=research.report,
                 agent=self.prediction_agent,
                 include_reasoning=self.include_reasoning,
-        )
+            )))
+
         except (NoResulsFoundError, NotEnoughScrapedSitesError) as e:
             self.logger.warning(f"Problem in PredictionProphet's predict: {e}")
             return Prediction()
