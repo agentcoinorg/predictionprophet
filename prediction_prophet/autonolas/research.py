@@ -366,7 +366,7 @@ def download_spacy_model(model_name: str) -> None:
     if not spacy.util.is_package(model_name):
         spacy.cli.download(model_name)
     else:
-        print(f"{model_name} is already installed.")
+        logger.info(f"{model_name} is already installed.")
 
 
 def extract_event_date(doc_question: spacy.tokens.Doc) -> Optional[str]:
@@ -459,7 +459,7 @@ def safe_get_urls_from_query(query: str, num: int = 3) -> List[str]:
     try:
         return get_urls_from_query(query, num)
     except ValueError as e:
-        print(f"Error in get_urls_from_query: {e}")
+        logger.warning(f"Error in get_urls_from_query: {e}")
         return []
 
 
@@ -936,7 +936,7 @@ def process_in_batches(
                         )
                     )
             except Exception as e:
-                print(f"An error occurred: {e}")
+                logger.warning(f"An error occurred: {e}")
 
         yield futures
 
@@ -994,10 +994,10 @@ def extract_and_sort_sentences(
                     all_sentences.extend(extracted_sentences)
 
             except requests.exceptions.Timeout:
-                print(f"Request for {url} timed out.")
+                logger.warning(f"Request for {url} timed out.")
 
             except Exception as e:
-                print(f"An error occurred: {e}")
+                logger.warning(f"An error occurred: {e}")
 
     all_sentences.sort(
         key=lambda x: x[1], reverse=True
