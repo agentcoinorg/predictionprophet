@@ -42,7 +42,6 @@ def web_scrape_strict(url: str, timeout: int = 10) -> str:
         
         return text
     else:
-        print("Non-HTML content received")
         logging.warning("Non-HTML content received")
         return ""
 
@@ -53,6 +52,5 @@ def web_scrape(url: str, timeout: int = 10) -> str:
     try:
         return web_scrape_strict(url=url, timeout=timeout)
     except requests.RequestException as e:
-        print(f"HTTP request failed: {e}")
         logging.warning(f"HTTP request failed: {e}")
         return ""

@@ -6,7 +6,6 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_openai import ChatOpenAI
 from prediction_market_agent_tooling.config import APIKeys
-from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 from prediction_market_agent_tooling.markets.data_models import ProbabilisticAnswer
 from pydantic import SecretStr
 
@@ -90,7 +89,7 @@ def make_debated_prediction(prompt: str, additional_information: str, api_key: S
 
     prediction_chain = (
         prediction_prompt |
-        ChatOpenAI(model="gpt-4-0125-preview", api_key=secretstr_to_v1_secretstr(api_key)) |
+        ChatOpenAI(model_name="gpt-4-0125-preview", openai_api_key=api_key) |
         StrOutputParser()
     )
 
@@ -125,7 +124,7 @@ def make_debated_prediction(prompt: str, additional_information: str, api_key: S
 
     extraction_chain = (
         extraction_prompt |
-        ChatOpenAI(model="gpt-3.5-turbo-0125", api_key=secretstr_to_v1_secretstr(api_key)) |
+        ChatOpenAI(model_name="gpt-3.5-turbo-0125", openai_api_key=api_key) |
         StrOutputParser()
     )
 

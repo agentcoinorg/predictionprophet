@@ -14,14 +14,13 @@ from prediction_prophet.models.WebScrapeResult import WebScrapeResult
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pydantic.types import SecretStr
 from prediction_market_agent_tooling.config import APIKeys
-from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 
 
 def create_embeddings_from_results(results: list[WebScrapeResult], text_splitter: RecursiveCharacterTextSplitter, api_key: SecretStr | None = None) -> Chroma:
     if api_key == None:
         api_key = APIKeys().openai_api_key
     
-    collection = Chroma(embedding_function=OpenAIEmbeddings(api_key=secretstr_to_v1_secretstr(api_key)))
+    collection = Chroma(embedding_function=OpenAIEmbeddings(openai_api_key=api_key))
     texts = []
     metadatas = []
 
