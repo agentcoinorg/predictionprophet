@@ -6,7 +6,6 @@ from langchain.schema.output_parser import StrOutputParser
 from prediction_prophet.functions.utils import trim_to_n_tokens
 from prediction_market_agent_tooling.config import APIKeys
 from pydantic.types import SecretStr
-from prediction_market_agent_tooling.gtypes import secretstr_to_v1_secretstr
 from prediction_market_agent_tooling.tools.langfuse_ import get_langfuse_langchain_config, observe
 
 @observe()
@@ -27,7 +26,7 @@ Content:
 
     research_evaluation_chain = (
         evaluation_prompt |
-        ChatOpenAI(model=model, api_key=secretstr_to_v1_secretstr(api_key)) |
+        ChatOpenAI(model_name=model, openai_api_key=api_key) |
         StrOutputParser()
     )
 
