@@ -30,8 +30,7 @@ scikit-learn = "^1.4.0"
 typer = ">=0.9.0,<1.0.0"
 types-requests = "^2.31.0.20240125"
 types-python-dateutil = "^2.9.0"
-# TODO: Use # >=0.65.3,<1
-prediction-market-agent-tooling = { version = "0.65.3.dev683", extras = ["langchain", "google"] } 
+prediction-market-agent-tooling = { version = ">=0.65.3,<1", extras = ["langchain", "google"] } 
 langchain-community = "^0.3.0"
 memory-profiler = "^0.61.0"
 matplotlib = "^3.8.3"
