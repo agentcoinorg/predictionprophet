@@ -1,9 +1,8 @@
-
 import os
 import tenacity
 from datetime import timedelta
 from sklearn.metrics.pairwise import cosine_similarity
-from typing import Any, Dict, Generator, List, Optional, Tuple, TypedDict, Sequence
+from typing import Annotated, Literal, Any, Dict, Generator, List, Optional, Tuple, TypedDict, Sequence
 from datetime import datetime, timezone
 import json
 from dotenv import load_dotenv
@@ -19,6 +18,8 @@ from bs4 import BeautifulSoup, NavigableString
 from googleapiclient.discovery import build
 from prediction_prophet.functions.parallelism import THREADPOOL
 from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic import BaseModel, Field
+
 
 import requests
 from requests import Session
@@ -37,6 +38,8 @@ from prediction_prophet.functions.parallelism import par_map
 from prediction_market_agent_tooling.tools.langfuse_ import observe
 from prediction_market_agent_tooling.loggers import logger
 from prediction_market_agent_tooling.tools.google_utils import search_google_gcp
+from prediction_market_agent_tooling.logprobs_parser import LogprobsParser, FieldLogprobs
+
 
 load_dotenv()
 
@@ -375,13 +378,14 @@ class EmbeddingModel(Enum):
     openai = "openai"
 
 
-class Prediction(TypedDict):
-    decision: str
-    p_yes: Probability
-    p_no: Probability
+class Prediction(BaseModel):
+    decision: Literal["y", "n"]
+    p_yes: Annotated[Probability, Field(ge=0.0, le=1.0)]
+    p_no: Annotated[Probability, Field(ge=0.0, le=1.0)]
     confidence: float
     info_utility: float
-    reasoning: Optional[str]
+    reasoning: Optional[str] = None
+    logprobs: Optional[list[FieldLogprobs]] = []
 
 
 class CategoricalPrediction(TypedDict):
@@ -1255,6 +1259,14 @@ def make_prediction(
     result = agent.run_sync(prediction_prompt)
 
     completion = result.data
+
+    logprobs = None
+    messages = result.all_messages()
+    if messages and hasattr(messages[-1], 'vendor_details'):
+        vendor_details = messages[-1].vendor_details
+        if vendor_details:
+            logprobs = vendor_details.get("logprobs")
+    
     logger.info(f"Completion: {completion}")
     completion_clean = clean_completion_json(completion)
     logger.info(f"Completion cleaned: {completion_clean}")
@@ -1263,7 +1275,10 @@ def make_prediction(
         response: Prediction = json.loads(completion_clean)
     except json.decoder.JSONDecodeError as e:
         raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {completion_clean=}") from e
-
+    
+    if logprobs:
+        response['logprobs'] = LogprobsParser(skip_fields = ["reasoning"]).parse_logprobs(logprobs, Prediction) # type: ignore
+    
     return response
 
 
