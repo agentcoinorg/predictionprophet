@@ -15,7 +15,7 @@ from prediction_market_agent_tooling.tools.langfuse_ import observe
 from pydantic_ai import Agent
 
 from prediction_prophet.autonolas.research import EmbeddingModel
-from prediction_prophet.autonolas.research import make_prediction, get_urls_from_queries
+from prediction_prophet.autonolas.research import make_prediction, get_urls_from_queries, make_prediction_categorical
 from prediction_prophet.autonolas.research import research as research_autonolas
 from prediction_prophet.functions.rephrase_question import rephrase_question
 from prediction_prophet.functions.research import NoResulsFoundError, NotEnoughScrapedSitesError, Research, \
@@ -46,6 +46,27 @@ def _make_prediction(
     )
     return ProbabilisticAnswer.model_validate(prediction)
 
+
+
+@observe()
+def _make_prediction_categorical(
+    market_question: str,
+    market_outcomes: t.Sequence[str],
+    additional_information: str,
+    agent: Agent,
+    include_reasoning: bool = False,
+) -> CategoricalProbabilisticAnswer:
+    """
+    We prompt model to output a simple flat JSON and convert it to a more structured pydantic model here.
+    """
+    prediction = make_prediction_categorical(
+        prompt=market_question,
+        possible_outcomes=market_outcomes,
+        additional_information=additional_information,
+        agent=agent,
+        include_reasoning=include_reasoning,
+    )
+    return CategoricalProbabilisticAnswer.model_validate(prediction)
 
 
 
@@ -203,6 +224,24 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             return Prediction()
         except ValueError as e:
             self.logger.error(f"Error in PredictionProphet's predict: {e}")
+            return Prediction()
+
+    def predict_categorical(self, market_question: str, market_outcomes: t.Sequence[str]) -> Prediction:
+        try:
+            research = self.research(market_question)
+            return Prediction(outcome_prediction=_make_prediction_categorical(
+                market_question=market_question,
+                market_outcomes=market_outcomes,
+                additional_information=research.report,
+                agent=self.prediction_agent,
+                include_reasoning=self.include_reasoning,
+            ))
+
+        except (NoResulsFoundError, NotEnoughScrapedSitesError) as e:
+            self.logger.warning(f"Problem in PredictionProphet's predict_categorical: {e}")
+            return Prediction()
+        except ValueError as e:
+            self.logger.error(f"Error in PredictionProphet's predict_categorical: {e}")
             return Prediction()
 
     def predict_restricted(
