@@ -2,7 +2,7 @@ import os
 import tenacity
 from datetime import timedelta
 from sklearn.metrics.pairwise import cosine_similarity
-from typing import Annotated, Literal, Any, Dict, Generator, List, Optional, Tuple, TypedDict
+from typing import Annotated, Literal, Any, Dict, Generator, List, Optional, Tuple, TypedDict, Sequence
 from datetime import datetime, timezone
 import json
 from dotenv import load_dotenv
@@ -118,12 +118,68 @@ OUTPUT_FORMAT:
 * The sum of "p_yes" and "p_no" must equal 1.
 * Output only the JSON object in your response. Do not include any other contents in your response.
 """
+PREDICTION_PROMPT_CATEGORICAL = """
+INTRODUCTION:
+You are a Large Language Model (LLM) within a multi-agent system. Your primary task is to accurately estimate the probabilities for the outcome of a 'market question', \
+found in 'USER_PROMPT'. The market question is part of a prediction market, where users can place bets on the outcomes of market questions and earn rewards if the selected outcome occurrs.
+Each market has a closing date at which the outcome is evaluated. This date is typically stated within the market question.  \
+The closing date is considered to be 23:59:59 of the date provided in the market question. \
+You are provided an itemized list of information under the label "ADDITIONAL_INFORMATION", which is \
+sourced from a Google search engine query performed a few seconds ago and is meant to assist you in your probability estimation. You must adhere to the following 'INSTRUCTIONS'.  
+
+
+INSTRUCTIONS:
+* Examine the user's input labeled 'USER_PROMPT'. Focus on the part enclosed in double quotes, which contains the 'market question'.
+* Estimate probabilities for each possible outcome of the market question, which are provided in the 'POSSIBLE_OUTCOMES' section.
+* Probabilities have to sum up to 1.
+* Consider the prediction market with the market question, the closing date and the outcomes in an isolated context that has no influence on the protagonists that are involved in the event in the real world, specified in the market question. The closing date is always arbitrarily set by the market creator and has no influence on the real world. So it is likely that the protagonists of the event in the real world are not even aware of the prediction market and do not care about the market's closing date.
+* The probability estimations of the market question outcomes must be as accurate as possible, as an inaccurate estimation will lead to financial loss for the user.
+* Utilize your training data and the information provided under "ADDITIONAL_INFORMATION" to generate probability estimations for the outcomes of the 'market question'.
+* Examine the itemized list under "ADDITIONAL_INFORMATION" thoroughly and use all the relevant information for your probability estimation. This data is sourced from a Google search engine query done a few seconds ago. 
+* Use any relevant item in "ADDITIONAL_INFORMATION" in addition to your training data to make the probability estimation. You can assume that you have been provided with the most current and relevant information available on the internet. Still pay close attention on the release and modification timestamps provided in parentheses right before each information item. Some information might be outdated and not relevant anymore.
+* More recent information indicated by the timestamps provided in parentheses right before each information item overrides older information within ADDITIONAL_INFORMATION and holds more weight for your probability estimation.
+* If there exist contradicting information, evaluate the release and modification dates of those information and prioritize the information that is more recent and adjust your confidence in the probability estimation accordingly.
+* Even if not all information might not be released today, you can assume that there haven't been publicly available updates in the meantime except for those inside ADDITIONAL_INFORMATION.
+* You must provide your response in the format specified under "OUTPUT_FORMAT".
+* Do not include any other contents in your response.
+
+
+USER_PROMPT:
+```
+{user_prompt}
+```
+
+POSSIBLE_OUTCOMES:
+```
+{possible_outcomes}
+```
+
+ADDITIONAL_INFORMATION:
+```
+{additional_information}
+```
+
+OUTPUT_FORMAT:
+* Your output response must be only a single JSON object to be parsed by Python's "json.loads()".
+* The JSON must contain {n_fields} fields: {fields_list}.
+{fields_description}
+* The sum of "p_yes" and "p_no" must equal 1.
+* Output only the JSON object in your response. Do not include any other contents in your response.
+"""
+
 
 FIELDS_DESCRIPTIONS = {
     "reasoning": "A string containing the reasoning behind your decision, and the rest of the answer you're about to give.",
     "decision": "The decision you made. Either `y` (for `Yes`) or `n` (for `No`).",
     "p_yes": "Probability that the market question's outcome will be `Yes`. Ranging from 0 (lowest probability) to 1 (maximum probability).",
     "p_no": "Probability that the market questions outcome will be `No`. Ranging from 0 (lowest probability) to 1 (maximum probability).",
+    "confidence": "Indicating the confidence in the estimated probabilities you provided ranging from 0 (lowest confidence) to 1 (maximum confidence). Confidence can be calculated based on the quality and quantity of data used for the estimation.",
+    "info_utility": "Utility of the information provided in 'ADDITIONAL_INFORMATION' to help you make the probability estimation ranging from 0 (lowest utility) to 1 (maximum utility).",
+}
+FIELDS_DESCRIPTIONS_CATEGORICAL = {
+    "reasoning": "A string containing the reasoning behind your decision, and the rest of the answer you're about to give.",
+    "decision": "The decision you made. The given outcome you have chosen.",
+    "probabilities": "A dictionary containing the probabilities for each possible outcome of the market question. The keys are the possible outcomes, and the values are the corresponding probabilities.",
     "confidence": "Indicating the confidence in the estimated probabilities you provided ranging from 0 (lowest confidence) to 1 (maximum confidence). Confidence can be calculated based on the quality and quantity of data used for the estimation.",
     "info_utility": "Utility of the information provided in 'ADDITIONAL_INFORMATION' to help you make the probability estimation ranging from 0 (lowest utility) to 1 (maximum utility).",
 }
@@ -321,6 +377,7 @@ class EmbeddingModel(Enum):
     spacy = "spacy"
     openai = "openai"
 
+
 class Prediction(BaseModel):
     decision: Literal["y", "n"]
     p_yes: Annotated[Probability, Field(ge=0.0, le=1.0)]
@@ -329,6 +386,14 @@ class Prediction(BaseModel):
     info_utility: float
     reasoning: Optional[str] = None
     logprobs: Optional[list[FieldLogprobs]] = []
+
+
+class CategoricalPrediction(TypedDict):
+    decision: str
+    probabilities: Dict[str, Probability]
+    confidence: float
+    info_utility: float
+    reasoning: Optional[str]
 
 
 def list_to_list_str(l: List[str]) -> str:
@@ -1215,6 +1280,47 @@ def make_prediction(
         response['logprobs'] = LogprobsParser(skip_fields = ["reasoning"]).parse_logprobs(logprobs, Prediction) # type: ignore
     
     return response
+
+
+@observe()
+def make_prediction_categorical(
+    prompt: str,
+    possible_outcomes: Sequence[str],
+    additional_information: str,
+    agent: Agent | None,
+    include_reasoning: bool = False,
+) -> CategoricalPrediction:
+    agent = agent or Agent(model="gpt-3.5-turbo-0125", model_settings=ModelSettings(temperature=0.7))
+    
+    current_time_utc = datetime.now(timezone.utc)
+    formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
+
+    field_descriptions = FIELDS_DESCRIPTIONS_CATEGORICAL.copy()
+    if not include_reasoning:
+        field_descriptions.pop("reasoning")
+    prediction_prompt = PREDICTION_PROMPT_CATEGORICAL.format(
+        user_prompt=prompt,
+        possible_outcomes=possible_outcomes,
+        additional_information=additional_information,
+        n_fields=len(field_descriptions),
+        fields_list=list_to_list_str(list(field_descriptions)),
+        fields_description=fields_dict_to_bullet_list(field_descriptions),
+        timestamp=formatted_time_utc,
+    )
+    result = agent.run_sync(prediction_prompt)
+
+    completion = result.data
+    logger.info(f"Completion: {completion}")
+    completion_clean = clean_completion_json(completion)
+    logger.info(f"Completion cleaned: {completion_clean}")
+
+    try:
+        response: CategoricalPrediction = json.loads(completion_clean)
+    except json.decoder.JSONDecodeError as e:
+        raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {completion_clean=}") from e
+
+    return response
+
 
 def clean_completion_json(completion: str) -> str:
     """
