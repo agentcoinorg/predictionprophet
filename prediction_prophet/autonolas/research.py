@@ -740,7 +740,10 @@ def concatenate_short_sentences(sentences: list[str], len_sentence_threshold: in
     return modified_sentences
 
 
-@db_cache
+@db_cache(
+    # Text (very rarely) contains some funky stuff that can not be serialized properly.
+    log_error_on_unsavable_data=True,
+)
 def openai_embedding_cached(text: str, model: str = "text-embedding-ada-002") -> list[float]:
     emb = OpenAIEmbeddings(model=model)
     vector: list[float] = emb.embed_query(text)
