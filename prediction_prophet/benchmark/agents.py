@@ -7,9 +7,9 @@ from prediction_market_agent_tooling.benchmark.agents import (
     AbstractBenchmarkedAgent,
 )
 from prediction_market_agent_tooling.benchmark.utils import (
-    Prediction, ScalarProbabilisticAnswer
+    Prediction, ScalarPrediction
 )
-from prediction_market_agent_tooling.markets.data_models import ProbabilisticAnswer, CategoricalProbabilisticAnswer
+from prediction_market_agent_tooling.markets.data_models import ProbabilisticAnswer, CategoricalProbabilisticAnswer,  ScalarProbabilisticAnswer
 from prediction_market_agent_tooling.tools.is_predictable import is_predictable_binary
 from prediction_market_agent_tooling.tools.langfuse_ import observe
 from pydantic_ai import Agent
@@ -46,7 +46,24 @@ def _make_prediction(
     )
     return ProbabilisticAnswer.model_validate(prediction)
 
-
+@observe()
+def _make_prediction_scalar(
+    market_question: str,
+    market_upper_bound: int,
+    market_lower_bound: int,
+    additional_information: str,
+    agent: Agent,
+    include_reasoning: bool = False,
+) -> ScalarProbabilisticAnswer:
+    prediction = make_prediction_scalar(
+        prompt=market_question,
+        market_upper_bound=market_upper_bound,
+        market_lower_bound=market_lower_bound,
+        additional_information=additional_information,
+        agent=agent,
+        include_reasoning=include_reasoning,
+    )
+    return ScalarProbabilisticAnswer.model_validate(prediction)
 
 @observe()
 def _make_prediction_categorical(
@@ -213,8 +230,8 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
     def _make_prediction_scalar(
         self,
         market_question: str,
-        market_upper_bound: float,
-        market_lower_bound: float,
+        market_upper_bound: int,
+        market_lower_bound: int,
         additional_information: str,
         agent: Agent,
         include_reasoning: bool = False,
@@ -228,7 +245,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             include_reasoning=include_reasoning,
         )
         return ScalarProbabilisticAnswer.model_validate(prediction)
-
+    
     def predict(self, market_question: str) -> Prediction:
         try:
             research = self.research(market_question)
@@ -264,6 +281,31 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             self.logger.error(f"Error in PredictionProphet's predict_categorical: {e}")
             return Prediction()
 
+    def predict_scalar(self, market_question: str, market_upper_bound: int, market_lower_bound: int) -> ScalarPrediction:
+        try:
+            research = self.research(market_question)
+            prediction=_make_prediction_scalar(
+                    market_question=market_question,
+                    market_upper_bound=market_upper_bound,
+                    market_lower_bound=market_lower_bound,
+                    additional_information=research.report,
+                    agent=self.prediction_agent,
+                    include_reasoning=self.include_reasoning,
+            )
+            return ScalarPrediction(
+                    outcome_prediction=ScalarProbabilisticAnswer(
+                        scalar_value=prediction.scalar_value,
+                        upperBound=market_upper_bound,
+                        lowerBound=market_lower_bound,
+                        confidence=prediction.confidence,
+                        reasoning=prediction.reasoning,
+                        logprobs=prediction.logprobs,
+                    )
+            )
+        except (NoResulsFoundError, NotEnoughScrapedSitesError) as e:
+            self.logger.warning(f"Problem in PredictionProphet's predict_scalar: {e}")
+            return ScalarPrediction()
+    
     def predict_restricted(
         self, market_question: str, time_restriction_up_to: datetime
     ) -> Prediction:

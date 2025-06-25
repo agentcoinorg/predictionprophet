@@ -230,7 +230,7 @@ FIELDS_DESCRIPTIONS_CATEGORICAL = {
 
 FIELDS_DESCRIPTIONS_SCALAR = {
     "reasoning": "A string containing the reasoning behind your decision, and the rest of the answer you're about to give.",
-    "scalar_value": "Predicted value is float. It is expected to be in [{market_upper_bound},{market_lower_bound}], but value can be outside of this range if you think it is more likely.",
+    "scalar_value": "Predicted value is integer. It is expected to be in [{market_upper_bound},{market_lower_bound}], but value can be outside of this range if you think it is more likely.",
     "confidence": "Indicating the confidence in the estimated value you provided ranging from 0 (lowest confidence) to 1 (maximum confidence). Confidence can be calculated based on the quality and quantity of data used for the estimation.",
     "info_utility": "Utility of the information provided in 'ADDITIONAL_INFORMATION' to help you make the probability estimation ranging from 0 (lowest utility) to 1 (maximum utility).",
 }
@@ -441,10 +441,12 @@ class Prediction(BaseModel):
 
 class ScalarPrediction(TypedDict):
     scalar_value: float
-    upperBound: float
-    lowerBound: float
+    upperBound: int
+    lowerBound: int
     confidence: float
     info_utility: float
+    reasoning: Optional[str]
+    logprobs: Optional[list[FieldLogprobs]]
 
 class CategoricalPrediction(TypedDict):
     decision: str
@@ -1382,11 +1384,15 @@ def make_prediction_categorical(
 
     return response
 
+def avg(key: str, parsed: list[dict[str, Any]]) -> float:
+    vals = [p[key] for p in parsed if key in p]
+    return float(sum(vals) / len(vals)) if vals else float("nan")
+
 @observe()
 def make_prediction_scalar(
     prompt: str,
-    market_upper_bound: float,
-    market_lower_bound: float,
+    market_upper_bound: int,
+    market_lower_bound: int,
     additional_information: str,
     agent: Agent | None,
     include_reasoning: bool = False,
@@ -1410,29 +1416,42 @@ def make_prediction_scalar(
         timestamp=formatted_time_utc,
     )
     result = agent.run_sync(prediction_prompt)
-
-    logprobs = None
-    messages = result.all_messages()
-    if messages and hasattr(messages[-1], 'vendor_details'):
-        vendor_details = messages[-1].vendor_details
-        if vendor_details:
-            logprobs = vendor_details.get("logprobs")
-    
     completion = result.data
-    logger.info(f"Completion: {completion}")
-    completion_clean = clean_completion_json(completion)
-    logger.info(f"Completion cleaned: {completion_clean}")
 
-    try:
-        response: ScalarPrediction = json.loads(completion_clean)
-    except json.decoder.JSONDecodeError as e:
-        raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {completion_clean=}") from e
+    if agent.model and hasattr(agent.model, "_n") and agent.model._n > 1:
+        jsons = re.findall(r"\{[^{}]*\}", result.data, flags=re.S)
 
-    if logprobs:
-        response['logprobs'] = LogprobsParser(skip_fields = ["reasoning"]).parse_logprobs(logprobs, Prediction) # type: ignore
-    
-    response['upperBound'] = market_upper_bound
-    response['lowerBound'] = market_lower_bound
+        parsed: list[dict[str, Any]] = []
+        for block in jsons:
+            try:
+                parsed.append(json.loads(block))
+            except json.JSONDecodeError:
+                continue          # silently drop malformed blocks
+
+        responses: ScalarPrediction = {
+            "scalar_value": avg("scalar_value", parsed),
+            "confidence":   avg("confidence", parsed),
+            "info_utility": avg("info_utility", parsed),
+            "upperBound":   market_upper_bound,
+            "lowerBound":   market_lower_bound,
+            "reasoning":    "\n\n---\n\n".join(p.get("reasoning", "") for p in parsed if p.get("reasoning")),
+            "logprobs":     [lp for p in parsed for lp in p.get("logprobs", [])] or None,
+        }
+        return responses
+
+    else:
+        completion = result.data
+        logger.info(f"Completion: {completion}")
+        completion_clean = clean_completion_json(completion)
+        logger.info(f"Completion cleaned: {completion_clean}")
+
+        try:
+            response: ScalarPrediction = json.loads(completion_clean)
+        except json.decoder.JSONDecodeError as e:
+            raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {completion_clean=}") from e
+
+        response['upperBound'] = market_upper_bound
+        response['lowerBound'] = market_lower_bound
 
     return response
 
