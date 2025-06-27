@@ -39,6 +39,7 @@ from prediction_market_agent_tooling.tools.langfuse_ import observe
 from prediction_market_agent_tooling.loggers import logger
 from prediction_market_agent_tooling.tools.google_utils import search_google_gcp
 from prediction_market_agent_tooling.logprobs_parser import LogprobsParser, FieldLogprobs
+from prediction_market_agent_tooling.gtypes import Wei
 
 
 load_dotenv()
@@ -123,15 +124,16 @@ PREDICTION_PROMPT_SCALAR = """
 INTRODUCTION:
 You are a Large Language Model (LLM) within a multi-agent system. Your primary task is to accurately estimate the 'scalar_value' for the outcome of a 'market question', \
 found in 'USER_PROMPT'. The market question is part of a prediction market, where users can place bets on the outcomes of market questions and earn rewards if the predicted 'scalar_value' is close to the actual outcome.
+Each market has {market_upper_bound} and {market_lower_bound} values use those values to calibrate your expectation about your prediction   .
 Each market has a closing date at which the outcome is evaluated. This date is typically stated within the market question.  \
 The closing date is considered to be 23:59:59 of the date provided in the market question. \
 You are provided an itemized list of information under the label "ADDITIONAL_INFORMATION", which is \
-sourced from a Google search engine query performed a few seconds ago and is meant to assist you in your 'scalar_value' estimation. You must adhere to the following 'INSTRUCTIONS'.  
+sourced from a Google search engine query performed a few seconds ago and is meant to assist you in your 'scalar_value' estimation. You must adhere to the following 'INSTRUCTIONS'. 
 
 
 INSTRUCTIONS:
 * Examine the user's input labeled 'USER_PROMPT'. Focus on the part enclosed in double quotes, which contains the 'market question'.
-* Estimate the 'scalar_value' for the outcome of the market question, which is can be any value between {market_upper_bound} and {market_lower_bound}, but the value can be outside of this range if you think it is more likely.
+* Estimate the 'scalar_value' for the outcome of the market question.
 * Consider the prediction market with the market question, the closing date and the outcomes in an isolated context that has no influence on the protagonists that are involved in the event in the real world, specified in the market question. The closing date is always arbitrarily set by the market creator and has no influence on the real world. So it is likely that the protagonists of the event in the real world are not even aware of the prediction market and do not care about the market's closing date.
 * The 'scalar_value' estimations of the market question outcomes must be as accurate as possible, as an inaccurate estimation will lead to financial loss for the user.
 * Utilize your training data and the information provided under "ADDITIONAL_INFORMATION" to generate 'scalar_value' estimations for the outcomes of the 'market question'.
@@ -158,7 +160,7 @@ OUTPUT_FORMAT:
 * Your output response must be only a single JSON object to be parsed by Python's "json.loads()".
 * The JSON must contain {n_fields} fields: {fields_list}.
 {fields_description}
-* The 'scalar_value' can be any value between {market_upper_bound} and {market_lower_bound}, but the value can be outside of this range if you think it is more likely.
+* The 'scalar_value' is float number.
 * Output only the JSON object in your response. Do not include any other contents in your response.
 """
 
@@ -230,7 +232,7 @@ FIELDS_DESCRIPTIONS_CATEGORICAL = {
 
 FIELDS_DESCRIPTIONS_SCALAR = {
     "reasoning": "A string containing the reasoning behind your decision, and the rest of the answer you're about to give.",
-    "scalar_value": "Predicted value is integer. It is expected to be in [{market_upper_bound},{market_lower_bound}], but value can be outside of this range if you think it is more likely.",
+    "scalar_value": "Predicted value of the market question, float number",
     "confidence": "Indicating the confidence in the estimated value you provided ranging from 0 (lowest confidence) to 1 (maximum confidence). Confidence can be calculated based on the quality and quantity of data used for the estimation.",
     "info_utility": "Utility of the information provided in 'ADDITIONAL_INFORMATION' to help you make the probability estimation ranging from 0 (lowest utility) to 1 (maximum utility).",
 }
@@ -440,9 +442,9 @@ class Prediction(BaseModel):
 
 
 class ScalarPrediction(TypedDict):
-    scalar_value: float
-    upperBound: int
-    lowerBound: int
+    scalar_value: Wei
+    upperBound: Wei
+    lowerBound: Wei
     confidence: float
     info_utility: float
     reasoning: Optional[str]
@@ -1391,8 +1393,8 @@ def avg(key: str, parsed: list[dict[str, Any]]) -> float:
 @observe()
 def make_prediction_scalar(
     prompt: str,
-    market_upper_bound: int,
-    market_lower_bound: int,
+    market_upper_bound: Wei,
+    market_lower_bound: Wei,
     additional_information: str,
     agent: Agent | None,
     include_reasoning: bool = False,
@@ -1429,7 +1431,7 @@ def make_prediction_scalar(
                 continue          # silently drop malformed blocks
 
         responses: ScalarPrediction = {
-            "scalar_value": avg("scalar_value", parsed),
+            "scalar_value": Wei(avg("scalar_value", parsed)),
             "confidence":   avg("confidence", parsed),
             "info_utility": avg("info_utility", parsed),
             "upperBound":   market_upper_bound,

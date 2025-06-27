@@ -6,6 +6,7 @@ from unittest.mock import patch
 from prediction_market_agent_tooling.benchmark.agents import (
     AbstractBenchmarkedAgent,
 )
+from prediction_market_agent_tooling.gtypes import Wei
 from prediction_market_agent_tooling.benchmark.utils import (
     Prediction, ScalarPrediction
 )
@@ -49,8 +50,8 @@ def _make_prediction(
 @observe()
 def _make_prediction_scalar(
     market_question: str,
-    market_upper_bound: int,
-    market_lower_bound: int,
+    market_upper_bound: Wei,
+    market_lower_bound: Wei,
     additional_information: str,
     agent: Agent,
     include_reasoning: bool = False,
@@ -281,7 +282,7 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
             self.logger.error(f"Error in PredictionProphet's predict_categorical: {e}")
             return Prediction()
 
-    def predict_scalar(self, market_question: str, market_upper_bound: int, market_lower_bound: int) -> ScalarPrediction:
+    def predict_scalar(self, market_question: str, market_upper_bound: Wei, market_lower_bound: Wei) -> ScalarPrediction:
         try:
             research = self.research(market_question)
             prediction=_make_prediction_scalar(
