@@ -1431,7 +1431,7 @@ def make_prediction_scalar(
                 continue          # silently drop malformed blocks
 
         responses: ScalarPrediction = {
-            "scalar_value": Wei(avg("scalar_value", parsed)),
+            "scalar_value": Wei(int(avg("scalar_value", parsed))),
             "confidence":   avg("confidence", parsed),
             "info_utility": avg("info_utility", parsed),
             "upperBound":   market_upper_bound,

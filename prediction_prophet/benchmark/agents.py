@@ -231,8 +231,8 @@ class PredictionProphetAgent(AbstractBenchmarkedAgent):
     def _make_prediction_scalar(
         self,
         market_question: str,
-        market_upper_bound: int,
-        market_lower_bound: int,
+        market_upper_bound: Wei,
+        market_lower_bound: Wei,
         additional_information: str,
         agent: Agent,
         include_reasoning: bool = False,
