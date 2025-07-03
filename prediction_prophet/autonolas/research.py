@@ -39,6 +39,7 @@ from prediction_market_agent_tooling.tools.langfuse_ import observe
 from prediction_market_agent_tooling.loggers import logger
 from prediction_market_agent_tooling.tools.google_utils import search_google_gcp
 from prediction_market_agent_tooling.logprobs_parser import LogprobsParser, FieldLogprobs
+from prediction_market_agent_tooling.gtypes import Wei
 
 
 load_dotenv()
@@ -118,6 +119,51 @@ OUTPUT_FORMAT:
 * The sum of "p_yes" and "p_no" must equal 1.
 * Output only the JSON object in your response. Do not include any other contents in your response.
 """
+
+PREDICTION_PROMPT_SCALAR = """
+INTRODUCTION:
+You are a Large Language Model (LLM) within a multi-agent system. Your primary task is to accurately estimate the 'scalar_value' for the outcome of a 'market question', \
+found in 'USER_PROMPT'. The market question is part of a prediction market, where users can place bets on the outcomes of market questions and earn rewards if the predicted 'scalar_value' is close to the actual outcome.
+Each market has {market_upper_bound} and {market_lower_bound} values use those values to calibrate your expectation about your prediction   .
+Each market has a closing date at which the outcome is evaluated. This date is typically stated within the market question.  \
+The closing date is considered to be 23:59:59 of the date provided in the market question. \
+You are provided an itemized list of information under the label "ADDITIONAL_INFORMATION", which is \
+sourced from a Google search engine query performed a few seconds ago and is meant to assist you in your 'scalar_value' estimation. You must adhere to the following 'INSTRUCTIONS'. 
+
+
+INSTRUCTIONS:
+* Examine the user's input labeled 'USER_PROMPT'. Focus on the part enclosed in double quotes, which contains the 'market question'.
+* Estimate the 'scalar_value' for the outcome of the market question.
+* Consider the prediction market with the market question, the closing date and the outcomes in an isolated context that has no influence on the protagonists that are involved in the event in the real world, specified in the market question. The closing date is always arbitrarily set by the market creator and has no influence on the real world. So it is likely that the protagonists of the event in the real world are not even aware of the prediction market and do not care about the market's closing date.
+* The 'scalar_value' estimations of the market question outcomes must be as accurate as possible, as an inaccurate estimation will lead to financial loss for the user.
+* Utilize your training data and the information provided under "ADDITIONAL_INFORMATION" to generate 'scalar_value' estimations for the outcomes of the 'market question'.
+* Examine the itemized list under "ADDITIONAL_INFORMATION" thoroughly and use all the relevant information for your 'scalar_value' estimation. This data is sourced from a Google search engine query done a few seconds ago. 
+* Use any relevant item in "ADDITIONAL_INFORMATION" in addition to your training data to make the 'scalar_value' estimation. You can assume that you have been provided with the most current and relevant information available on the internet. Still pay close attention on the release and modification timestamps provided in parentheses right before each information item. Some information might be outdated and not relevant anymore.
+* More recent information indicated by the timestamps provided in parentheses right before each information item overrides older information within ADDITIONAL_INFORMATION and holds more weight for your 'scalar_value' estimation.
+* If there exist contradicting information, evaluate the release and modification dates of those information and prioritize the information that is more recent and adjust your confidence in the probability estimation accordingly.
+* Even if not all information might not be released today, you can assume that there haven't been publicly available updates in the meantime except for those inside ADDITIONAL_INFORMATION.
+* You must provide your response in the format specified under "OUTPUT_FORMAT".
+* Do not include any other contents in your response.
+
+
+USER_PROMPT:
+```
+{user_prompt}
+```
+
+ADDITIONAL_INFORMATION:
+```
+{additional_information}
+```
+
+OUTPUT_FORMAT:
+* Your output response must be only a single JSON object to be parsed by Python's "json.loads()".
+* The JSON must contain {n_fields} fields: {fields_list}.
+{fields_description}
+* The 'scalar_value' is float number.
+* Output only the JSON object in your response. Do not include any other contents in your response.
+"""
+
 PREDICTION_PROMPT_CATEGORICAL = """
 INTRODUCTION:
 You are a Large Language Model (LLM) within a multi-agent system. Your primary task is to accurately estimate the probabilities for the outcome of a 'market question', \
@@ -181,6 +227,13 @@ FIELDS_DESCRIPTIONS_CATEGORICAL = {
     "decision": "The decision you made. The given outcome you have chosen.",
     "probabilities": "A dictionary containing the probabilities for each possible outcome of the market question. The keys are the possible outcomes, and the values are the corresponding probabilities.",
     "confidence": "Indicating the confidence in the estimated probabilities you provided ranging from 0 (lowest confidence) to 1 (maximum confidence). Confidence can be calculated based on the quality and quantity of data used for the estimation.",
+    "info_utility": "Utility of the information provided in 'ADDITIONAL_INFORMATION' to help you make the probability estimation ranging from 0 (lowest utility) to 1 (maximum utility).",
+}
+
+FIELDS_DESCRIPTIONS_SCALAR = {
+    "reasoning": "A string containing the reasoning behind your decision, and the rest of the answer you're about to give.",
+    "scalar_value": "Predicted value of the market question, float number",
+    "confidence": "Indicating the confidence in the estimated value you provided ranging from 0 (lowest confidence) to 1 (maximum confidence). Confidence can be calculated based on the quality and quantity of data used for the estimation.",
     "info_utility": "Utility of the information provided in 'ADDITIONAL_INFORMATION' to help you make the probability estimation ranging from 0 (lowest utility) to 1 (maximum utility).",
 }
 
@@ -387,6 +440,15 @@ class Prediction(BaseModel):
     reasoning: Optional[str] = None
     logprobs: Optional[list[FieldLogprobs]] = []
 
+
+class ScalarPrediction(TypedDict):
+    scalar_value: Wei
+    upperBound: Wei
+    lowerBound: Wei
+    confidence: float
+    info_utility: float
+    reasoning: Optional[str]
+    logprobs: Optional[list[FieldLogprobs]]
 
 class CategoricalPrediction(TypedDict):
     decision: str
@@ -1324,6 +1386,76 @@ def make_prediction_categorical(
 
     return response
 
+def avg(key: str, parsed: list[dict[str, Any]]) -> float:
+    vals = [p[key] for p in parsed if key in p]
+    return float(sum(vals) / len(vals)) if vals else float("nan")
+
+@observe()
+def make_prediction_scalar(
+    prompt: str,
+    market_upper_bound: Wei,
+    market_lower_bound: Wei,
+    additional_information: str,
+    agent: Agent | None,
+    include_reasoning: bool = False,
+) -> ScalarPrediction:
+    agent = agent or Agent(model="gpt-3.5-turbo-0125", model_settings=ModelSettings(temperature=0.7))
+    
+    current_time_utc = datetime.now(timezone.utc)
+    formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
+
+    field_descriptions = FIELDS_DESCRIPTIONS_SCALAR.copy()
+    if not include_reasoning:
+        field_descriptions.pop("reasoning")
+    prediction_prompt = PREDICTION_PROMPT_SCALAR.format(
+        user_prompt=prompt,
+        market_upper_bound=market_upper_bound,
+        market_lower_bound=market_lower_bound,
+        additional_information=additional_information,
+        n_fields=len(field_descriptions),
+        fields_list=list_to_list_str(list(field_descriptions)),
+        fields_description=fields_dict_to_bullet_list(field_descriptions),
+        timestamp=formatted_time_utc,
+    )
+    result = agent.run_sync(prediction_prompt)
+    completion = result.data
+
+    if agent.model and hasattr(agent.model, "_n") and agent.model._n > 1:
+        jsons = re.findall(r"\{[^{}]*\}", result.data, flags=re.S)
+
+        parsed: list[dict[str, Any]] = []
+        for block in jsons:
+            try:
+                parsed.append(json.loads(block))
+            except json.JSONDecodeError:
+                continue          # silently drop malformed blocks
+
+        responses: ScalarPrediction = {
+            "scalar_value": Wei(int(avg("scalar_value", parsed))),
+            "confidence":   avg("confidence", parsed),
+            "info_utility": avg("info_utility", parsed),
+            "upperBound":   market_upper_bound,
+            "lowerBound":   market_lower_bound,
+            "reasoning":    "\n\n---\n\n".join(p.get("reasoning", "") for p in parsed if p.get("reasoning")),
+            "logprobs":     [lp for p in parsed for lp in p.get("logprobs", [])] or None,
+        }
+        return responses
+
+    else:
+        completion = result.data
+        logger.info(f"Completion: {completion}")
+        completion_clean = clean_completion_json(completion)
+        logger.info(f"Completion cleaned: {completion_clean}")
+
+        try:
+            response: ScalarPrediction = json.loads(completion_clean)
+        except json.decoder.JSONDecodeError as e:
+            raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {completion_clean=}") from e
+
+        response['upperBound'] = market_upper_bound
+        response['lowerBound'] = market_lower_bound
+
+    return response
 
 def clean_completion_json(completion: str) -> str:
     """
