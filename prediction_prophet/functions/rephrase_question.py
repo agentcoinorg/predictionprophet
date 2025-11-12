@@ -3,7 +3,7 @@ import tiktoken
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from prediction_prophet.autonolas.research import clean_completion_json
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 
 QUESTION_REPHRASE_PROMPT = """We have the following question: `{question}`

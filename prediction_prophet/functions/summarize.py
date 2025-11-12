@@ -1,4 +1,4 @@
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -10,23 +10,23 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 def summarize(objective: str, content: str) -> str:
     llm = ChatOpenAI(temperature = 0, model_name="gpt-3.5-turbo-16k-0613")
-    
+
     map_template = """
     The following is a set of documents
     {docs}
     Based on this list of docs, please provide a full comprehensive summary relevant to: {objective}
     Helpful Answer:
     """
-    
+
     map_prompt = PromptTemplate(template=map_template, input_variables=["docs", "objective"])
     map_chain = LLMChain(llm=llm, prompt=map_prompt)
-    
+
     reduce_template = """The following is set of summaries:
     {docs}
-    Take these and distill it into a final full comprehensive, summary relevant to: {objective}. 
+    Take these and distill it into a final full comprehensive, summary relevant to: {objective}.
     Helpful Answer:"""
     reduce_prompt = PromptTemplate(template=reduce_template, input_variables=["docs", "objective"])
-    
+
     # Run chain
     reduce_chain = LLMChain(llm=llm, prompt=reduce_prompt)
 
@@ -44,7 +44,7 @@ def summarize(objective: str, content: str) -> str:
         # The maximum number of tokens to group documents into.
         token_max=8000,
     )
-    
+
     map_reduce_chain = MapReduceDocumentsChain(
         # Map chain
         llm_chain=map_chain,
@@ -59,8 +59,7 @@ def summarize(objective: str, content: str) -> str:
 
     text_splitter = RecursiveCharacterTextSplitter(separators=["\n\n", "\n"], chunk_size = 10000, chunk_overlap=500)
     docs = text_splitter.create_documents([content])
-    
-    response: str = map_reduce_chain.run(docs=docs, objective=objective)
-    
-    return response
 
+    response: str = map_reduce_chain.run(docs=docs, objective=objective)
+
+    return response

@@ -2,7 +2,7 @@ import datetime
 import json
 
 from autogen import ConversableAgent
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_openai import ChatOpenAI
 from prediction_market_agent_tooling.config import APIKeys
@@ -25,7 +25,7 @@ Use the question provided in 'USER_PROMPT' and follow these guidelines:
     - "p_no": Probability that the market questions outcome will be `No`. Ranging from 0 (lowest probability) to 1 (maximum probability).
     - "confidence": Indicating the confidence in the estimated probabilities you provided ranging from 0 (lowest confidence) to 1 (maximum confidence). Confidence can be calculated based on the quality and quantity of data used for the estimation.
     - "info_utility": Utility of the information provided in "ADDITIONAL_INFORMATION" to help you make the probability estimation ranging from 0 (lowest utility) to 1 (maximum utility).
-    
+
     Ensure p_yes + p_no equals 1.
 USER_PROMPT: {user_prompt}
 ADDITIONAL_INFORMATION:
@@ -66,7 +66,7 @@ You will be given information. From it, extract the JSON with the following cont
    - "p_no": Probability that the market questions outcome will be `No`. Ranging from 0 (lowest probability) to 1 (maximum probability).
    - "confidence": Indicating the confidence in the estimated probabilities you provided ranging from 0 (lowest confidence) to 1 (maximum confidence). Confidence can be calculated based on the quality and quantity of data used for the estimation.
    - "info_utility": Utility of the information provided in "ADDITIONAL_INFORMATION" to help you make the probability estimation ranging from 0 (lowest utility) to 1 (maximum utility).
-    
+
 Return only the JSON and include nothing more in your response.
 
 Information: {prediction_summary}
@@ -78,13 +78,13 @@ You are a critical and strong debater, information analyzer and future events pr
 You will debate other agents's predictions. You can update your prediction if other agents
 give you convincing arguments. Nonetheless, be strong in your position and argument back to defend your prediction.
 """
-    
+
 def make_debated_prediction(prompt: str, additional_information: str, api_key: SecretStr | None = None) -> ProbabilisticAnswer:
     if api_key == None:
         api_key = APIKeys().openai_api_key
-        
+
     formatted_time_utc = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds') + "Z"
-    
+
     prediction_prompt = ChatPromptTemplate.from_template(template=PREDICTION_PROMPT)
 
     prediction_chain = (
@@ -98,7 +98,7 @@ def make_debated_prediction(prompt: str, additional_information: str, api_key: S
         "additional_information": additional_information,
         "timestamp": formatted_time_utc,
     } for _ in range(2)])
-    
+
     agents = [
         ConversableAgent(
             name=f"Predictor_Agent_{i}",
@@ -106,7 +106,7 @@ def make_debated_prediction(prompt: str, additional_information: str, api_key: S
             llm_config={"config_list": [{"model": "gpt-4-0125-preview", "api_key": api_key.get_secret_value()}]},
             human_input_mode="NEVER")
         for i in range(2) ]
-    
+
     chat_result = agents[0].initiate_chat(
         agents[1],
         message=DEBATE_PREDICTION.format(
@@ -119,7 +119,7 @@ def make_debated_prediction(prompt: str, additional_information: str, api_key: S
         summary_method="reflection_with_llm",
         max_turns=3,
     )
-            
+
     extraction_prompt = ChatPromptTemplate.from_template(template=EXTRACTION_PROMPT)
 
     extraction_chain = (
@@ -131,6 +131,6 @@ def make_debated_prediction(prompt: str, additional_information: str, api_key: S
     result = extraction_chain.invoke({
         "prediction_summary": chat_result.summary
     })
-    
+
 
     return ProbabilisticAnswer.model_validate(json.loads(result))
