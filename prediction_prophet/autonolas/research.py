@@ -128,7 +128,7 @@ Each market has {market_upper_bound} and {market_lower_bound} values use those v
 Each market has a closing date at which the outcome is evaluated. This date is typically stated within the market question.  \
 The closing date is considered to be 23:59:59 of the date provided in the market question. \
 You are provided an itemized list of information under the label "ADDITIONAL_INFORMATION", which is \
-sourced from a Google search engine query performed a few seconds ago and is meant to assist you in your 'scalar_value' estimation. You must adhere to the following 'INSTRUCTIONS'. 
+sourced from a Google search engine query performed a few seconds ago and is meant to assist you in your 'scalar_value' estimation. You must adhere to the following 'INSTRUCTIONS'.
 
 
 INSTRUCTIONS:
@@ -137,7 +137,7 @@ INSTRUCTIONS:
 * Consider the prediction market with the market question, the closing date and the outcomes in an isolated context that has no influence on the protagonists that are involved in the event in the real world, specified in the market question. The closing date is always arbitrarily set by the market creator and has no influence on the real world. So it is likely that the protagonists of the event in the real world are not even aware of the prediction market and do not care about the market's closing date.
 * The 'scalar_value' estimations of the market question outcomes must be as accurate as possible, as an inaccurate estimation will lead to financial loss for the user.
 * Utilize your training data and the information provided under "ADDITIONAL_INFORMATION" to generate 'scalar_value' estimations for the outcomes of the 'market question'.
-* Examine the itemized list under "ADDITIONAL_INFORMATION" thoroughly and use all the relevant information for your 'scalar_value' estimation. This data is sourced from a Google search engine query done a few seconds ago. 
+* Examine the itemized list under "ADDITIONAL_INFORMATION" thoroughly and use all the relevant information for your 'scalar_value' estimation. This data is sourced from a Google search engine query done a few seconds ago.
 * Use any relevant item in "ADDITIONAL_INFORMATION" in addition to your training data to make the 'scalar_value' estimation. You can assume that you have been provided with the most current and relevant information available on the internet. Still pay close attention on the release and modification timestamps provided in parentheses right before each information item. Some information might be outdated and not relevant anymore.
 * More recent information indicated by the timestamps provided in parentheses right before each information item overrides older information within ADDITIONAL_INFORMATION and holds more weight for your 'scalar_value' estimation.
 * If there exist contradicting information, evaluate the release and modification dates of those information and prioritize the information that is more recent and adjust your confidence in the probability estimation accordingly.
@@ -1400,7 +1400,7 @@ def make_prediction_scalar(
     include_reasoning: bool = False,
 ) -> ScalarPrediction:
     agent = agent or Agent(model="gpt-3.5-turbo-0125", model_settings=ModelSettings(temperature=0.7))
-    
+
     current_time_utc = datetime.now(timezone.utc)
     formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
 
@@ -1418,10 +1418,10 @@ def make_prediction_scalar(
         timestamp=formatted_time_utc,
     )
     result = agent.run_sync(prediction_prompt)
-    completion = result.data
+    completion = result.output
 
     if agent.model and hasattr(agent.model, "_n") and agent.model._n > 1:
-        jsons = re.findall(r"\{[^{}]*\}", result.data, flags=re.S)
+        jsons = re.findall(r"\{[^{}]*\}", completion, flags=re.S)
 
         parsed: list[dict[str, Any]] = []
         for block in jsons:
@@ -1442,7 +1442,7 @@ def make_prediction_scalar(
         return responses
 
     else:
-        completion = result.data
+        completion = result.output
         logger.info(f"Completion: {completion}")
         completion_clean = clean_completion_json(completion)
         logger.info(f"Completion cleaned: {completion_clean}")
