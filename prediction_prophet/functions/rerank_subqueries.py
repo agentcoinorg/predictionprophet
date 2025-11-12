@@ -1,6 +1,6 @@
 from pydantic_ai import Agent
 from prediction_market_agent_tooling.tools.langfuse_ import observe
-from langchain.output_parsers import CommaSeparatedListOutputParser
+from langchain_core.output_parsers import CommaSeparatedListOutputParser
 
 rerank_queries_template = """I will present you with a list of queries to search the web for, for answers to the question: {goal}.
 
