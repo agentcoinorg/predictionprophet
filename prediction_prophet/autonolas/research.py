@@ -78,7 +78,7 @@ found in 'USER_PROMPT'. The market question is part of a prediction market, wher
 in this scenario has only two possible outcomes: `Yes` or `No`. Each market has a closing date at which the outcome is evaluated. This date is typically stated within the market question.  \
 The closing date is considered to be 23:59:59 of the date provided in the market question. If the event specified in the market question has not occurred before the closing date, the market question's outcome is `No`. \
 If the event has happened before the closing date, the market question's outcome is `Yes`. You are provided an itemized list of information under the label "ADDITIONAL_INFORMATION", which is \
-sourced from a Google search engine query performed a few seconds ago and is meant to assist you in your probability estimation. You must adhere to the following 'INSTRUCTIONS'.  
+sourced from a Google search engine query performed a few seconds ago and is meant to assist you in your probability estimation. You must adhere to the following 'INSTRUCTIONS'.
 
 
 INSTRUCTIONS:
@@ -89,7 +89,7 @@ INSTRUCTIONS:
 * Consider the prediction market with the market question, the closing date and the outcomes in an isolated context that has no influence on the protagonists that are involved in the event in the real world, specified in the market question. The closing date is always arbitrarily set by the market creator and has no influence on the real world. So it is likely that the protagonists of the event in the real world are not even aware of the prediction market and do not care about the market's closing date.
 * The probability estimations of the market question outcomes must be as accurate as possible, as an inaccurate estimation will lead to financial loss for the user.
 * Utilize your training data and the information provided under "ADDITIONAL_INFORMATION" to generate probability estimations for the outcomes of the 'market question'.
-* Examine the itemized list under "ADDITIONAL_INFORMATION" thoroughly and use all the relevant information for your probability estimation. This data is sourced from a Google search engine query done a few seconds ago. 
+* Examine the itemized list under "ADDITIONAL_INFORMATION" thoroughly and use all the relevant information for your probability estimation. This data is sourced from a Google search engine query done a few seconds ago.
 * Use any relevant item in "ADDITIONAL_INFORMATION" in addition to your training data to make the probability estimation. You can assume that you have been provided with the most current and relevant information available on the internet. Still pay close attention on the release and modification timestamps provided in parentheses right before each information item. Some information might be outdated and not relevant anymore.
 * More recent information indicated by the timestamps provided in parentheses right before each information item overrides older information within ADDITIONAL_INFORMATION and holds more weight for your probability estimation.
 * If there exist contradicting information, evaluate the release and modification dates of those information and prioritize the information that is more recent and adjust your confidence in the probability estimation accordingly.
@@ -171,7 +171,7 @@ found in 'USER_PROMPT'. The market question is part of a prediction market, wher
 Each market has a closing date at which the outcome is evaluated. This date is typically stated within the market question.  \
 The closing date is considered to be 23:59:59 of the date provided in the market question. \
 You are provided an itemized list of information under the label "ADDITIONAL_INFORMATION", which is \
-sourced from a Google search engine query performed a few seconds ago and is meant to assist you in your probability estimation. You must adhere to the following 'INSTRUCTIONS'.  
+sourced from a Google search engine query performed a few seconds ago and is meant to assist you in your probability estimation. You must adhere to the following 'INSTRUCTIONS'.
 
 
 INSTRUCTIONS:
@@ -181,7 +181,7 @@ INSTRUCTIONS:
 * Consider the prediction market with the market question, the closing date and the outcomes in an isolated context that has no influence on the protagonists that are involved in the event in the real world, specified in the market question. The closing date is always arbitrarily set by the market creator and has no influence on the real world. So it is likely that the protagonists of the event in the real world are not even aware of the prediction market and do not care about the market's closing date.
 * The probability estimations of the market question outcomes must be as accurate as possible, as an inaccurate estimation will lead to financial loss for the user.
 * Utilize your training data and the information provided under "ADDITIONAL_INFORMATION" to generate probability estimations for the outcomes of the 'market question'.
-* Examine the itemized list under "ADDITIONAL_INFORMATION" thoroughly and use all the relevant information for your probability estimation. This data is sourced from a Google search engine query done a few seconds ago. 
+* Examine the itemized list under "ADDITIONAL_INFORMATION" thoroughly and use all the relevant information for your probability estimation. This data is sourced from a Google search engine query done a few seconds ago.
 * Use any relevant item in "ADDITIONAL_INFORMATION" in addition to your training data to make the probability estimation. You can assume that you have been provided with the most current and relevant information available on the internet. Still pay close attention on the release and modification timestamps provided in parentheses right before each information item. Some information might be outdated and not relevant anymore.
 * More recent information indicated by the timestamps provided in parentheses right before each information item overrides older information within ADDITIONAL_INFORMATION and holds more weight for your probability estimation.
 * If there exist contradicting information, evaluate the release and modification dates of those information and prioritize the information that is more recent and adjust your confidence in the probability estimation accordingly.
@@ -580,7 +580,7 @@ def truncate_additional_information(
     else:
         add_trunc_enc = add_enc[: -int(len_add_enc - max_add_tokens)]
         return enc.decode(add_trunc_enc)
-    
+
 
 def safe_get_urls_from_query(query: str, num: int = 3) -> List[str]:
     try:
@@ -878,13 +878,13 @@ def extract_similarity_scores(
 
     # Encode sentences using an embedding model
     similarities = par_map(
-        sentences, 
+        sentences,
         lambda sentence: (
-            doc_question.similarity(nlp(sentence)) if embedding_model == EmbeddingModel.spacy 
+            doc_question.similarity(nlp(sentence)) if embedding_model == EmbeddingModel.spacy
             else cosine_similarity(
-                [openai_embedding_cached(sentence)], 
+                [openai_embedding_cached(sentence)],
                 [openai_embedding_cached(doc_question.text)]
-            )[0][0] if embedding_model == EmbeddingModel.openai 
+            )[0][0] if embedding_model == EmbeddingModel.openai
             else None
         )
     )
@@ -1215,7 +1215,7 @@ def fetch_additional_information(
     if not agent._system_prompts and not agent._system_prompt_functions and not agent._system_prompt_dynamic_functions:
         agent.system_prompt()(lambda: "You are a helpful assistant.")
 
-    response = agent.run_sync(url_query_prompt).data
+    response = agent.run_sync(url_query_prompt).output
 
     # Parse the response content
     try:
@@ -1294,7 +1294,7 @@ def research(
     # Spacy loads ~500MB into memory. Free it with force.
     del nlp
     gc.collect()
-    
+
     return additional_information
 
 
@@ -1306,7 +1306,7 @@ def make_prediction(
     include_reasoning: bool = False,
 ) -> Prediction:
     agent = agent or Agent(model="gpt-3.5-turbo-0125", model_settings=ModelSettings(temperature=0.7))
-    
+
     current_time_utc = datetime.now(timezone.utc)
     formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
 
@@ -1323,7 +1323,7 @@ def make_prediction(
     )
     result = agent.run_sync(prediction_prompt)
 
-    completion = result.data
+    completion = result.output
 
     logprobs = None
     messages = result.all_messages()
@@ -1331,7 +1331,7 @@ def make_prediction(
         vendor_details = messages[-1].vendor_details
         if vendor_details:
             logprobs = vendor_details.get("logprobs")
-    
+
     logger.info(f"Completion: {completion}")
     completion_clean = clean_completion_json(completion)
     logger.info(f"Completion cleaned: {completion_clean}")
@@ -1340,10 +1340,10 @@ def make_prediction(
         response: Prediction = json.loads(completion_clean)
     except json.decoder.JSONDecodeError as e:
         raise UnexpectedModelBehavior(f"The response from {agent=} could not be parsed as JSON: {completion_clean=}") from e
-    
+
     if logprobs:
         response['logprobs'] = LogprobsParser(skip_fields = ["reasoning"]).parse_logprobs(logprobs, Prediction) # type: ignore
-    
+
     return response
 
 
@@ -1356,7 +1356,7 @@ def make_prediction_categorical(
     include_reasoning: bool = False,
 ) -> CategoricalPrediction:
     agent = agent or Agent(model="gpt-3.5-turbo-0125", model_settings=ModelSettings(temperature=0.7))
-    
+
     current_time_utc = datetime.now(timezone.utc)
     formatted_time_utc = current_time_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-6] + "Z"
 
@@ -1374,7 +1374,7 @@ def make_prediction_categorical(
     )
     result = agent.run_sync(prediction_prompt)
 
-    completion = result.data
+    completion = result.output
     logger.info(f"Completion: {completion}")
     completion_clean = clean_completion_json(completion)
     logger.info(f"Completion cleaned: {completion_clean}")

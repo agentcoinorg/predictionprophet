@@ -13,6 +13,6 @@ Queries: {queries}
 """
 @observe()
 def rerank_subqueries(queries: list[str], goal: str, agent: Agent) -> list[str]:
-    result = agent.run_sync(rerank_queries_template.format(goal=goal, queries="\n---query---\n".join(queries)))
-    responses = CommaSeparatedListOutputParser().parse(result.data)
+    result = agent.run_sync(rerank_queries_template.format(goal=goal, queries="\n---query---\n".join(queries)),)
+    responses = CommaSeparatedListOutputParser().parse(result.output)
     return responses

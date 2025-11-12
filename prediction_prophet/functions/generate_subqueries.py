@@ -16,6 +16,6 @@ def generate_subqueries(query: str, limit: int, agent: Agent) -> list[str]:
         return [query]
 
     result = agent.run_sync(subquery_generation_template.format(query=query, search_limit=limit))
-    subqueries = CommaSeparatedListOutputParser().parse(result.data)
+    subqueries = CommaSeparatedListOutputParser().parse(result.output)
 
     return [query] + [subquery.strip('\"') for subquery in subqueries]
