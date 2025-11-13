@@ -19,6 +19,7 @@ from googleapiclient.discovery import build
 from prediction_prophet.functions.parallelism import THREADPOOL
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic import BaseModel, Field
+from pydantic_ai.models import infer_model
 
 
 import requests
@@ -1265,7 +1266,8 @@ def research(
 
     # Get the tiktoken base encoding
     assert agent.model is not None
-    enc = tiktoken.encoding_for_model(agent.model if isinstance(agent.model, str) else agent.model.model_name)
+    model_name = infer_model(agent.model if isinstance(agent.model, str) else agent.model.model_name).model_name
+    enc = tiktoken.encoding_for_model(model_name)
 
     # Calculate the maximum number of tokens and words that can be consumed by the additional information string
     max_add_tokens = get_max_tokens_for_additional_information(
