@@ -7,7 +7,7 @@ from pydantic_ai import Agent
 from pydantic_ai.models import KnownModelName
 from pydantic_ai.settings import ModelSettings
 from prediction_market_agent_tooling.tools.utils import secret_str_from_env
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from prediction_prophet.functions.create_embeddings_from_results import create_embeddings_from_results
 from prediction_prophet.functions.generate_subqueries import generate_subqueries
 from prediction_prophet.functions.prepare_report import prepare_report

@@ -2,7 +2,7 @@ import typing as t
 from pydantic_ai import Agent
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser
+from langchain_core.output_parsers import StrOutputParser
 from prediction_prophet.functions.utils import trim_to_n_tokens
 from prediction_market_agent_tooling.config import APIKeys
 from pydantic.types import SecretStr

@@ -1,5 +1,5 @@
 from langchain_openai import ChatOpenAI
-from langchain.output_parsers import CommaSeparatedListOutputParser
+from langchain_core.output_parsers import CommaSeparatedListOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 rerank_results_template = """

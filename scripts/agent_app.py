@@ -6,7 +6,7 @@ Tip: if you specify PYTHONPATH=., streamlit will watch for the changes in all fi
 import inspect
 import typing as t
 import streamlit as st
-from enum import Enum 
+from enum import Enum
 from prediction_market_agent_tooling.markets.markets import get_binary_markets, MarketType
 from prediction_market_agent_tooling.benchmark.agents import AbstractBenchmarkedAgent
 from prediction_prophet.benchmark.agents import AGENTS
@@ -22,7 +22,7 @@ market_source = MarketType(st.selectbox("Select a market source", [market_source
 markets = get_binary_markets(42, market_source)
 
 # Select an agent from the list of available agents.
-agent_class_names = st.multiselect("Select agents", [agent_class.__name__ for agent_class in AGENTS]) 
+agent_class_names = st.multiselect("Select agents", [agent_class.__name__ for agent_class in AGENTS])
 if not agent_class_names:
     st.warning("Please select at least one agent.")
     st.stop()
@@ -55,15 +55,15 @@ agents: list[AbstractBenchmarkedAgent] = []
 
 with st.expander("Show agent's parameters", expanded=False):
     for idx, (column, agent_class) in enumerate(zip(st.columns(len(agent_classes)), agent_classes)):
-        # Inspect the agent's __init__ method to get arguments it accepts, 
-        # ask the user to provide values for these arguments, 
+        # Inspect the agent's __init__ method to get arguments it accepts,
+        # ask the user to provide values for these arguments,
         # and fill in defaults where possible.
         inspect_class_init = inspect.getfullargspec(agent_class.__init__)
         class_arg_to_default_value = {
             arg_name: arg_default
             for arg_name, arg_default in zip(
                 # Only last arguments can have a default value, so we need to slice the args list.
-                inspect_class_init.args[-(len(inspect_class_init.defaults or [])):], 
+                inspect_class_init.args[-(len(inspect_class_init.defaults or [])):],
                 inspect_class_init.defaults or [],
             )
         }
@@ -74,20 +74,20 @@ with st.expander("Show agent's parameters", expanded=False):
         class_inputs: dict[str, t.Any] = {}
         for arg_name in inspect_class_init.args:
             # Skip these, no need to ask the user for them.
-            if arg_name in ("self", "agent_name", "max_workers"):
+            if arg_name in ("self", "agent_name", "max_workers", "logger"):
                 continue
             # We need SENTINEL to differentiate between not having the default value and when the default value is None.
             default_value = class_arg_to_default_value.get(arg_name, default_arguments.get(arg_name, SENTINTEL))
             input_type = type(default_value)
             class_inputs[arg_name]  = (
                 # Show checkbox for booleans.
-                column.checkbox(arg_name, default_value if default_value is not SENTINTEL else False, key=f"{idx}-{arg_name}") 
-                if input_type == bool 
+                column.checkbox(arg_name, default_value if default_value is not SENTINTEL else False, key=f"{idx}-{arg_name}")
+                if input_type == bool
                 else
                 # Number input for numbers.
                 column.number_input(arg_name, default_value if default_value is not SENTINTEL else 0, key=f"{idx}-{arg_name}")
                 if input_type in (int, float)
-                else 
+                else
                 # Convert strings to Enum, if the default value is an Enum.
                 input_type(str(column.text_input(arg_name, default_value, key=f"{idx}-{arg_name}")).replace(f"{default_value.__class__.__name__}.", ""))
                 if isinstance(default_value, Enum)
@@ -134,7 +134,7 @@ Is predictable: `{is_predictable}`
     with column.expander("Show agent's prediction", expanded=True):
         st.markdown(f"""## Prediction
 
-```       
+```
 {prediction.outcome_prediction}
 ```
 """)

@@ -1,15 +1,16 @@
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains.llm import LLMChain
-from langchain.chains.combine_documents.reduce import ReduceDocumentsChain
-from langchain.chains.combine_documents.stuff import  StuffDocumentsChain
-from langchain.chains.combine_documents.map_reduce import MapReduceDocumentsChain
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_classic.chains.llm import LLMChain
+from langchain_classic.chains.combine_documents.reduce import ReduceDocumentsChain
+from langchain_classic.chains.combine_documents.stuff import  StuffDocumentsChain
+from langchain_classic.chains.combine_documents.map_reduce import MapReduceDocumentsChain
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 
 def summarize(objective: str, content: str) -> str:
-    llm = ChatOpenAI(temperature = 0, model_name="gpt-3.5-turbo-16k-0613")
+    llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
 
     map_template = """
     The following is a set of documents

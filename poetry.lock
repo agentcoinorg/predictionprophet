@@ -3751,6 +3751,23 @@ together = ["langchain-together"]
 xai = ["langchain-xai"]
 
 [[package]]
+name = "langchain-chroma"
+version = "1.0.0"
+description = "An integration package connecting Chroma and LangChain."
+optional = false
+python-versions = "<4.0.0,>=3.10.0"
+groups = ["main"]
+files = [
+    {file = "langchain_chroma-1.0.0-py3-none-any.whl", hash = "sha256:b7adb991090f066f8d5e746a2d338de3116b192cec3990deef3052b7ea07324c"},
+    {file = "langchain_chroma-1.0.0.tar.gz", hash = "sha256:ee82c6fbd0c94e5e9942e3b9302f69deea6c58c0e957ff16de6066d896d7a34a"},
+]
+
+[package.dependencies]
+chromadb = ">=1.0.20,<2.0.0"
+langchain-core = ">=1.0.0,<2.0.0"
+numpy = {version = ">=1.26.0", markers = "python_version < \"3.13\""}
+
+[[package]]
 name = "langchain-classic"
 version = "1.0.0"
 description = "Building applications with LLMs through composability"
@@ -3887,30 +3904,27 @@ test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "langfuse"
-version = "2.60.5"
+version = "3.9.3"
 description = "A client library for accessing langfuse"
 optional = false
-python-versions = "<4.0,>=3.9"
+python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "langfuse-2.60.5-py3-none-any.whl", hash = "sha256:fd27d52017f36d6fa5ca652615213a2535dc93dd88c3375eeb811af26384d285"},
-    {file = "langfuse-2.60.5.tar.gz", hash = "sha256:a33ecddc98cf6d12289372e63071b77b72230e7bc8260ee349f1465d53bf425b"},
+    {file = "langfuse-3.9.3-py3-none-any.whl", hash = "sha256:0afe88773f20fc67636d8a52dd3a5fb4e10f1c6e226f2c99ace8c65190fb5697"},
+    {file = "langfuse-3.9.3.tar.gz", hash = "sha256:8081691d40325b7022b07fc4e5884853c4a4ffe03b05c702490788b9a1a125df"},
 ]
 
 [package.dependencies]
-anyio = ">=4.4.0,<5.0.0"
 backoff = ">=1.10.0"
 httpx = ">=0.15.4,<1.0"
-idna = ">=3.7,<4.0"
-packaging = ">=23.2,<25.0"
+openai = ">=0.27.8"
+opentelemetry-api = ">=1.33.1,<2.0.0"
+opentelemetry-exporter-otlp-proto-http = ">=1.33.1,<2.0.0"
+opentelemetry-sdk = ">=1.33.1,<2.0.0"
+packaging = ">=23.2,<26.0"
 pydantic = ">=1.10.7,<3.0"
 requests = ">=2,<3"
 wrapt = ">=1.14,<2.0"
-
-[package.extras]
-langchain = ["langchain (>=0.0.309)"]
-llama-index = ["llama-index (>=0.10.12,<2.0.0)"]
-openai = ["openai (>=0.27.8)"]
 
 [[package]]
 name = "langgraph"
@@ -5790,14 +5804,14 @@ test = ["anthropic", "coverage", "django", "flake8", "freezegun (==1.5.1)", "lan
 
 [[package]]
 name = "prediction-market-agent-tooling"
-version = "0.69.19.dev1154"
+version = "0.69.19.dev1157"
 description = "Tools to benchmark, deploy and monitor prediction market agents."
 optional = false
 python-versions = "<3.13,>=3.10"
 groups = ["main"]
 files = [
-    {file = "prediction_market_agent_tooling-0.69.19.dev1154-py3-none-any.whl", hash = "sha256:09a5debeb505a04d927ee5538bb72f2b09640cd2075cdddfeab59c17e5720802"},
-    {file = "prediction_market_agent_tooling-0.69.19.dev1154.tar.gz", hash = "sha256:61196f27a8452dae12e8b7e5acc1a2c0b9d7d6ecf186cd16501bfac16c5859bf"},
+    {file = "prediction_market_agent_tooling-0.69.19.dev1157-py3-none-any.whl", hash = "sha256:e5f8f89af110b4a146beb6569d50a7ace7832bcbab5e7f0b790ed2ccb0d0b314"},
+    {file = "prediction_market_agent_tooling-0.69.19.dev1157.tar.gz", hash = "sha256:6c3698d556ad68b05b0ab25921528bc3a34fc7b192b0cae533b2ecc776c93bd0"},
 ]
 
 [package.dependencies]
@@ -5819,7 +5833,7 @@ isort = ">=5.13.2,<6.0.0"
 langchain = {version = ">=1.0.0,<2.0.0", optional = true, markers = "extra == \"langchain\""}
 langchain-community = ">=0.0.19"
 langchain-openai = {version = ">=1.0.0,<2.0.0", optional = true, markers = "extra == \"langchain\""}
-langfuse = ">=2.42.0,<3.0.0"
+langfuse = ">=3.0.0,<4.0.0"
 loguru = ">=0.7.2,<0.8.0"
 loky = ">=3.4.1,<4.0.0"
 numpy = ">=1.26.4,<2.0.0"
@@ -10122,4 +10136,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "ef1533a6f4c0bcad23fbdb721b1d9159ac15637c5ed5368f181b52d2d3504ac3"
+content-hash = "97ba32292b1fd60fbfe1f33485bf904fb1081ace8c5dc23aa248e29c2f38d47b"

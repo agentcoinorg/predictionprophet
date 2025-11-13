@@ -3,7 +3,7 @@ import json
 
 from autogen import ConversableAgent
 from langchain_core.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser
+from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 from prediction_market_agent_tooling.config import APIKeys
 from prediction_market_agent_tooling.markets.data_models import ProbabilisticAnswer
