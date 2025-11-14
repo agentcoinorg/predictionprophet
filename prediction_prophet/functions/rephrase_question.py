@@ -3,7 +3,7 @@ import tiktoken
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from prediction_prophet.autonolas.research import clean_completion_json
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 
 QUESTION_REPHRASE_PROMPT = """We have the following question: `{question}`
@@ -41,13 +41,12 @@ def rephrase_question(
     messages = prompt.format_messages(question=question)
 
     max_tokens = 2 * len(tokenizer.encode(question)) + 50 # Max tokens as the question two times + some buffer for formatting.
-    completion = str(llm(messages, max_tokens=max_tokens).content)
+    completion = str(llm.invoke(messages, max_tokens=max_tokens).content)
 
     try:
         return RephrasedQuestion(
-            original_question=question, 
+            original_question=question,
             **json.loads(clean_completion_json(completion))
         )
     except json.decoder.JSONDecodeError as e:
         raise ValueError(f"Error in rephrase_question for `{question}`: {completion}") from e
-        

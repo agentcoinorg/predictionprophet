@@ -1,4 +1,4 @@
-from langchain.output_parsers import CommaSeparatedListOutputParser
+from langchain_core.output_parsers import CommaSeparatedListOutputParser
 from pydantic_ai import Agent
 from prediction_market_agent_tooling.tools.langfuse_ import observe
 
@@ -16,6 +16,6 @@ def generate_subqueries(query: str, limit: int, agent: Agent) -> list[str]:
         return [query]
 
     result = agent.run_sync(subquery_generation_template.format(query=query, search_limit=limit))
-    subqueries = CommaSeparatedListOutputParser().parse(result.data)
+    subqueries = CommaSeparatedListOutputParser().parse(result.output)
 
     return [query] + [subquery.strip('\"') for subquery in subqueries]
