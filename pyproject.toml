@@ -10,7 +10,7 @@ python = ">=3.10,<3.13"
 langchain = "^1.0.0"
 beautifulsoup4 = "^4,<4.13" # Bug in typing of newer version
 click = "^8.0.2"
-markdownify = "0.11.6"
+markdownify = "1.0.0"
 pandas = "^2.1.1"
 openai = "^1.10.0"
 chromadb = "^1.0.0"
