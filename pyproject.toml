@@ -12,7 +12,7 @@ beautifulsoup4 = "^4,<4.13" # Bug in typing of newer version
 click = "^8.0.2"
 markdownify = "1.0.0"
 pandas = "^2.1.1"
-openai = "^1.10.0"
+openai = "^2.0.0"
 chromadb = "^1.0.0"
 spacy = "3.7.5"
 en_core_web_md = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.1/en_core_web_md-3.7.1-py3-none-any.whl" }
@@ -36,7 +36,7 @@ memory-profiler = "^0.61.0"
 matplotlib = "^3.8.3"
 pyautogen = "^0.3.1"
 python-dateutil = "^2.9.0.post0"
-pydantic-ai = "^1.0.0"
+pydantic-ai-slim = {version = "^1.0.0", extras = ["openai", "anthropic", "logfire"]}
 langchain-chroma = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
